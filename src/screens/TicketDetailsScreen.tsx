@@ -12,10 +12,10 @@ import {
 } from 'react-native';
 import { ResolvedTicketCard, AssignedFilter } from './BeneficiaryRedressalScreen';
 
-const imgBackIconWhite = 'http://localhost:3845/assets/7f8f3adda2b5ee6b329aa4bec9e698dafbe66a4e.svg';
-const imgIcon  = 'http://localhost:3845/assets/68a3d96cc9d535751db0556c4ec051a7b10232bc.svg';
-const imgIcon1 = 'http://localhost:3845/assets/4e4c20143662c7fa550404d6af1b4a67fff5a25a.svg';
-const imgIcon2 = 'http://localhost:3845/assets/d8fb18a3620042e5865afa1aa020f61987b34fbb.svg';
+const imgBackIconWhite = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/arrow-left.svg';
+const imgIcon  = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/reception-4.svg';
+const imgIcon1 = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/wifi.svg';
+const imgIcon2 = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/battery-full.svg';
 
 // ─── Status config ────────────────────────────────────────────────────────────
 
@@ -305,7 +305,7 @@ export default function TicketDetailsScreen({
             <SectionHeader title="Supporting Documents" />
             <View style={dtStyles.docsSection}>
               <View style={dtStyles.docItem}>
-                <Image source={{ uri: 'http://localhost:3845/assets/73be45dd812dab1ed305e0e71138eed35eb8bd6d.svg' }} style={dtStyles.docIcon} />
+                <Image source={{ uri: 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/file-earmark-pdf-fill.svg' }} style={dtStyles.docIcon} />
                 <View style={dtStyles.docInfo}>
                   <Text style={dtStyles.docName}>
                     {currentCard.id === '1' ? 'pmmvy_enrollment_form.pdf' :
@@ -455,7 +455,7 @@ const dtStyles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   backBtn: { width: 29, height: 24, justifyContent: 'center' },
-  backIcon: { width: 29, height: 24 },
+  backIcon: { width: 29, height: 24, tintColor: '#ffffff' },
   headerTitle: {
     flex: 1,
     fontFamily: 'Inter',
@@ -832,7 +832,7 @@ const ActionTakenModal = ({
             >
               {confirmClosed && (
                 <Image
-                  source={{ uri: 'http://localhost:3845/assets/73be45dd812dab1ed305e0e71138eed35eb8bd6d.svg' }}
+                  source={{ uri: 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/check.svg' }}
                   style={sheetStyles.checkIcon}
                 />
               )}
@@ -882,7 +882,7 @@ const SuccessScreen = ({
         {/* Checked Circle */}
         <View style={successStyles.checkCircle}>
           <Image
-            source={{ uri: 'http://localhost:3845/assets/73be45dd812dab1ed305e0e71138eed35eb8bd6d.svg' }}
+            source={{ uri: 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/check-circle-fill.svg' }}
             style={successStyles.checkIcon}
           />
         </View>

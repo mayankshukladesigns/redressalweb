@@ -67,6 +67,24 @@ const RoleSelectionScreen = ({ onSelectRole }: { onSelectRole: (role: Role) => v
             </Text>
           </View>
         </TouchableOpacity>
+
+        {/* DPO Card */}
+        <TouchableOpacity
+          style={selStyles.card}
+          activeOpacity={0.85}
+          onPress={() => onSelectRole('DPO')}
+        >
+          <View style={[selStyles.cardIconContainer, { backgroundColor: '#e8f5e9' }]}>
+            <Text style={[selStyles.cardIconText, { color: '#2e7d32' }]}>D</Text>
+          </View>
+          <View style={selStyles.cardInfo}>
+            <Text style={selStyles.cardTitle}>DPO View</Text>
+            <Text style={selStyles.cardSubtitle}>District Programme Officer</Text>
+            <Text style={selStyles.cardDesc}>
+              Monitor district-wide redressal status, review appeal cases, and resolve overdue grievances.
+            </Text>
+          </View>
+        </TouchableOpacity>
       </View>
 
       <Text style={selStyles.footer}>v1.2.0 • Powered by Expo</Text>
@@ -84,7 +102,7 @@ export default function HomeScreen() {
         <View style={styles.roleSwitcher}>
           <Text style={styles.switcherLabel}>View as:</Text>
           <View style={styles.switcherPills}>
-            {(['CDPO', 'Supervisor'] as Role[]).map(role => (
+            {(['CDPO', 'Supervisor', 'DPO'] as Role[]).map(role => (
               <TouchableOpacity
                 key={role}
                 style={[styles.pill, activeRole === role && styles.pillActive]}

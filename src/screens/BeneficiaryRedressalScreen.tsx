@@ -13,17 +13,17 @@ import {
 } from 'react-native';
 
 // Asset URLs from Figma MCP localhost server
-const imgIcon = 'http://localhost:3845/assets/68a3d96cc9d535751db0556c4ec051a7b10232bc.svg';
-const imgIcon1 = 'http://localhost:3845/assets/4e4c20143662c7fa550404d6af1b4a67fff5a25a.svg';
-const imgIcon2 = 'http://localhost:3845/assets/d8fb18a3620042e5865afa1aa020f61987b34fbb.svg';
-const imgBackIconWhite = 'http://localhost:3845/assets/7f8f3adda2b5ee6b329aa4bec9e698dafbe66a4e.svg';
-const imgChevronDown = 'http://localhost:3845/assets/9d6c55a5780b87734427bb57f75bd6fccbb58623.svg';
-const imgChevronDown1 = 'http://localhost:3845/assets/30b64f7f06cc94d25556e6f34cdfe12c0935dcbd.svg';
-const imgIcon3 = 'http://localhost:3845/assets/73be45dd812dab1ed305e0e71138eed35eb8bd6d.svg';
-const imgCloseIcon = 'http://localhost:3845/assets/67d1da512779267315b557231287a65b73068fac.svg';
-const imgCalendarIcon = 'http://localhost:3845/assets/0d2b9fb8a52edbca2ea04c0077d5e0c53c39e57a.svg';
-const imgCalendarIcon1 = 'http://localhost:3845/assets/266749b2e21c71d3d5c06cac6425a6fd2ad0fba5.svg';
-const imgCalendarIcon2 = 'http://localhost:3845/assets/bca71dec266f858973c00891d906be6c76faca29.svg';
+const imgIcon = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/reception-4.svg';
+const imgIcon1 = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/wifi.svg';
+const imgIcon2 = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/battery-full.svg';
+const imgBackIconWhite = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/arrow-left.svg';
+const imgChevronDown = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/chevron-down.svg';
+const imgChevronDown1 = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/chevron-down.svg';
+const imgIcon3 = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/check.svg';
+const imgCloseIcon = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/x.svg';
+const imgCalendarIcon = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/calendar3.svg';
+const imgCalendarIcon1 = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/calendar3.svg';
+const imgCalendarIcon2 = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/calendar3.svg';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -2477,7 +2477,7 @@ const styles = StyleSheet.create({
     height: 24,
     justifyContent: 'center',
   },
-  backIcon: { width: 29, height: 24 },
+  backIcon: { width: 29, height: 24, tintColor: '#ffffff' },
   headerTitle: {
     flex: 1,
     fontFamily: 'Inter',

@@ -12,12 +12,12 @@ import {
 } from 'react-native';
 import BeneficiaryRedressalScreen, { TicketCard, pendingCards, TicketCardComponent } from './BeneficiaryRedressalScreen';
 // ─── Assets (reused from Figma MCP) ─────────────────────────────────────────
-const imgIcon        = 'http://localhost:3845/assets/68a3d96cc9d535751db0556c4ec051a7b10232bc.svg';
-const imgIcon1       = 'http://localhost:3845/assets/4e4c20143662c7fa550404d6af1b4a67fff5a25a.svg';
-const imgIcon2       = 'http://localhost:3845/assets/d8fb18a3620042e5865afa1aa020f61987b34fbb.svg';
-const imgBackIcon    = 'http://localhost:3845/assets/7f8f3adda2b5ee6b329aa4bec9e698dafbe66a4e.svg';
-const imgDocIcon     = 'http://localhost:3845/assets/73be45dd812dab1ed305e0e71138eed35eb8bd6d.svg';
-const imgCloseIcon   = 'http://localhost:3845/assets/67d1da512779267315b557231287a65b73068fac.svg';
+const imgIcon        = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/reception-4.svg';
+const imgIcon1       = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/wifi.svg';
+const imgIcon2       = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/battery-full.svg';
+const imgBackIcon    = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/arrow-left.svg';
+const imgDocIcon     = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/file-earmark-pdf-fill.svg';
+const imgCloseIcon   = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/x.svg';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type DPOTab       = 'Overdue' | 'Appealed';
@@ -1319,14 +1319,14 @@ const s = StyleSheet.create({
   statusBar: { height: 24, backgroundColor: '#1a237e', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16 },
   statusTime: { fontFamily: 'Inter', fontWeight: '600', fontSize: 14, color: '#fff', lineHeight: 21 },
   statusIcons: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  sIcon16: { width: 16, height: 12 },
-  sIcon14: { width: 14, height: 12 },
-  sIcon20: { width: 20, height: 12 },
+  sIcon16: { width: 16, height: 12, tintColor: '#ffffff' },
+  sIcon14: { width: 14, height: 12, tintColor: '#ffffff' },
+  sIcon20: { width: 20, height: 12, tintColor: '#ffffff' },
 
   // Header
   header: { height: 56, backgroundColor: '#1a237e', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, gap: 12 },
   backBtn: { width: 24, height: 24, justifyContent: 'center', alignItems: 'center' },
-  backIcon: { width: 24, height: 24 },
+  backIcon: { width: 24, height: 24, tintColor: '#ffffff' },
   headerTitle: { flex: 1, fontFamily: 'Inter', fontWeight: '700', fontSize: 16, color: '#fff', textAlign: 'center' },
   dpoBadge: { backgroundColor: 'rgba(255,255,255,0.22)', borderRadius: 100, paddingHorizontal: 10, paddingVertical: 3 },
   dpoBadgeText: { fontFamily: 'Inter', fontWeight: '700', fontSize: 11, color: '#fff', letterSpacing: 0.5 },
@@ -1414,7 +1414,7 @@ const s = StyleSheet.create({
   appealReasonTxt: { fontFamily: 'Inter', fontWeight: '400', fontSize: 12, color: '#616161', lineHeight: 18 },
 
   docBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#e8eaf6', borderRadius: 4, paddingHorizontal: 10, paddingVertical: 5, alignSelf: 'flex-start' },
-  docIcon: { width: 13, height: 13 },
+  docIcon: { width: 13, height: 13, tintColor: '#1a237e' },
   docTxt: { fontFamily: 'Inter', fontWeight: '500', fontSize: 11, color: '#1a237e' },
 
   cardByRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
@@ -1446,7 +1446,7 @@ const ms = StyleSheet.create({
 
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 13, borderBottomWidth: 1, borderBottomColor: '#eee' },
   sheetTitle: { fontFamily: 'Inter', fontWeight: '700', fontSize: 15, color: '#1a237e' },
-  closeIcon: { width: 18, height: 18 },
+  closeIcon: { width: 18, height: 18, tintColor: '#1a237e' },
 
   body: { paddingHorizontal: 16, paddingTop: 16, gap: 12 },
 

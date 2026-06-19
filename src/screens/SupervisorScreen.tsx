@@ -25,15 +25,15 @@ import {
 import TicketDetailsScreen from './TicketDetailsScreen';
 
 // ─── Asset URLs ────────────────────────────────────────────────────────────────
-const imgIcon = 'http://localhost:3845/assets/68a3d96cc9d535751db0556c4ec051a7b10232bc.svg';
-const imgIcon1 = 'http://localhost:3845/assets/5138e7c8bd6c0bba28ecc85213922f0688c66468.svg';
-const imgIcon2 = 'http://localhost:3845/assets/d8fb18a3620042e5865afa1aa020f61987b34fbb.svg';
-const imgBackIconWhite = 'http://localhost:3845/assets/32b7393b3a409ac220f906d6ec254abfe0188dcc.svg';
-const imgChevronDown = 'http://localhost:3845/assets/9d6c55a5780b87734427bb57f75bd6fccbb58623.svg';
-const imgCloseIcon = 'http://localhost:3845/assets/67d1da512779267315b557231287a65b73068fac.svg';
-const imgCalendarIcon = 'http://localhost:3845/assets/a00ca2acf3d09b4df8c97f55af64b2d6d073c3db.svg';
-const imgCalendarIcon1 = 'http://localhost:3845/assets/a00ca2acf3d09b4df8c97f55af64b2d6d073c3db.svg';
-const imgCalendarIcon2 = 'http://localhost:3845/assets/a00ca2acf3d09b4df8c97f55af64b2d6d073c3db.svg';
+const imgIcon = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/reception-4.svg';
+const imgIcon1 = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/wifi.svg';
+const imgIcon2 = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/battery-full.svg';
+const imgBackIconWhite = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/arrow-left.svg';
+const imgChevronDown = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/chevron-down.svg';
+const imgCloseIcon = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/x.svg';
+const imgCalendarIcon = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/calendar3.svg';
+const imgCalendarIcon1 = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/calendar3.svg';
+const imgCalendarIcon2 = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/calendar3.svg';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 type SupervisorFilter = 'Me' | 'AWW';
@@ -1129,7 +1129,7 @@ const svStyles = StyleSheet.create({
   // Header
   header: { height: 56, backgroundColor: '#1a237e', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 },
   backButton: { width: 29, height: 24, justifyContent: 'center' },
-  backIcon: { width: 24, height: 24 },
+  backIcon: { width: 24, height: 24, tintColor: '#ffffff' },
   headerTitle: { flex: 1, fontFamily: 'Inter', fontWeight: '700', fontSize: 16, color: '#ffffff', textAlign: 'center', lineHeight: 24 },
   headerSpacer: { width: 29 },
 
