@@ -920,7 +920,7 @@ const sheetStyles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    width: 375,
+    width: '100%',
     zIndex: 999,
   },
   inlineBackdrop: {
@@ -942,7 +942,7 @@ const sheetStyles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     left: 0,
-    width: 375,
+    width: '100%',
     backgroundColor: '#ffffff',
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
@@ -1086,7 +1086,7 @@ const successStyles = StyleSheet.create({
     backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
-    width: 375,
+    width: '100%',
     zIndex: 9999,
   },
   content: {

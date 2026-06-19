@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Platform, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Platform, TouchableOpacity, useWindowDimensions } from 'react-native';
 import BeneficiaryRedressalScreen from '../screens/BeneficiaryRedressalScreen';
 import DPODashboardScreen from '../screens/DPODashboardScreen';
 import SupervisorScreen from '../screens/SupervisorScreen';
@@ -94,8 +94,11 @@ const RoleSelectionScreen = ({ onSelectRole }: { onSelectRole: (role: Role) => v
 
 export default function HomeScreen() {
   const [activeRole, setActiveRole] = useState<Role | null>(null);
+  const { width: windowWidth } = useWindowDimensions();
 
-  if (Platform.OS === 'web') {
+  const isMobileWeb = Platform.OS === 'web' && windowWidth < 600;
+
+  if (Platform.OS === 'web' && !isMobileWeb) {
     return (
       <View style={styles.webWrapper}>
         {/* Role Switcher */}
@@ -144,7 +147,7 @@ export default function HomeScreen() {
     );
   }
 
-  // Native: render based on role or show selector
+  // Native and Mobile Web: render full screen based on role or show selector
   return (
     <View style={styles.nativeWrapper}>
       {activeRole === null ? (
@@ -373,5 +376,15 @@ const styles = StyleSheet.create({
   nativeWrapper: {
     flex: 1,
     backgroundColor: '#fafafa',
+    ...Platform.select({
+      web: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        overflow: 'hidden',
+      }
+    })
   },
 });
