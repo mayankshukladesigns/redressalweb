@@ -1318,7 +1318,7 @@ const TicketDetailsOverlay = ({
   onBack: () => void;
   onResolveTicket?: (ticketId: string, closureNote: string) => void;
 }) => (
-  <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: 375 }}>
+  <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%' }}>
     <TicketDetailsScreen
       card={card}
       assignedFilter={assignedFilter}
@@ -2434,7 +2434,7 @@ export default function BeneficiaryRedressalScreen({
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    width: 375,
+    width: '100%',
     backgroundColor: '#fafafa',
     overflow: 'hidden',
   },
@@ -3205,7 +3205,7 @@ const modalStyles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    width: 375,
+    width: '100%',
   },
   inlineBackdrop: {
     position: 'absolute',
@@ -3226,7 +3226,7 @@ const modalStyles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     left: 0,
-    width: 375,
+    width: '100%',
     height: 491,
     backgroundColor: '#ffffff',
     borderTopLeftRadius: 16,

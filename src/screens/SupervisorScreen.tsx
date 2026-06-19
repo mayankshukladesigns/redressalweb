@@ -861,7 +861,7 @@ const TicketDetailsOverlay = ({
   onBack: () => void;
   onResolveTicket?: (ticketId: string, closureNote: string) => void;
 }) => (
-  <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: 375 }}>
+  <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%' }}>
     <TicketDetailsScreen
       card={card}
       assignedFilter={'Supervisor'}
@@ -1116,7 +1116,7 @@ export default function SupervisorScreen({ onBack }: { onBack?: () => void }) {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const svStyles = StyleSheet.create({
-  root: { flex: 1, width: 375, backgroundColor: '#fafafa', overflow: 'hidden' },
+  root: { flex: 1, width: '100%', backgroundColor: '#fafafa', overflow: 'hidden' },
 
   // Status Bar
   statusBar: { height: 24, backgroundColor: '#1a237e', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16 },
@@ -1210,7 +1210,7 @@ const svStyles = StyleSheet.create({
 });
 
 const svModalStyles = StyleSheet.create({
-  overlayWrapper: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: 375 },
+  overlayWrapper: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%' },
   backdrop: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.45)' },
   dismiss: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   sheet: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#ffffff', borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: 0, overflow: 'hidden' },
