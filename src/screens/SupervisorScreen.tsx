@@ -25,15 +25,15 @@ import {
 import TicketDetailsScreen from './TicketDetailsScreen';
 
 // ─── Asset URLs ────────────────────────────────────────────────────────────────
-const imgIcon = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/reception-4.svg';
-const imgIcon1 = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/wifi.svg';
-const imgIcon2 = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/battery-full.svg';
-const imgBackIconWhite = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/arrow-left.svg';
-const imgChevronDown = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/chevron-down.svg';
-const imgCloseIcon = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/x.svg';
-const imgCalendarIcon = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/calendar3.svg';
-const imgCalendarIcon1 = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/calendar3.svg';
-const imgCalendarIcon2 = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/calendar3.svg';
+const imgIcon = 'http://localhost:3845/assets/68a3d96cc9d535751db0556c4ec051a7b10232bc.svg';
+const imgIcon1 = 'http://localhost:3845/assets/5138e7c8bd6c0bba28ecc85213922f0688c66468.svg';
+const imgIcon2 = 'http://localhost:3845/assets/d8fb18a3620042e5865afa1aa020f61987b34fbb.svg';
+const imgBackIconWhite = 'http://localhost:3845/assets/32b7393b3a409ac220f906d6ec254abfe0188dcc.svg';
+const imgChevronDown = 'http://localhost:3845/assets/9d6c55a5780b87734427bb57f75bd6fccbb58623.svg';
+const imgCloseIcon = 'http://localhost:3845/assets/67d1da512779267315b557231287a65b73068fac.svg';
+const imgCalendarIcon = 'http://localhost:3845/assets/a00ca2acf3d09b4df8c97f55af64b2d6d073c3db.svg';
+const imgCalendarIcon1 = 'http://localhost:3845/assets/a00ca2acf3d09b4df8c97f55af64b2d6d073c3db.svg';
+const imgCalendarIcon2 = 'http://localhost:3845/assets/a00ca2acf3d09b4df8c97f55af64b2d6d073c3db.svg';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 type SupervisorFilter = 'Me' | 'AWW';
@@ -102,7 +102,7 @@ const StatusBar_ = () => (
 const Header = ({ onBack }: { onBack?: () => void }) => (
   <View style={svStyles.header}>
     <TouchableOpacity style={svStyles.backButton} onPress={onBack} activeOpacity={0.7}>
-      <Image source={{ uri: imgBackIconWhite }} style={svStyles.backIcon} />
+      <Text style={svStyles.backArrow}>{'←'}</Text>
     </TouchableOpacity>
     <Text style={svStyles.headerTitle}>Beneficiary Redressal</Text>
     <View style={svStyles.headerSpacer} />
@@ -572,7 +572,7 @@ const ResolvedBreakdownSheet = ({ visible, onClose }: { visible: boolean; onClos
     <View pointerEvents={visible ? 'auto' : 'box-none'} style={svModalStyles.overlayWrapper}>
       <Animated.View style={[svModalStyles.backdrop, { opacity: fadeAnim }]} />
       <TouchableOpacity style={svModalStyles.dismiss} activeOpacity={1} onPress={onClose} />
-      <Animated.View style={[svModalStyles.sheet, { height: 510, transform: [{ translateY: slideAnim }] }]}>
+      <Animated.View style={[svModalStyles.sheet, { height: 440, transform: [{ translateY: slideAnim }] }]}>
         <View style={svModalStyles.handleRow}><View style={svModalStyles.handle} /></View>
         <View style={svModalStyles.titleRow}>
           <Text style={svModalStyles.sheetTitle}>Resolved Breakdown</Text>
@@ -599,7 +599,7 @@ const ResolvedBreakdownSheet = ({ visible, onClose }: { visible: boolean; onClos
           </View>
 
           {/* 2x2 sub-cards grid */}
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 16 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 10, marginTop: 16 }}>
             {subCards.map(card => (
               <View key={card.label} style={[svModalStyles.subCard, { backgroundColor: card.bg, borderColor: card.border }]}>
                 <Text style={[svModalStyles.subCardLabel, { color: card.color }]}>{card.label.toUpperCase()}</Text>
@@ -868,14 +868,13 @@ const TicketDetailsOverlay = ({
   onBack: () => void;
   onResolveTicket?: (ticketId: string, closureNote: string) => void;
 }) => (
-  <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%' }}>
+  <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: 375 }}>
     <TicketDetailsScreen
       card={card}
       assignedFilter={'Supervisor'}
       onBack={onBack}
       onResolveTicket={onResolveTicket}
       resolveLabel="Resolve"
-      hideResolveCTA={card.assignedTo === 'AWW'}
     />
   </View>
 );
@@ -1123,7 +1122,7 @@ export default function SupervisorScreen({ onBack }: { onBack?: () => void }) {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const svStyles = StyleSheet.create({
-  root: { flex: 1, width: '100%', backgroundColor: '#fafafa', overflow: 'hidden' },
+  root: { flex: 1, width: 375, backgroundColor: '#fafafa', overflow: 'hidden' },
 
   // Status Bar
   statusBar: { height: 24, backgroundColor: '#1a237e', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16 },
@@ -1135,8 +1134,8 @@ const svStyles = StyleSheet.create({
 
   // Header
   header: { height: 56, backgroundColor: '#1a237e', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 },
-  backButton: { width: 29, height: 24, justifyContent: 'center' },
-  backIcon: { width: 24, height: 24, tintColor: '#ffffff' },
+  backButton: { width: 29, height: 24, justifyContent: 'center', alignItems: 'center' },
+  backArrow: { fontSize: 28, color: '#ffffff', lineHeight: 28, fontWeight: '300', includeFontPadding: false },
   headerTitle: { flex: 1, fontFamily: 'Inter', fontWeight: '700', fontSize: 16, color: '#ffffff', textAlign: 'center', lineHeight: 24 },
   headerSpacer: { width: 29 },
 
@@ -1217,7 +1216,7 @@ const svStyles = StyleSheet.create({
 });
 
 const svModalStyles = StyleSheet.create({
-  overlayWrapper: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%' },
+  overlayWrapper: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: 375 },
   backdrop: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.45)' },
   dismiss: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   sheet: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#ffffff', borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: 0, overflow: 'hidden' },
@@ -1242,7 +1241,7 @@ const svModalStyles = StyleSheet.create({
   helpNote: { backgroundColor: '#f5f6fb', borderRadius: 8, borderWidth: 1, borderColor: '#e3e6f5', paddingHorizontal: 12, paddingVertical: 10, marginTop: 12 },
   helpNoteText: { fontFamily: 'Inter', fontSize: 11, lineHeight: 16, color: '#5c6470' },
   helpNoteHighlight: { fontWeight: '700', color: '#d32f2f' },
-  subCard: { width: '47.5%', borderRadius: 10, borderWidth: 1, padding: 12 },
+  subCard: { width: '48.5%', borderRadius: 10, borderWidth: 1, padding: 12 },
   subCardLabel: { fontFamily: 'Inter', fontWeight: '700', fontSize: 9, letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 2 },
   subCardValue: { fontFamily: 'Inter', fontWeight: '700', fontSize: 22, marginBottom: 8 },
   subCardDivider: { borderTopWidth: 1, paddingTop: 8, gap: 4 },

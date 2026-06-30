@@ -10,183 +10,66 @@ import {
   StatusBar,
   Animated,
 } from 'react-native';
-import BeneficiaryRedressalScreen, { TicketCard, pendingCards, TicketCardComponent } from './BeneficiaryRedressalScreen';
-// ─── Assets (reused from Figma MCP) ─────────────────────────────────────────
-const imgIcon        = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/reception-4.svg';
-const imgIcon1       = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/wifi.svg';
-const imgIcon2       = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/battery-full.svg';
-const imgBackIcon    = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/arrow-left.svg';
-const imgDocIcon     = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/file-earmark-pdf-fill.svg';
-const imgCloseIcon   = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/x.svg';
+import {
+  pendingCards,
+  resolvedCards,
+  TicketCard,
+  ResolvedTicketCard,
+  ResolvedStatus,
+  getStatusLabel,
+  TicketCardComponent,
+  ResolvedTicketCardComponent,
+} from './BeneficiaryRedressalScreen';
+import TicketDetailsScreen from './TicketDetailsScreen';
+
+// ─── Assets ───────────────────────────────────────────────────────────────────
+const imgIcon        = 'http://localhost:3845/assets/68a3d96cc9d535751db0556c4ec051a7b10232bc.svg';
+const imgIcon1       = 'http://localhost:3845/assets/4e4c20143662c7fa550404d6af1b4a67fff5a25a.svg';
+const imgIcon2       = 'http://localhost:3845/assets/d8fb18a3620042e5865afa1aa020f61987b34fbb.svg';
+const imgBackIcon    = 'http://localhost:3845/assets/7f8f3adda2b5ee6b329aa4bec9e698dafbe66a4e.svg';
+const imgCloseIcon   = 'http://localhost:3845/assets/67d1da512779267315b557231287a65b73068fac.svg';
+const imgIcon3       = 'http://localhost:3845/assets/73be45dd812dab1ed305e0e71138eed35eb8bd6d.svg';
+const imgCalendarIcon1 = 'http://localhost:3845/assets/266749b2e21c71d3d5c06cac6425a6fd2ad0fba5.svg';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type DPOTab       = 'Overdue' | 'Appealed';
 type AssignFilter = 'DPO' | 'CDPO' | 'Supervisor' | 'AWW';
-type ResolutionCategory = 'Action Taken' | 'Closed – No Action' | 'Referred to Higher Authority';
-type AppealDecision = 'uphold' | 'dismiss' | null;
 
-interface OverdueTicket {
-  id: string;
-  ticketNumber: string;
-  roleLabel: string;
-  title: string;
-  description: string;
-  submittedDate: string;
-  overdueDays: number;
-  documents?: string;
-  byName: string;
-  complaintType?: 'Corruption' | 'Urgent' | 'Others';
+const SECTOR_OPTIONS = ['All Sectors', 'Sector 1', 'Sector 2', 'Sector 3', 'Sector 4'];
+const AWC_OPTIONS = [
+  'All Centres',
+  'Anganwadi Centre 1',
+  'Anganwadi Centre 2',
+  'Anganwadi Centre 3',
+  'Anganwadi Centre 4',
+  'Anganwadi Centre 5',
+  'Anganwadi Centre 6',
+];
+const PROJECT_OPTIONS = ['All Projects', 'Sanganer', 'Jotwara', 'Amer', 'Sanganer II', 'Phagi'];
+
+// Helper functions for date filtering (mock current date 30/06/2025)
+function parseDateString(str: string): Date | null {
+  const cleanStr = str.replace('Submitted:', '').replace('Resolved:', '').trim();
+  const match = cleanStr.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+  if (!match) return null;
+  const day = parseInt(match[1], 10);
+  const month = parseInt(match[2], 10) - 1; // 0-indexed month
+  const year = parseInt(match[3], 10);
+  return new Date(year, month, day);
 }
 
-interface AppealTicket {
-  id: string;
-  ticketNumber: string;
-  roleLabel: string;
-  title: string;
-  originalDescription: string;
-  appealReason: string;
-  submittedDate: string;
-  appealDate: string;
-  documents?: string;
-  byName: string;
-  status?: 'raised' | 'resolved';
-  decision?: AppealDecision;
-  resolutionNotes?: string;
-  complaintType?: 'Corruption' | 'Urgent' | 'Others';
+function parseInputDate(str: string): Date | null {
+  const match = str.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!match) return null;
+  const day = parseInt(match[1], 10);
+  const month = parseInt(match[2], 10) - 1;
+  const year = parseInt(match[3], 10);
+  return new Date(year, month, day);
 }
 
-// ─── Sample Data ──────────────────────────────────────────────────────────────
-const overdueTickets: OverdueTicket[] = [
-  {
-    id: 'o1',
-    ticketNumber: 'Ticket# AWW 001243',
-    roleLabel: 'AWW',
-    title: 'Misappropriation of THR Distribution Funds',
-    description:
-      'AWW at Anganwadi Centre 3 has reportedly been collecting THR payments from beneficiaries without distributing actual supplies.',
-    submittedDate: 'Submitted: 27/05/2025',
-    overdueDays: 22,
-    documents: '3 documents',
-    byName: 'Kamla Devi',
-    complaintType: 'Corruption',
-  },
-  {
-    id: 'o2',
-    ticketNumber: 'Ticket# AWW 001255',
-    roleLabel: 'AWW',
-    title: 'Ghost Beneficiary Enrollment to Inflate Coverage',
-    description:
-      'Inactive and relocated beneficiaries found active in records. AWW in Sector 5 maintaining ghost entries for nutrition supply inflation.',
-    submittedDate: 'Submitted: 05/06/2025',
-    overdueDays: 13,
-    documents: '2 documents',
-    byName: 'Anonymous',
-    complaintType: 'Corruption',
-  },
-  {
-    id: 'o3',
-    ticketNumber: 'Ticket# SUP 000891',
-    roleLabel: 'Supervisor',
-    title: 'Missing ECCE Materials from Sector 3',
-    description:
-      'ECCE materials dispatched from district store not received at Sector 3 AWCs. Supervisor has not filed FIR or initiated enquiry despite 3 reminders.',
-    submittedDate: 'Submitted: 15/06/2025',
-    overdueDays: 3,
-    byName: 'Supervisor Priya Devi',
-    complaintType: 'Corruption',
-  },
-  {
-    id: 'o4',
-    ticketNumber: 'Ticket# AWW 001267',
-    roleLabel: 'AWW',
-    title: 'Severe Water Supply Issue at Anganwadi Centre 7',
-    description:
-      'AWC in Sector 4 has had no running water for over a month. Beneficiaries and children are being serviced in unhygienic conditions.',
-    submittedDate: 'Submitted: 28/05/2025',
-    overdueDays: 21,
-    documents: '1 document',
-    byName: 'Sunita Rani',
-    complaintType: 'Urgent',
-  },
-  {
-    id: 'o5',
-    ticketNumber: 'Ticket# DPO 000100',
-    roleLabel: 'DPO',
-    title: 'District Redressal Policy Drafting',
-    description:
-      'Drafting new guidelines for Anganwadi grievance redressal portal integration and escalations.',
-    submittedDate: 'Submitted: 02/06/2025',
-    overdueDays: 16,
-    documents: '1 document',
-    byName: 'DPO Admin',
-    complaintType: 'Others',
-  },
-];
-
-const appealTickets: AppealTicket[] = [
-  {
-    id: 'a1',
-    ticketNumber: 'Ticket# CDPO 001234',
-    roleLabel: 'CDPO',
-    title: 'Misappropriation of THR Distribution Funds',
-    originalDescription:
-      'AWW collecting THR payments without distributing actual supplies. Multiple beneficiary complaints received.',
-    appealReason:
-      'CDPO has marked this ticket as resolved without any physical verification or action on the AWW. The issue persists at ground level.',
-    submittedDate: 'Submitted: 25/06/2025',
-    appealDate: 'Appeal Filed: 28/06/2025',
-    documents: '2 documents',
-    byName: 'Kamla Devi',
-    complaintType: 'Corruption',
-  },
-  {
-    id: 'a2',
-    ticketNumber: 'Ticket# AWW 001189',
-    roleLabel: 'AWW',
-    title: 'Denial of Maternity Benefit Payment',
-    originalDescription:
-      'Beneficiary in 3rd trimester denied maternity benefits citing documentation issues. AWW refused to assist.',
-    appealReason:
-      'AWW resolved the ticket without disbursing benefits. Documents were in order and no valid reason was given for denial.',
-    submittedDate: 'Submitted: 20/06/2025',
-    appealDate: 'Appeal Filed: 25/06/2025',
-    byName: 'Rekha Sharma',
-    complaintType: 'Others',
-  },
-  {
-    id: 'a3',
-    ticketNumber: 'Ticket# SUP 000756',
-    roleLabel: 'Supervisor',
-    title: 'Improper Handling of Nutrition Complaint',
-    originalDescription:
-      'Children at AWC showing severe stunting. Supervisor instructed to investigate nutrition programme irregularities.',
-    appealReason:
-      'Supervisor marked complaint resolved without visiting the AWC. Photographs from the site confirm the situation is unchanged.',
-    submittedDate: 'Submitted: 15/06/2025',
-    appealDate: 'Appeal Filed: 22/06/2025',
-    documents: '4 documents',
-    byName: 'Dr. Suresh Mehta (PHC)',
-    complaintType: 'Others',
-  },
-  {
-    id: 'a4',
-    ticketNumber: 'Ticket# SUP 787868898904',
-    roleLabel: 'Supervisor',
-    title: 'Vaccination not administered on scheduled date at sub-health centre',
-    originalDescription:
-      'Vaccination rescheduled with PHC medical officer. Child vaccinated on 11 Jun 2025 — DPT booster and OPV administered.',
-    appealReason:
-      'Sub-health centre was closed on scheduled date. Supervisor marked resolved after child got vaccinated, but no action was taken on staff absence.',
-    submittedDate: 'Submitted: 08/06/2025',
-    appealDate: 'Appeal Filed: 14/06/2025',
-    byName: 'Geeta Sharma',
-    status: 'resolved',
-    decision: 'dismiss',
-    resolutionNotes:
-      'Appeal reviewed on 12 Jun 2025. Vaccination records verified at PHC — DPT booster and OPV confirmed administered on 11 Jun 2025. Immunisation card entries are accurate and complete. Resolution by Supervisor upheld. Appeal resolved in favour of existing resolution.',
-    complaintType: 'Others',
-  },
-];
+const handleDateChange = (text: string, setter: (val: string) => void) => {
+  const clean = text.replace(/[^0-9/]/g, '');
+  setter(clean);
+};
 
 // ─── Animation Hook ───────────────────────────────────────────────────────────
 const useSheetAnim = (visible: boolean) => {
@@ -229,10 +112,10 @@ const DPOStatusBar_ = () => (
   </View>
 );
 
-const DPOHeader = ({ onBack }: { onBack?: () => void }) => (
+const DPOHeader = () => (
   <View style={s.header}>
-    <TouchableOpacity style={s.backBtn} onPress={onBack} activeOpacity={0.7}>
-      <Image source={{ uri: imgBackIcon }} style={s.backIcon} />
+    <TouchableOpacity style={s.backBtn} activeOpacity={0.7}>
+      <Text style={s.backArrow}>{'←'}</Text>
     </TouchableOpacity>
     <Text style={s.headerTitle}>Beneficiary Redressal</Text>
     <View style={s.dpoBadge}>
@@ -276,6 +159,7 @@ const DPOSummaryTable = ({
       </View>
 
       {[
+        { label: 'DPO',        pending: '8',     resolved: '8',     total: '16' },
         { label: 'CDPO',       pending: '7',     resolved: '5',     total: '12' },
         { label: 'Supervisor', pending: '50',    resolved: '150',    total: '200' },
         { label: 'AWW',        pending: '2,000', resolved: '1,000', total: '3,000' },
@@ -294,15 +178,13 @@ const DPOSummaryTable = ({
       {/* Total Row */}
       <View style={[s.sRow, s.sDataRow, { borderBottomWidth: 0 }]}>
         <View style={s.sCol0}><Text style={[s.sRowLabel, { fontWeight: '600', color: '#1a237e' }]}>Total</Text></View>
-        <View style={s.sColData}><Text style={[s.sDataVal, { color: '#e65100' }]}>2,057</Text></View>
-        <View style={s.sColData}><Text style={[s.sDataVal, { color: '#2e7d32' }]}>1,155</Text></View>
-        <View style={s.sColData}><Text style={[s.sDataVal, { color: '#1a237e' }]}>3,212</Text></View>
+        <View style={s.sColData}><Text style={[s.sDataVal, { color: '#e65100' }]}>2,065</Text></View>
+        <View style={s.sColData}><Text style={[s.sDataVal, { color: '#2e7d32' }]}>1,163</Text></View>
+        <View style={s.sColData}><Text style={[s.sDataVal, { color: '#1a237e' }]}>3,228</Text></View>
       </View>
     </View>
   </View>
 );
-
-// ─── Assign Filter ────────────────────────────────────────────────────────────
 
 const DPOAssignFilter = ({
   selected,
@@ -330,38 +212,16 @@ const DPOAssignFilter = ({
   </View>
 );
 
-// ─── Tab Bar ──────────────────────────────────────────────────────────────────
-
-const DPOTabBar = ({
-  active,
-  onChange,
-}: {
-  active: DPOTab;
-  onChange: (t: DPOTab) => void;
-}) => (
-  <View style={s.tabBar}>
-    {(['Overdue', 'Appealed'] as DPOTab[]).map(tab => (
-      <TouchableOpacity key={tab} style={s.tabItem} onPress={() => onChange(tab)} activeOpacity={0.8}>
-        <View style={s.tabContent}>
-          <Text style={[s.tabText, active === tab && s.tabTextActive]}>{tab}</Text>
-          <View style={[s.tabBadge, active === tab ? s.tabBadgeOn : s.tabBadgeOff]}>
-            <Text style={[s.tabBadgeTxt, active === tab ? s.tabBadgeTxtOn : s.tabBadgeTxtOff]}>
-              {tab === 'Overdue' ? '516' : '92'}
-            </Text>
-          </View>
-        </View>
-        <View style={[s.tabUnderline, active === tab && s.tabUnderlineActive]} />
-      </TouchableOpacity>
-    ))}
-  </View>
-);
-
 const CDPOTabBar = ({
   active,
   onChange,
+  pendingCount,
+  resolvedCount,
 }: {
   active: 'Pending' | 'Resolved';
   onChange: (t: 'Pending' | 'Resolved') => void;
+  pendingCount: number;
+  resolvedCount: number;
 }) => (
   <View style={s.tabBar}>
     {(['Pending', 'Resolved'] as const).map(tab => (
@@ -370,7 +230,7 @@ const CDPOTabBar = ({
           <Text style={[s.tabText, active === tab && s.tabTextActive]}>{tab}</Text>
           <View style={[s.tabBadge, active === tab ? s.tabBadgeOn : s.tabBadgeOff]}>
             <Text style={[s.tabBadgeTxt, active === tab ? s.tabBadgeTxtOn : s.tabBadgeTxtOff]}>
-              {tab === 'Pending' ? '7' : '5'}
+              {tab === 'Pending' ? pendingCount.toString() : resolvedCount.toString()}
             </Text>
           </View>
         </View>
@@ -380,187 +240,714 @@ const CDPOTabBar = ({
   </View>
 );
 
-// ─── Filter Chips ─────────────────────────────────────────────────────────────
-
-const FilterChips = ({ showOverdue }: { showOverdue: boolean }) => (
-  <View style={s.filterRow}>
-    {showOverdue && (
-      <TouchableOpacity style={s.filterChip} activeOpacity={0.7}>
-        <Text style={s.filterChipTxt}>Overdue</Text>
-      </TouchableOpacity>
-    )}
-    <TouchableOpacity style={s.filterChip} activeOpacity={0.7}>
-      <Text style={s.filterChipTxt}>Date Range ▾</Text>
-    </TouchableOpacity>
-    <TouchableOpacity style={s.filterChip} activeOpacity={0.7}>
-      <Text style={s.filterChipTxt}>Type ▾</Text>
+const SectorDropdown = ({ value, onPress }: { value: string; onPress: () => void }) => (
+  <View style={s.dropdownWrapper}>
+    <TouchableOpacity style={s.dropdownCard} activeOpacity={0.75} onPress={onPress}>
+      <View style={s.dropdownDot} />
+      <View style={s.dropdownTextBlock}>
+        <Text style={s.dropdownLabel}>SECTOR</Text>
+        <Text style={s.dropdownValue}>{value}</Text>
+      </View>
+      <Text style={s.dropdownChevron}>▾</Text>
     </TouchableOpacity>
   </View>
 );
 
-// ─── Cards UI helper ──────────────────────────────────────────────────────────
+const ProjectDropdown = ({ value, onPress }: { value: string; onPress: () => void }) => (
+  <View style={s.dropdownWrapper}>
+    <TouchableOpacity style={s.dropdownCard} activeOpacity={0.75} onPress={onPress}>
+      <View style={s.dropdownDot} />
+      <View style={s.dropdownTextBlock}>
+        <Text style={s.dropdownLabel}>PROJECT</Text>
+        <Text style={s.dropdownValue}>{value}</Text>
+      </View>
+      <Text style={s.dropdownChevron}>▾</Text>
+    </TouchableOpacity>
+  </View>
+);
 
-const getRoleChipStyles = (role: string) => {
-  switch (role.toUpperCase()) {
-    case 'CDPO':
-      return { bg: '#e3f2fd', border: '#90caf9', text: '#1565c0' };
-    case 'SUPERVISOR':
-      return { bg: '#f3e5f5', border: '#ce93d8', text: '#7b1fa2' };
-    case 'AWW':
-      return { bg: '#e8f5e9', border: '#a5d6a7', text: '#2e7d32' };
-    default:
-      return { bg: '#e8eaf6', border: '#90caf9', text: '#1a237e' };
-  }
-};
+const AnganwadiCentreDropdown = ({ value, onPress }: { value: string; onPress: () => void }) => (
+  <View style={s.dropdownWrapper}>
+    <TouchableOpacity style={s.dropdownCard} activeOpacity={0.75} onPress={onPress}>
+      <View style={s.dropdownDot} />
+      <View style={s.dropdownTextBlock}>
+        <Text style={s.dropdownLabel}>ANGANWADI CENTRE</Text>
+        <Text style={s.dropdownValue}>{value}</Text>
+      </View>
+      <Text style={s.dropdownChevron}>▾</Text>
+    </TouchableOpacity>
+  </View>
+);
 
-// ─── Overdue Card ─────────────────────────────────────────────────────────────
+// ─── Filter Chips ─────────────────────────────────────────────────────────────
 
-const OverdueCard = ({
-  ticket,
-  onView,
-  onClose,
+const FilterChips = ({
+  activeTab,
+  assignedFilter,
+  isOverdueActive,
+  onOverdueToggle,
+  onClearAll,
+  appliedDateOption,
+  appliedTypes,
+  appliedCategories,
+  appliedStatuses,
+  onDateRangePress,
+  onTypePress,
+  onCategoryPress,
+  onStatusPress,
+  onClearDateRange,
+  onClearType,
+  onClearCategory,
+  onClearStatus,
 }: {
-  ticket: OverdueTicket;
-  onView: (t: OverdueTicket) => void;
-  onClose?: (t: OverdueTicket) => void;
+  activeTab: 'Pending' | 'Resolved';
+  assignedFilter: AssignFilter;
+  isOverdueActive: boolean;
+  onOverdueToggle: () => void;
+  onClearAll: () => void;
+  appliedDateOption: '7' | '14' | '21' | 'custom' | null;
+  appliedTypes: string[];
+  appliedCategories: string[];
+  appliedStatuses: ResolvedStatus[];
+  onDateRangePress: () => void;
+  onTypePress: () => void;
+  onCategoryPress: () => void;
+  onStatusPress: () => void;
+  onClearDateRange: () => void;
+  onClearType: () => void;
+  onClearCategory: () => void;
+  onClearStatus: () => void;
 }) => {
-  const roleStyle = getRoleChipStyles(ticket.roleLabel);
+  const safeTypes = appliedTypes || [];
+  const safeCategories = appliedCategories || [];
+  const safeStatuses = appliedStatuses || [];
+  const isTypeFilter = assignedFilter === 'DPO' || assignedFilter === 'CDPO';
+  const isAnyFilterActive =
+    isOverdueActive ||
+    appliedDateOption !== null ||
+    safeTypes.length > 0 ||
+    safeCategories.length > 0 ||
+    safeStatuses.length > 0;
+
   return (
-    <View style={[s.card, s.overdueCard]}>
-      {/* Top row */}
-      <View style={s.cardTopRow}>
-        <Text style={s.cardTicketNum}>{ticket.ticketNumber}</Text>
+    <View>
+      <View style={s.filterRow}>
+        {activeTab === 'Pending' ? (
+          <>
+            <TouchableOpacity
+              style={[s.filterChip, isOverdueActive && s.filterChipOverdueActive]}
+              onPress={onOverdueToggle}
+              activeOpacity={0.7}
+            >
+              <Text style={[s.filterChipTxt, isOverdueActive && s.filterChipTextActive]}>
+                Overdue
+              </Text>
+              {isOverdueActive && <Text style={s.filterChipClose}> ×</Text>}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[s.filterChip, appliedDateOption !== null && s.filterChipActive]}
+              onPress={onDateRangePress}
+              activeOpacity={0.7}
+            >
+              <Text style={[s.filterChipTxt, appliedDateOption !== null && s.filterChipTextActive]}>
+                {appliedDateOption === '7'
+                  ? '7 Days'
+                  : appliedDateOption === '14'
+                  ? '14 Days'
+                  : appliedDateOption === '21'
+                  ? '21 Days'
+                  : appliedDateOption === 'custom'
+                  ? 'Custom Range'
+                  : 'Date Range ▾'}
+              </Text>
+              {appliedDateOption !== null && (
+                <TouchableOpacity onPress={onClearDateRange} hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }}>
+                  <Text style={s.filterChipClose}> ×</Text>
+                </TouchableOpacity>
+              )}
+            </TouchableOpacity>
+
+            {isTypeFilter ? (
+              <TouchableOpacity
+                style={[s.filterChip, safeTypes.length > 0 && s.filterChipActive]}
+                onPress={onTypePress}
+                activeOpacity={0.7}
+              >
+                <Text style={[s.filterChipTxt, safeTypes.length > 0 && s.filterChipTextActive]}>
+                  {safeTypes.length === 0
+                    ? 'Type ▾'
+                    : safeTypes.length === 1
+                    ? safeTypes[0]
+                    : `${safeTypes.length} Types`}
+                </Text>
+                {safeTypes.length > 0 && (
+                  <TouchableOpacity onPress={onClearType} hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }}>
+                    <Text style={s.filterChipClose}> ×</Text>
+                  </TouchableOpacity>
+                )}
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={[s.filterChip, safeCategories.length > 0 && s.filterChipActive]}
+                onPress={onCategoryPress}
+                activeOpacity={0.7}
+              >
+                <Text style={[s.filterChipTxt, safeCategories.length > 0 && s.filterChipTextActive]}>
+                  {safeCategories.length === 0
+                    ? 'Category ▾'
+                    : safeCategories.length === 1
+                    ? safeCategories[0]
+                    : `${safeCategories.length} Categories`}
+                </Text>
+                {safeCategories.length > 0 && (
+                  <TouchableOpacity onPress={onClearCategory} hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }}>
+                    <Text style={s.filterChipClose}> ×</Text>
+                  </TouchableOpacity>
+                )}
+              </TouchableOpacity>
+            )}
+          </>
+        ) : (
+          <>
+            <TouchableOpacity
+              style={[s.filterChip, safeStatuses.length > 0 && s.filterChipActive]}
+              onPress={onStatusPress}
+              activeOpacity={0.7}
+            >
+              <Text style={[s.filterChipTxt, safeStatuses.length > 0 && s.filterChipTextActive]}>
+                {safeStatuses.length === 0
+                  ? 'Status ▾'
+                  : safeStatuses.length === 1
+                  ? getStatusLabel(safeStatuses[0])
+                  : `${safeStatuses.length} Statuses`}
+              </Text>
+              {safeStatuses.length > 0 && (
+                <TouchableOpacity onPress={onClearStatus} hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }}>
+                  <Text style={s.filterChipClose}> ×</Text>
+                </TouchableOpacity>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[s.filterChip, appliedDateOption !== null && s.filterChipActive]}
+              onPress={onDateRangePress}
+              activeOpacity={0.7}
+            >
+              <Text style={[s.filterChipTxt, appliedDateOption !== null && s.filterChipTextActive]}>
+                {appliedDateOption === '7'
+                  ? '7 Days'
+                  : appliedDateOption === '14'
+                  ? '14 Days'
+                  : appliedDateOption === '21'
+                  ? '21 Days'
+                  : appliedDateOption === 'custom'
+                  ? 'Custom Range'
+                  : 'Date Range ▾'}
+              </Text>
+              {appliedDateOption !== null && (
+                <TouchableOpacity onPress={onClearDateRange} hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }}>
+                  <Text style={s.filterChipClose}> ×</Text>
+                </TouchableOpacity>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[s.filterChip, safeCategories.length > 0 && s.filterChipActive]}
+              onPress={onCategoryPress}
+              activeOpacity={0.7}
+            >
+              <Text style={[s.filterChipTxt, safeCategories.length > 0 && s.filterChipTextActive]}>
+                {safeCategories.length === 0
+                  ? 'Category ▾'
+                  : safeCategories.length === 1
+                  ? safeCategories[0]
+                  : `${safeCategories.length} Categories`}
+              </Text>
+              {safeCategories.length > 0 && (
+                <TouchableOpacity onPress={onClearCategory} hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }}>
+                  <Text style={s.filterChipClose}> ×</Text>
+                </TouchableOpacity>
+              )}
+            </TouchableOpacity>
+          </>
+        )}
       </View>
- 
-      {/* Role chip */}
-      <View style={[s.roleChip, { backgroundColor: roleStyle.bg, borderColor: roleStyle.border }]}>
-        <Text style={[s.roleChipTxt, { color: roleStyle.text }]}>{ticket.roleLabel}</Text>
-      </View>
- 
-      {/* Title */}
-      <Text style={s.cardTitle}>{ticket.title}</Text>
- 
-      {/* Description */}
-      <Text style={s.cardDesc} numberOfLines={2}>{ticket.description}</Text>
- 
-      {/* Date + Overdue days */}
-      <View style={s.cardDateRow}>
-        <Text style={s.cardDate}>{ticket.submittedDate}</Text>
-        <View style={[s.daysBadge, { backgroundColor: '#ffebee' }]}>
-          <Text style={[s.daysBadgeTxt, { color: '#d32f2f' }]}>Overdue by {ticket.overdueDays} Days</Text>
-        </View>
-      </View>
- 
-      {/* Documents */}
-      {ticket.documents && (ticket.complaintType === 'Corruption' || ticket.complaintType === 'Urgent') && (
-        <View style={s.docBtn}>
-          <Image source={{ uri: imgDocIcon }} style={s.docIcon} />
-          <Text style={s.docTxt}>
-            {ticket.documents.toLowerCase().includes('1 ') || ticket.documents.toLowerCase() === '1 document' ? 'Doc Uploaded' : ticket.documents}
-          </Text>
-        </View>
-      )}
- 
-      {/* By */}
-      <View style={s.cardByRow}>
-        <Text style={s.cardByLabel}>By:</Text>
-        <Text style={s.cardByName}>{ticket.byName}</Text>
-      </View>
- 
-      {/* CTA */}
-      {ticket.roleLabel === 'DPO' ? (
-        <TouchableOpacity style={s.ctaNavy} onPress={() => onClose && onClose(ticket)} activeOpacity={0.8}>
-          <Text style={s.ctaNavyTxt}>Close Ticket</Text>
-        </TouchableOpacity>
-      ) : (
-        <TouchableOpacity style={s.ctaNavy} onPress={() => onView(ticket)} activeOpacity={0.8}>
-          <Text style={s.ctaNavyTxt}>View Details</Text>
+      {isAnyFilterActive && (
+        <TouchableOpacity style={s.clearAllRow} onPress={onClearAll} activeOpacity={0.7}>
+          <Text style={s.clearAllText}>Clear all</Text>
         </TouchableOpacity>
       )}
     </View>
   );
 };
 
-// ─── Appeal Card ──────────────────────────────────────────────────────────────
+// ─── Date Range Sheet ──────────────────────────────────────────────────────────
 
-const AppealCard = ({
-  ticket,
-  onResolve,
-  onViewDetails,
+const DateRangeFilterSheet = ({
+  visible,
+  onClose,
+  appliedOption,
+  appliedFrom,
+  appliedTo,
+  onApply,
 }: {
-  ticket: AppealTicket;
-  onResolve: (t: AppealTicket) => void;
-  onViewDetails?: (t: AppealTicket) => void;
+  visible: boolean;
+  onClose: () => void;
+  appliedOption: '7' | '14' | '21' | 'custom' | null;
+  appliedFrom: string;
+  appliedTo: string;
+  onApply: (opt: '7' | '14' | '21' | 'custom' | null, from: string, to: string) => void;
 }) => {
-  const roleStyle = getRoleChipStyles(ticket.roleLabel);
-  const isResolved = ticket.status === 'resolved';
+  const { slideAnim, fadeAnim, mounted } = useSheetAnim(visible);
+  const [selectedOption, setSelectedOption] = useState<'7' | '14' | '21' | 'custom' | null>(appliedOption);
+  const [fromText, setFromText] = useState(appliedFrom);
+  const [toText, setToText] = useState(appliedTo);
+
+  useEffect(() => {
+    if (visible) {
+      setSelectedOption(appliedOption);
+      setFromText(appliedFrom);
+      setToText(appliedTo);
+    }
+  }, [visible, appliedOption, appliedFrom, appliedTo]);
+
+  if (!mounted) return null;
+
+  const handleApply = () => {
+    onApply(selectedOption, fromText, toText);
+  };
+
+  const handleClear = () => {
+    onApply(null, '', '');
+  };
+
+  const isApplyDisabled =
+    selectedOption === 'custom' &&
+    (fromText.length !== 10 || toText.length !== 10);
+
   return (
-    <TouchableOpacity
-      style={[s.card, s.appealCard]}
-      activeOpacity={isResolved && onViewDetails ? 0.85 : 1}
-      onPress={() => isResolved && onViewDetails && onViewDetails(ticket)}
-    >
-      {/* Top row */}
-      <View style={s.cardTopRow}>
-        <Text style={s.cardTicketNum}>{ticket.ticketNumber}</Text>
-        <View style={[s.appealBadge, isResolved && { backgroundColor: '#2e7d32' }]}>
-          <Text style={s.appealBadgeTxt}>
-            {isResolved ? 'APPEAL RESOLVED' : 'APPEAL RAISED'}
-          </Text>
+    <View pointerEvents={visible ? 'auto' : 'box-none'} style={ms.overlayWrapper}>
+      <Animated.View style={[ms.backdrop, { opacity: fadeAnim }]} />
+      <TouchableOpacity style={ms.dismiss} activeOpacity={1} onPress={onClose} />
+
+      <Animated.View style={[ms.sheet, { height: selectedOption === 'custom' ? 440 : 330, transform: [{ translateY: slideAnim }] }]}>
+        <View style={ms.handleRow}><View style={ms.handle} /></View>
+        <View style={ms.titleRow}>
+          <Text style={ms.sheetTitle}>Filter by Date Range</Text>
+          <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Image source={{ uri: imgCloseIcon }} style={ms.closeIcon} />
+          </TouchableOpacity>
         </View>
-      </View>
 
-      {/* Role chip */}
-      <View style={[s.roleChip, { backgroundColor: roleStyle.bg, borderColor: roleStyle.border }]}>
-        <Text style={[s.roleChipTxt, { color: roleStyle.text }]}>{ticket.roleLabel}</Text>
-      </View>
+        <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+          <View style={ms.body}>
+            {[
+              { value: '7',  label: 'Last 7 Days' },
+              { value: '14', label: 'Last 14 Days' },
+              { value: '21', label: 'Last 21 Days' },
+              { value: 'custom', label: 'Custom Range' },
+            ].map(opt => (
+              <TouchableOpacity
+                key={opt.value}
+                style={ms.radioRow}
+                onPress={() => setSelectedOption(opt.value as any)}
+                activeOpacity={0.7}
+              >
+                <View style={[ms.radioCircle, selectedOption === opt.value && { borderColor: '#1a237e' }]}>
+                  {selectedOption === opt.value && <View style={[ms.radioDot, { backgroundColor: '#1a237e' }]} />}
+                </View>
+                <Text style={ms.radioLabel}>{opt.label}</Text>
+              </TouchableOpacity>
+            ))}
 
-      {/* Title */}
-      <Text style={s.cardTitle}>{ticket.title}</Text>
+            {selectedOption === 'custom' && (
+              <View style={ms.customInputs}>
+                <Text style={ms.inputLabel}>FROM DATE</Text>
+                <View style={ms.inputWrapper}>
+                  <TextInput
+                    style={ms.textInput}
+                    placeholder="DD/MM/YYYY"
+                    placeholderTextColor="#9e9e9e"
+                    value={fromText}
+                    maxLength={10}
+                    onChangeText={t => handleDateChange(t, setFromText)}
+                  />
+                  <Image source={{ uri: imgCalendarIcon1 }} style={ms.inputCalIcon} />
+                </View>
 
-      {/* Appeal reason */}
-      <Text style={s.appealReasonLabel}>Appeal Reason:</Text>
-      <Text style={s.appealReasonTxt} numberOfLines={2}>{ticket.appealReason}</Text>
+                <Text style={[ms.inputLabel, { marginTop: 12 }]}>TO DATE</Text>
+                <View style={ms.inputWrapper}>
+                  <TextInput
+                    style={ms.textInput}
+                    placeholder="DD/MM/YYYY"
+                    placeholderTextColor="#9e9e9e"
+                    value={toText}
+                    maxLength={10}
+                    onChangeText={t => handleDateChange(t, setToText)}
+                  />
+                  <Image source={{ uri: imgCalendarIcon1 }} style={ms.inputCalIcon} />
+                </View>
+              </View>
+            )}
+          </View>
+        </ScrollView>
 
-      {/* Dates */}
-      <View style={s.cardDateRow}>
-        <Text style={s.cardDate}>{ticket.submittedDate}</Text>
-        <View style={[s.daysBadge, isResolved ? { backgroundColor: '#e8f5e9' } : { backgroundColor: '#fff3e0' }]}>
-          <Text style={[s.daysBadgeTxt, isResolved ? { color: '#2e7d32' } : { color: '#e65100' }]}>
-            {isResolved ? 'Resolved' : ticket.appealDate.replace('Appeal Filed: ', '')}
-          </Text>
+        <View style={ms.buttonsContainer}>
+          <TouchableOpacity style={ms.clearBtn} onPress={handleClear} activeOpacity={0.7}>
+            <Text style={ms.clearBtnText}>Clear</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[ms.applyBtn, isApplyDisabled && ms.applyBtnDisabled]}
+            disabled={isApplyDisabled}
+            onPress={handleApply}
+            activeOpacity={0.7}
+          >
+            <Text style={ms.applyBtnText}>Apply Filters</Text>
+          </TouchableOpacity>
         </View>
-      </View>
+        <View style={{ height: 20 }} />
+      </Animated.View>
+    </View>
+  );
+};
 
-      {/* Documents */}
-      {ticket.documents && (ticket.complaintType === 'Corruption' || ticket.complaintType === 'Urgent') && (
-        <View style={s.docBtn}>
-          <Image source={{ uri: imgDocIcon }} style={s.docIcon} />
-          <Text style={s.docTxt}>
-            {ticket.documents.toLowerCase().includes('1 ') || ticket.documents.toLowerCase() === '1 document' ? 'Doc Uploaded' : ticket.documents}
-          </Text>
+// ─── Type Filter Sheet ────────────────────────────────────────────────────────
+
+const TypeFilterSheet = ({
+  visible,
+  onClose,
+  appliedTypes,
+  onApply,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  appliedTypes: string[];
+  onApply: (types: string[]) => void;
+}) => {
+  const { slideAnim, fadeAnim, mounted } = useSheetAnim(visible);
+  const [tempTypes, setTempTypes] = useState<string[]>(appliedTypes);
+
+  useEffect(() => {
+    if (visible) {
+      setTempTypes(appliedTypes);
+    }
+  }, [visible, appliedTypes]);
+
+  if (!mounted) return null;
+
+  const handleToggle = (type: string) => {
+    if (tempTypes.includes(type)) {
+      setTempTypes(tempTypes.filter(t => t !== type));
+    } else {
+      setTempTypes([...tempTypes, type]);
+    }
+  };
+
+  const handleApply = () => {
+    onApply(tempTypes);
+  };
+
+  const handleCancel = () => {
+    setTempTypes(appliedTypes);
+    onClose();
+  };
+
+  const options = ['Corruption', 'Urgent', 'Others'];
+
+  return (
+    <View pointerEvents={visible ? 'auto' : 'box-none'} style={ms.overlayWrapper}>
+      <Animated.View style={[ms.backdrop, { opacity: fadeAnim }]} />
+      <TouchableOpacity style={ms.dismiss} activeOpacity={1} onPress={handleCancel} />
+
+      <Animated.View style={[ms.sheet, { height: 340, transform: [{ translateY: slideAnim }] }]}>
+        <View style={ms.handleRow}><View style={ms.handle} /></View>
+        <View style={ms.titleRow}>
+          <Text style={ms.sheetTitle}>Filter by Type</Text>
         </View>
-      )}
 
-      {/* By */}
-      <View style={s.cardByRow}>
-        <Text style={s.cardByLabel}>By:</Text>
-        <Text style={s.cardByName}>{ticket.byName}</Text>
-      </View>
-
-      {/* CTA */}
-      {isResolved ? (
-        <View style={s.resolvedFooter}>
-          <Text style={s.resolvedFooterTxt}>
-            ✓  Resolved — {ticket.decision === 'uphold' ? 'Appeal Upheld' : 'Appeal Dismissed'}
-          </Text>
+        <View style={ms.optionsList}>
+          {options.map(opt => {
+            const isSelected = tempTypes.includes(opt);
+            return (
+              <TouchableOpacity
+                key={opt}
+                style={ms.radioRow}
+                onPress={() => handleToggle(opt)}
+                activeOpacity={0.7}
+              >
+                <View style={[ms.radioCircle, isSelected && { borderColor: '#1a237e' }]}>
+                  {isSelected && <View style={[ms.radioDot, { backgroundColor: '#1a237e' }]} />}
+                </View>
+                <Text style={ms.radioLabel}>{opt}</Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
-      ) : (
-        <TouchableOpacity style={s.ctaGreen} onPress={() => onResolve(ticket)} activeOpacity={0.8}>
-          <Text style={s.ctaGreenTxt}>Resolve Appeal</Text>
-        </TouchableOpacity>
-      )}
-    </TouchableOpacity>
+
+        <View style={ms.buttonsContainer}>
+          <TouchableOpacity style={ms.clearBtn} onPress={handleCancel} activeOpacity={0.7}>
+            <Text style={ms.clearBtnText}>Cancel</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={ms.applyBtn} onPress={handleApply} activeOpacity={0.7}>
+            <Text style={ms.applyBtnText}>Apply Filters</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={{ height: 20 }} />
+      </Animated.View>
+    </View>
+  );
+};
+
+// ─── Category Filter Sheet ────────────────────────────────────────────────────
+
+const CategoryFilterSheet = ({
+  visible,
+  onClose,
+  appliedCategories,
+  onApply,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  appliedCategories: string[];
+  onApply: (categories: string[]) => void;
+}) => {
+  const { slideAnim, fadeAnim, mounted } = useSheetAnim(visible);
+  const [tempCategories, setTempCategories] = useState<string[]>(appliedCategories);
+
+  useEffect(() => {
+    if (visible) {
+      setTempCategories(appliedCategories);
+    }
+  }, [visible, appliedCategories]);
+
+  if (!mounted) return null;
+
+  const handleToggle = (opt: string) => {
+    if (tempCategories.includes(opt)) {
+      setTempCategories(tempCategories.filter(c => c !== opt));
+    } else {
+      setTempCategories([...tempCategories, opt]);
+    }
+  };
+
+  const handleApply = () => {
+    onApply(tempCategories);
+  };
+
+  const handleCancel = () => {
+    setTempCategories(appliedCategories);
+    onClose();
+  };
+
+  const options = [
+    'Pregnant Woman',
+    'Lactating Mother',
+    'Children (6m-3y)',
+    'Children (3-6y)',
+    'Children 0-6 months',
+    'Adolescent Girl',
+  ];
+
+  return (
+    <View pointerEvents={visible ? 'auto' : 'box-none'} style={ms.overlayWrapper}>
+      <Animated.View style={[ms.backdrop, { opacity: fadeAnim }]} />
+      <TouchableOpacity style={ms.dismiss} activeOpacity={1} onPress={handleCancel} />
+
+      <Animated.View style={[ms.sheet, { height: 490, transform: [{ translateY: slideAnim }] }]}>
+        <View style={ms.handleRow}><View style={ms.handle} /></View>
+        <View style={ms.titleRow}>
+          <Text style={ms.sheetTitle}>Filter by Category</Text>
+        </View>
+
+        <View style={ms.optionsList}>
+          {options.map(opt => {
+            const isSelected = tempCategories.includes(opt);
+            return (
+              <TouchableOpacity
+                key={opt}
+                style={ms.radioRow}
+                onPress={() => handleToggle(opt)}
+                activeOpacity={0.7}
+              >
+                <View style={[ms.radioCircle, isSelected && { borderColor: '#1a237e' }]}>
+                  {isSelected && <View style={[ms.radioDot, { backgroundColor: '#1a237e' }]} />}
+                </View>
+                <Text style={ms.radioLabel}>{opt}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        <View style={ms.buttonsContainer}>
+          <TouchableOpacity style={ms.clearBtn} onPress={handleCancel} activeOpacity={0.7}>
+            <Text style={ms.clearBtnText}>Cancel</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={ms.applyBtn} onPress={handleApply} activeOpacity={0.7}>
+            <Text style={ms.applyBtnText}>Apply Filters</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={{ height: 20 }} />
+      </Animated.View>
+    </View>
+  );
+};
+
+// ─── Status Filter Sheet ──────────────────────────────────────────────────────
+
+const StatusFilterSheet = ({
+  visible,
+  onClose,
+  appliedStatuses,
+  onApply,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  appliedStatuses: ResolvedStatus[];
+  onApply: (statuses: ResolvedStatus[]) => void;
+}) => {
+  const { slideAnim, fadeAnim, mounted } = useSheetAnim(visible);
+  const [tempStatuses, setTempStatuses] = useState<ResolvedStatus[]>(appliedStatuses);
+
+  useEffect(() => {
+    if (visible) {
+      setTempStatuses(appliedStatuses);
+    }
+  }, [visible, appliedStatuses]);
+
+  if (!mounted) return null;
+
+  const handleToggle = (opt: ResolvedStatus) => {
+    if (tempStatuses.includes(opt)) {
+      setTempStatuses(tempStatuses.filter(s => s !== opt));
+    } else {
+      setTempStatuses([...tempStatuses, opt]);
+    }
+  };
+
+  const handleApply = () => {
+    onApply(tempStatuses);
+  };
+
+  const handleCancel = () => {
+    setTempStatuses(appliedStatuses);
+    onClose();
+  };
+
+  const options: { value: ResolvedStatus; label: string; color: string }[] = [
+    { value: 'CLOSURE_PENDING', label: 'Closure Pending', color: '#f57f17' },
+    { value: 'CLOSED',          label: 'Closed',          color: '#2e7d32' },
+    { value: 'APPEAL_RAISED',   label: 'Appeal Raised',   color: '#e65100' },
+    { value: 'APPEAL_RESOLVED', label: 'Appeal Resolved', color: '#1565c0' },
+  ];
+
+  const selectedCount = tempStatuses.length;
+
+  return (
+    <View pointerEvents={visible ? 'auto' : 'box-none'} style={ms.overlayWrapper}>
+      <Animated.View style={[ms.backdrop, { opacity: fadeAnim }]} />
+      <TouchableOpacity style={ms.dismiss} activeOpacity={1} onPress={handleCancel} />
+
+      <Animated.View style={[ms.sheet, { height: 390, transform: [{ translateY: slideAnim }] }]}>
+        <View style={ms.handleRow}><View style={ms.handle} /></View>
+        <View style={ms.titleRow}>
+          <Text style={ms.sheetTitle}>Filter by Status</Text>
+        </View>
+
+        <View style={ms.optionsList}>
+          {options.map(opt => {
+            const isSelected = tempStatuses.includes(opt.value);
+            return (
+              <TouchableOpacity
+                key={opt.value}
+                style={[ms.radioRow, isSelected && { backgroundColor: '#f3f4fb' }]}
+                onPress={() => handleToggle(opt.value)}
+                activeOpacity={0.7}
+              >
+                <View style={[ms.radioCircle, isSelected && { borderColor: '#1a237e', backgroundColor: '#1a237e' }]}>
+                  {isSelected && <Image source={{ uri: imgIcon3 }} style={{ width: 10, height: 10, tintColor: '#ffffff' }} />}
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: opt.color }} />
+                  <Text style={[ms.radioLabel, isSelected && { color: '#1a237e', fontWeight: '600' }]}>
+                    {opt.label}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        <View style={ms.buttonsContainer}>
+          <TouchableOpacity style={ms.clearBtn} onPress={handleCancel} activeOpacity={0.7}>
+            <Text style={ms.clearBtnText}>Cancel</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={ms.applyBtn} onPress={handleApply} activeOpacity={0.7}>
+            <Text style={ms.applyBtnText}>
+              {selectedCount > 0 ? `Apply Filters (${selectedCount})` : 'Apply Filters'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+        <View style={{ height: 20 }} />
+      </Animated.View>
+    </View>
+  );
+};
+
+// ─── Dropdown Sheet ───────────────────────────────────────────────────────────
+
+const DropdownPickSheet = ({
+  visible,
+  title,
+  options,
+  selected,
+  onSelect,
+  onClose,
+}: {
+  visible: boolean;
+  title: string;
+  options: string[];
+  selected: string;
+  onSelect: (val: string) => void;
+  onClose: () => void;
+}) => {
+  const { slideAnim, fadeAnim, mounted } = useSheetAnim(visible);
+  if (!mounted) return null;
+
+  return (
+    <View pointerEvents={visible ? 'auto' : 'box-none'} style={ms.overlayWrapper}>
+      <Animated.View style={[ms.backdrop, { opacity: fadeAnim }]} />
+      <TouchableOpacity style={ms.dismiss} activeOpacity={1} onPress={onClose} />
+      <Animated.View style={[ms.sheet, { height: 80 + options.length * 52, transform: [{ translateY: slideAnim }] }]}>
+        <View style={ms.handleRow}><View style={ms.handle} /></View>
+        <View style={ms.titleRow}>
+          <Text style={ms.sheetTitle}>{title}</Text>
+          <TouchableOpacity onPress={onClose} activeOpacity={0.7} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Image source={{ uri: imgCloseIcon }} style={ms.closeIcon} />
+          </TouchableOpacity>
+        </View>
+        <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+          <View style={ms.optionsList}>
+            {options.map(opt => (
+              <TouchableOpacity
+                key={opt}
+                style={ms.radioRow}
+                onPress={() => { onSelect(opt); onClose(); }}
+                activeOpacity={0.7}
+              >
+                <View style={[ms.radioCircle, selected === opt && { borderColor: '#1a237e' }]}>
+                  {selected === opt && <View style={[ms.radioDot, { backgroundColor: '#1a237e' }]} />}
+                </View>
+                <Text style={[ms.radioLabel, selected === opt && { color: '#1a237e', fontWeight: '600' }]}>
+                  {opt}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </ScrollView>
+        <View style={{ height: 20 }} />
+      </Animated.View>
+    </View>
   );
 };
 
@@ -571,17 +958,18 @@ const PendingBreakdownSheet = ({ visible, onClose }: { visible: boolean; onClose
   if (!mounted) return null;
 
   const rows = [
+    { role: 'DPO',         pending: '8',     overdue: '2',   isSeparatorLight: true },
     { role: 'CDPO',        pending: '7',     overdue: '3',   isSeparatorLight: true },
     { role: 'Supervisor',  pending: '50',    overdue: '10',  isSeparatorLight: true },
     { role: 'AWW',         pending: '2,000', overdue: '503', isSeparatorLight: false },
-    { role: 'Total',       pending: '2,057', overdue: '516', isTotal: true },
+    { role: 'Total',       pending: '2,065', overdue: '518', isTotal: true },
   ];
 
   return (
     <View pointerEvents={visible ? 'auto' : 'box-none'} style={ms.overlayWrapper}>
       <Animated.View style={[ms.backdrop, { opacity: fadeAnim }]} />
       <TouchableOpacity style={ms.dismiss} activeOpacity={1} onPress={onClose} />
-      <Animated.View style={[ms.sheet, { height: 545, transform: [{ translateY: slideAnim }] }]}>
+      <Animated.View style={[ms.sheet, { height: 630, transform: [{ translateY: slideAnim }] }]}>
         <View style={ms.handleRow}><View style={ms.handle} /></View>
         <View style={ms.titleRow}>
           <Text style={ms.sheetTitle}>Pending Breakdown</Text>
@@ -590,12 +978,10 @@ const PendingBreakdownSheet = ({ visible, onClose }: { visible: boolean; onClose
           </TouchableOpacity>
         </View>
         <View style={ms.body}>
-          {/* Total card */}
           <View style={[ms.pendingTotalCard, { backgroundColor: '#e8eaf6' }]}>
             <Text style={[ms.pendingTotalLabel, { color: '#5c67b5' }]}>TOTAL PENDING</Text>
-            <Text style={[ms.pendingTotalValue, { color: '#1a237e' }]}>2,057</Text>
+            <Text style={[ms.pendingTotalValue, { color: '#1a237e' }]}>2,065</Text>
           </View>
-          {/* Table */}
           <View style={ms.pendingTableWrapper}>
             <View style={[ms.pendingTableRow, ms.pendingTableHeaderRow]}>
               <View style={ms.pendingTableColRole}><Text style={ms.pendingTableHeaderCell}>ROLE</Text></View>
@@ -640,22 +1026,22 @@ const ResolvedBreakdownSheet = ({ visible, onClose }: { visible: boolean; onClos
     {
       label: 'Closure Pending', value: '104', color: '#f57f17',
       bg: '#fff8e1', border: '#ffe082', divider: '#ffe082',
-      rows: [{ role: 'CDPO', val: '1' }, { role: 'Supervisor', val: '3' }, { role: 'AWW', val: '100' }],
+      rows: [{ role: 'DPO', val: '0' }, { role: 'CDPO', val: '1' }, { role: 'Supervisor', val: '3' }, { role: 'AWW', val: '100' }],
     },
     {
-      label: 'Closed', value: '863', color: '#2e7d32',
+      label: 'Closed', value: '867', color: '#2e7d32',
       bg: '#e8f5e9', border: '#a5d6a7', divider: '#a5d6a7',
-      rows: [{ role: 'CDPO', val: '3' }, { role: 'Supervisor', val: '110' }, { role: 'AWW', val: '750' }],
+      rows: [{ role: 'DPO', val: '4' }, { role: 'CDPO', val: '3' }, { role: 'Supervisor', val: '110' }, { role: 'AWW', val: '750' }],
     },
     {
-      label: 'Appeal Raised', value: '92', color: '#e65100',
+      label: 'Appeal Raised', value: '94', color: '#e65100',
       bg: '#fff3e0', border: '#ffcc80', divider: '#ffcc80',
-      rows: [{ role: 'CDPO', val: '0' }, { role: 'Supervisor', val: '12' }, { role: 'AWW', val: '80' }],
+      rows: [{ role: 'DPO', val: '2' }, { role: 'CDPO', val: '0' }, { role: 'Supervisor', val: '12' }, { role: 'AWW', val: '80' }],
     },
     {
-      label: 'Appeal Resolved', value: '79', color: '#1565c0',
+      label: 'Appeal Resolved', value: '81', color: '#1565c0',
       bg: '#e8eaf6', border: '#90caf9', divider: '#90caf9',
-      rows: [{ role: 'CDPO', val: '1' }, { role: 'Supervisor', val: '8' }, { role: 'AWW', val: '70' }],
+      rows: [{ role: 'DPO', val: '2' }, { role: 'CDPO', val: '1' }, { role: 'Supervisor', val: '8' }, { role: 'AWW', val: '70' }],
     },
   ];
 
@@ -663,7 +1049,7 @@ const ResolvedBreakdownSheet = ({ visible, onClose }: { visible: boolean; onClos
     <View pointerEvents={visible ? 'auto' : 'box-none'} style={ms.overlayWrapper}>
       <Animated.View style={[ms.backdrop, { opacity: fadeAnim }]} />
       <TouchableOpacity style={ms.dismiss} activeOpacity={1} onPress={onClose} />
-      <Animated.View style={[ms.sheet, { height: 510, transform: [{ translateY: slideAnim }] }]}>
+      <Animated.View style={[ms.sheet, { height: 560, transform: [{ translateY: slideAnim }] }]}>
         <View style={ms.handleRow}><View style={ms.handle} /></View>
         <View style={titleRowStyle}>
           <Text style={ms.sheetTitle}>Resolved Breakdown</Text>
@@ -672,14 +1058,13 @@ const ResolvedBreakdownSheet = ({ visible, onClose }: { visible: boolean; onClos
           </TouchableOpacity>
         </View>
         <View style={ms.body}>
-          {/* Total card */}
           <View style={ms.resolvedTotalCard}>
             <View>
               <Text style={[ms.totalLabel, { color: '#388e3c' }]}>TOTAL RESOLVED</Text>
-              <Text style={[ms.totalVal, { color: '#2e7d32' }]}>1,155</Text>
+              <Text style={[ms.totalVal, { color: '#2e7d32' }]}>1,163</Text>
             </View>
             <View style={{ gap: 3, alignItems: 'flex-end' }}>
-              {[{ label: 'CDPO', val: '5' }, { label: 'Supervisor', val: '150' }, { label: 'AWW', val: '1,000' }].map(r => (
+              {[{ label: 'DPO', val: '8' }, { label: 'CDPO', val: '5' }, { label: 'Supervisor', val: '150' }, { label: 'AWW', val: '1,000' }].map(r => (
                 <View key={r.label} style={{ flexDirection: 'row', gap: 6 }}>
                   <Text style={{ fontFamily: 'Inter', fontSize: 11, color: '#66bb6a' }}>{r.label}</Text>
                   <Text style={{ fontFamily: 'Inter', fontWeight: '700', fontSize: 13, color: '#2e7d32' }}>{r.val}</Text>
@@ -688,7 +1073,6 @@ const ResolvedBreakdownSheet = ({ visible, onClose }: { visible: boolean; onClos
             </View>
           </View>
 
-          {/* 2x2 grid */}
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 16 }}>
             {subCards.map(card => (
               <View key={card.label} style={[ms.subCard, { backgroundColor: card.bg, borderColor: card.border }]}>
@@ -712,7 +1096,6 @@ const ResolvedBreakdownSheet = ({ visible, onClose }: { visible: boolean; onClos
   );
 };
 
-// Helper style to keep titleRow clean
 const titleRowStyle = {
   flexDirection: 'row' as const,
   alignItems: 'center' as const,
@@ -724,607 +1107,216 @@ const titleRowStyle = {
   borderBottomColor: '#eee',
 };
 
-// ─── Action Taken Modal ───────────────────────────────────────────────────────
-
-const ActionTakenModal = ({
-  visible,
-  ticket,
-  onClose,
-}: {
-  visible: boolean;
-  ticket: OverdueTicket | null;
-  onClose: () => void;
-}) => {
-  const { slideAnim, fadeAnim, mounted } = useSheetAnim(visible);
-  const [notes, setNotes] = useState('');
-  const [submitted, setSubmitted] = useState(false);
-  const [attachedFile, setAttachedFile] = useState<string | null>(null);
-
-  // Reset form when a new ticket is opened
-  useEffect(() => {
-    if (visible) {
-      setNotes('');
-      setSubmitted(false);
-      setAttachedFile(null);
-    }
-  }, [visible, ticket?.id]);
-
-  if (!mounted || !ticket) return null;
-
-  const handleSubmit = () => {
-    setSubmitted(true);
-    setTimeout(() => {
-      onClose();
-    }, 1400);
-  };
-
-  return (
-    <View pointerEvents={visible ? 'auto' : 'box-none'} style={ms.overlayWrapper}>
-      <Animated.View style={[ms.backdrop, { opacity: fadeAnim }]} />
-      <TouchableOpacity style={ms.dismiss} activeOpacity={1} onPress={onClose} />
-
-      <Animated.View style={[ms.sheet, { height: 460, transform: [{ translateY: slideAnim }] }]}>
-        <View style={ms.handleRow}><View style={ms.handle} /></View>
-
-        <View style={ms.titleRow}>
-          <Text style={ms.sheetTitle}>Close Ticket</Text>
-          <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Image source={{ uri: imgCloseIcon }} style={ms.closeIcon} />
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-          <View style={ms.body}>
-
-            {/* Ticket mini card */}
-            <View style={ms.miniCard}>
-              <View style={ms.miniCardTop}>
-                <Text style={ms.miniCardNum}>{ticket.ticketNumber}</Text>
-                <View style={[ms.rolePillSmall, { backgroundColor: '#e3f2fd' }]}>
-                  <Text style={[ms.rolePillSmallTxt, { color: '#1565c0' }]}>{ticket.roleLabel}</Text>
-                </View>
-              </View>
-              <Text style={ms.miniCardTitle} numberOfLines={2}>{ticket.title}</Text>
-              <View style={[ms.overdueTagRed, { marginTop: 6, alignSelf: 'flex-start' }]}>
-                <Text style={ms.overdueTagRedTxtSm}>Overdue by {ticket.overdueDays} Days</Text>
-              </View>
-            </View>
-
-            {/* Action Taken Notes */}
-            <Text style={ms.fieldLabel}>Action Taken Description</Text>
-            <TextInput
-              style={ms.textArea}
-              placeholder="Describe the action taken to resolve this ticket…"
-              placeholderTextColor="#bdbdbd"
-              multiline
-              numberOfLines={4}
-              value={notes}
-              onChangeText={setNotes}
-              textAlignVertical="top"
-            />
-
-            {/* Attach Document / Attached Document Card */}
-            {(ticket.complaintType === 'Corruption' || ticket.complaintType === 'Urgent') && (
-              <View style={{ marginVertical: 14 }}>
-                {attachedFile === null ? (
-                  <TouchableOpacity
-                    style={ms.attachBtn}
-                    activeOpacity={0.75}
-                    onPress={() => setAttachedFile('supporting_document.pdf')}
-                  >
-                    <Text style={ms.attachBtnTxt}>＋  Attach Supporting Document</Text>
-                  </TouchableOpacity>
-                ) : (
-                  <View style={ms.attachedFileBox}>
-                    <View style={ms.attachedFileLeft}>
-                      <Image source={{ uri: imgDocIcon }} style={ms.attachedDocIcon} />
-                      <Text style={ms.attachedFileText}>
-                        {attachedFile}
-                        <Text style={ms.attachedFileSize}>  (2.4 MB)</Text>
-                      </Text>
-                    </View>
-                    <TouchableOpacity
-                      style={ms.removeFileBtn}
-                      onPress={() => setAttachedFile(null)}
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    >
-                      <Image source={{ uri: imgCloseIcon }} style={ms.removeFileIcon} />
-                    </TouchableOpacity>
-                  </View>
-                )}
-              </View>
-            )}
-
-            {/* Submit */}
-            {submitted ? (
-              <View style={ms.successBanner}>
-                <Text style={ms.successBannerTxt}>✓  Ticket Closed Successfully</Text>
-              </View>
-            ) : (
-              <TouchableOpacity
-                style={[ms.submitBtn, (!notes.trim()) && ms.submitBtnDisabled]}
-                onPress={handleSubmit}
-                activeOpacity={0.85}
-                disabled={!notes.trim()}
-              >
-                <Text style={ms.submitBtnTxt}>Confirm &amp; Close Ticket</Text>
-              </TouchableOpacity>
-            )}
-
-            <View style={{ height: 32 }} />
-          </View>
-        </ScrollView>
-      </Animated.View>
-    </View>
-  );
-};
-
-// ─── Appeal Resolution Modal ──────────────────────────────────────────────────
-
-const AppealResolutionModal = ({
-  visible,
-  ticket,
-  onClose,
-  onResolveSubmit,
-}: {
-  visible: boolean;
-  ticket: AppealTicket | null;
-  onClose: () => void;
-  onResolveSubmit: (ticketId: string, decision: AppealDecision, notes: string) => void;
-}) => {
-  const { slideAnim, fadeAnim, mounted } = useSheetAnim(visible);
-  const [decision, setDecision] = useState<AppealDecision>(null);
-  const [notes, setNotes] = useState('');
-  const [confirmed, setConfirmed] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-
-  useEffect(() => {
-    if (visible) {
-      setDecision(null);
-      setNotes('');
-      setConfirmed(false);
-      setSubmitted(false);
-    }
-  }, [visible, ticket?.id]);
-
-  if (!mounted || !ticket) return null;
-
-  const handleSubmit = () => {
-    setSubmitted(true);
-    setTimeout(() => {
-      onResolveSubmit(ticket.id, decision, notes);
-      onClose();
-    }, 1400);
-  };
-
-  const canSubmit = decision !== null && notes.trim().length > 0 && confirmed;
-
-  return (
-    <View pointerEvents={visible ? 'auto' : 'box-none'} style={ms.overlayWrapper}>
-      <Animated.View style={[ms.backdrop, { opacity: fadeAnim }]} />
-      <TouchableOpacity style={ms.dismiss} activeOpacity={1} onPress={onClose} />
-
-      <Animated.View style={[ms.sheet, { height: 580, transform: [{ translateY: slideAnim }] }]}>
-        <View style={ms.handleRow}><View style={ms.handle} /></View>
-
-        <View style={ms.titleRow}>
-          <Text style={ms.sheetTitle}>Resolve Appeal</Text>
-          <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Image source={{ uri: imgCloseIcon }} style={ms.closeIcon} />
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-          <View style={ms.body}>
-
-            {/* Appeal summary card */}
-            <View style={[ms.miniCard, { backgroundColor: '#fff8e1', borderColor: '#ffe082' }]}>
-              <View style={ms.miniCardTop}>
-                <Text style={ms.miniCardNum}>{ticket.ticketNumber}</Text>
-                <View style={[ms.rolePillSmall, { backgroundColor: '#fff3e0', borderColor: '#ffcc80' }]}>
-                  <Text style={[ms.rolePillSmallTxt, { color: '#e65100' }]}>{ticket.roleLabel}</Text>
-                </View>
-              </View>
-              <Text style={ms.miniCardTitle} numberOfLines={2}>{ticket.title}</Text>
-              <View style={ms.appealInfoRow}>
-                <Text style={ms.appealInfoLabel}>Appeal Reason:</Text>
-                <Text style={ms.appealInfoTxt} numberOfLines={2}>{ticket.appealReason}</Text>
-              </View>
-              <Text style={[ms.cardDate, { marginTop: 6, color: '#e65100' }]}>{ticket.appealDate}</Text>
-            </View>
-
-            {/* Your Decision */}
-            <Text style={ms.fieldLabel}>Your Decision</Text>
-            <View style={ms.decisionRow}>
-              {/* Uphold */}
-              <TouchableOpacity
-                style={[
-                  ms.decisionOption,
-                  { borderColor: decision === 'uphold' ? '#2e7d32' : '#e0e0e0', backgroundColor: decision === 'uphold' ? '#e8f5e9' : '#fff' },
-                ]}
-                onPress={() => setDecision('uphold')}
-                activeOpacity={0.8}
-              >
-                <View style={[ms.radioCircle, { borderColor: decision === 'uphold' ? '#2e7d32' : '#bdbdbd' }]}>
-                  {decision === 'uphold' && <View style={[ms.radioDot, { backgroundColor: '#2e7d32' }]} />}
-                </View>
-                <View>
-                  <Text style={[ms.decisionLabel, { color: decision === 'uphold' ? '#2e7d32' : '#424242' }]}>Uphold Appeal</Text>
-                  <Text style={ms.decisionSub}>Appeal is valid</Text>
-                </View>
-              </TouchableOpacity>
-
-              {/* Dismiss */}
-              <TouchableOpacity
-                style={[
-                  ms.decisionOption,
-                  { borderColor: decision === 'dismiss' ? '#d32f2f' : '#e0e0e0', backgroundColor: decision === 'dismiss' ? '#ffebee' : '#fff' },
-                ]}
-                onPress={() => setDecision('dismiss')}
-                activeOpacity={0.8}
-              >
-                <View style={[ms.radioCircle, { borderColor: decision === 'dismiss' ? '#d32f2f' : '#bdbdbd' }]}>
-                  {decision === 'dismiss' && <View style={[ms.radioDot, { backgroundColor: '#d32f2f' }]} />}
-                </View>
-                <View>
-                  <Text style={[ms.decisionLabel, { color: decision === 'dismiss' ? '#d32f2f' : '#424242' }]}>Dismiss Appeal</Text>
-                  <Text style={ms.decisionSub}>Resolution was correct</Text>
-                </View>
-              </TouchableOpacity>
-            </View>
-
-            {/* Resolution Notes */}
-            <Text style={ms.fieldLabel}>Resolution Notes</Text>
-            <TextInput
-              style={ms.textArea}
-              placeholder="Provide the basis for your decision…"
-              placeholderTextColor="#bdbdbd"
-              multiline
-              numberOfLines={4}
-              value={notes}
-              onChangeText={setNotes}
-              textAlignVertical="top"
-            />
-
-            {/* Confirmation Checkbox */}
-            <TouchableOpacity
-              style={ms.checkboxRow}
-              onPress={() => setConfirmed(!confirmed)}
-              activeOpacity={0.8}
-            >
-              <View style={[ms.checkboxCircle, confirmed && ms.checkboxCircleChecked]}>
-                {confirmed && <Text style={ms.checkmark}>✓</Text>}
-              </View>
-              <Text style={ms.checkboxLabel}>
-                I confirm the decision and details filled above.
-              </Text>
-            </TouchableOpacity>
-
-            {/* Submit */}
-            {submitted ? (
-              <View style={[ms.successBanner, { backgroundColor: decision === 'uphold' ? '#e8f5e9' : '#ffebee' }]}>
-                <Text style={[ms.successBannerTxt, { color: decision === 'uphold' ? '#2e7d32' : '#d32f2f' }]}>
-                  {decision === 'uphold' ? '✓  Appeal Upheld — Ticket Reopened' : '✓  Appeal Dismissed — Resolution Confirmed'}
-                </Text>
-              </View>
-            ) : (
-              <TouchableOpacity
-                style={[
-                  ms.submitBtn,
-                  decision === 'uphold' ? { backgroundColor: '#2e7d32' } : decision === 'dismiss' ? { backgroundColor: '#d32f2f' } : {},
-                  !canSubmit && ms.submitBtnDisabled,
-                ]}
-                onPress={handleSubmit}
-                activeOpacity={0.85}
-                disabled={!canSubmit}
-              >
-                <Text style={ms.submitBtnTxt}>
-                  {decision === 'uphold' ? 'Uphold & Reopen' : decision === 'dismiss' ? 'Dismiss Appeal' : 'Resolve Appeal'}
-                </Text>
-              </TouchableOpacity>
-            )}
-
-            <View style={{ height: 32 }} />
-          </View>
-        </ScrollView>
-      </Animated.View>
-    </View>
-  );
-};
-
-// ─── Ticket Details Modal ─────────────────────────────────────────────────────
-
-const TicketDetailModal = ({
-  visible,
-  ticket,
-  onClose,
-}: {
-  visible: boolean;
-  ticket: AppealTicket | null;
-  onClose: () => void;
-}) => {
-  const { slideAnim, fadeAnim, mounted } = useSheetAnim(visible);
-
-  if (!mounted || !ticket) return null;
-
-  return (
-    <View pointerEvents={visible ? 'auto' : 'box-none'} style={ms.overlayWrapper}>
-      <Animated.View style={[ms.backdrop, { opacity: fadeAnim }]} />
-      <TouchableOpacity style={ms.dismiss} activeOpacity={1} onPress={onClose} />
-
-      <Animated.View style={[ms.sheet, { height: 720, transform: [{ translateY: slideAnim }] }]}>
-        <View style={ms.handleRow}><View style={ms.handle} /></View>
-
-        <View style={ms.titleRow}>
-          <Text style={ms.sheetTitle}>Ticket Details</Text>
-          <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Image source={{ uri: imgCloseIcon }} style={ms.closeIcon} />
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-          <View style={[ms.body, { paddingBottom: 40 }]}>
-            {/* Section 1: Ticket Summary */}
-            <View style={ds.sectionHeader}>
-              <Text style={ds.sectionHeaderTxt}>Ticket Summary</Text>
-              <View style={ds.sectionHeaderLine} />
-            </View>
-
-            <View style={ds.summaryTitleRow}>
-              <Text style={ds.summaryTitle}>{ticket.ticketNumber}</Text>
-              <View style={ds.summaryBadge}>
-                <Text style={ds.summaryBadgeTxt}>
-                  {ticket.appealReason ? (ticket.status === 'resolved' ? 'APPEAL RESOLVED' : 'APPEAL RAISED') : 'OVERDUE'}
-                </Text>
-              </View>
-            </View>
-
-            <View style={ds.infoList}>
-              {[
-                { label: 'Assigned on', val: '08/06/2025' },
-                { label: 'Resolved on', val: '12/06/2025' },
-                { label: 'Resolved by', val: 'Supervisor' },
-                { label: 'Closed on', val: '13/06/2025' },
-                { label: 'Appeal raised on', val: '14/06/2025' },
-                { label: 'Appeal resolved on', val: '12/06/2025' },
-              ].map(item => (
-                <View key={item.label} style={ds.infoRow}>
-                  <Text style={ds.infoLabel}>{item.label}</Text>
-                  <Text style={ds.infoValue}>{item.val}</Text>
-                </View>
-              ))}
-            </View>
-
-            {/* Section 2: Ticket Details */}
-            <View style={ds.sectionHeader}>
-              <Text style={ds.sectionHeaderTxt}>Ticket Details</Text>
-              <View style={ds.sectionHeaderLine} />
-            </View>
-
-            <View style={ds.infoList}>
-              <View style={ds.infoRow}>
-                <Text style={ds.infoLabel}>Help Topic</Text>
-                <Text style={ds.infoValue}>Immunization</Text>
-              </View>
-              <View style={ds.infoRow}>
-                <Text style={ds.infoLabel}>Sub-topic</Text>
-                <Text style={[ds.infoValue, { flex: 1, flexWrap: 'wrap' }]}>
-                  Vaccination not administered on scheduled date at sub-health centre
-                </Text>
-              </View>
-            </View>
-
-            <View style={ds.textBlock}>
-              <Text style={ds.textBlockLabel}>Description</Text>
-              <View style={ds.blueBox}>
-                <Text style={ds.blueBoxTxt}>
-                  Vaccination rescheduled with PHC medical officer. Child vaccinated on 11 Jun 2025 — DPT booster and OPV administered. Immunisation card updated. Parents counselled on next scheduled vaccination date of 15 Sep 2025.
-                </Text>
-              </View>
-            </View>
-
-            {/* Section 3: Beneficiary Information */}
-            <View style={ds.sectionHeader}>
-              <Text style={ds.sectionHeaderTxt}>Beneficiary Information</Text>
-              <View style={ds.sectionHeaderLine} />
-            </View>
-
-            <View style={ds.infoList}>
-              {[
-                { label: 'Name', val: 'Geeta Sharma' },
-                { label: 'Mobile', val: '98765 43210' },
-                { label: 'Category', val: 'Children (6m-3y)' },
-                { label: 'AWC', val: 'Anganwadi Centre 2' },
-                { label: 'District', val: 'Jaipur' },
-                { label: 'Project', val: 'Sanganer' },
-                { label: 'Sector', val: '1' },
-              ].map(item => (
-                <View key={item.label} style={ds.infoRow}>
-                  <Text style={ds.infoLabel}>{item.label}</Text>
-                  <Text style={ds.infoValue}>{item.val}</Text>
-                </View>
-              ))}
-            </View>
-
-            {/* Section 4: Resolution Details */}
-            {ticket.appealReason !== '' && (
-              <>
-                <View style={ds.sectionHeader}>
-                  <Text style={ds.sectionHeaderTxt}>Resolution Details</Text>
-                  <View style={ds.sectionHeaderLine} />
-                </View>
-
-                <View style={ds.textBlock}>
-                  <Text style={ds.textBlockLabel}>Action Taken</Text>
-                  <View style={ds.blueBox}>
-                    <Text style={ds.blueBoxTxt}>
-                      Vaccination rescheduled with PHC medical officer. Child vaccinated on 11 Jun 2025 — DPT booster and OPV administered. Immunisation card updated. Parents counselled on next scheduled vaccination date of 15 Sep 2025.
-                    </Text>
-                  </View>
-                </View>
-              </>
-            )}
-
-            {/* Section 5: DPO Appeal Resolution */}
-            {ticket.appealReason !== '' && (
-              <>
-                <View style={ds.sectionHeader}>
-                  <Text style={ds.sectionHeaderTxt}>DPO Appeal Resolution</Text>
-                  <View style={ds.sectionHeaderLine} />
-                </View>
-
-                <View style={ds.textBlock}>
-                  <Text style={ds.textBlockLabel}>Action Taken by DPO</Text>
-                  <View style={ds.blueBox}>
-                    <Text style={ds.blueBoxTxt}>
-                      Appeal reviewed on 12 Jun 2025. Vaccination records verified at PHC — DPT booster and OPV confirmed administered on 11 Jun 2025. Immunisation card entries are accurate and complete. Resolution by Supervisor upheld. Appeal resolved in favour of existing resolution.
-                    </Text>
-                  </View>
-                </View>
-              </>
-            )}
-
-            {/* Section 6: Timeline */}
-            <View style={ds.sectionHeader}>
-              <Text style={ds.sectionHeaderTxt}>Timeline</Text>
-              <View style={ds.sectionHeaderLine} />
-            </View>
-
-            <View style={ds.timeline}>
-              {ticket.appealReason !== '' ? (
-                [
-                  { title: 'Appeal Resolved by DPO', date: '12/06/2025, 11:00 AM', color: '#1565c0' },
-                  { title: 'Appeal Raised by Beneficiary', date: '14/06/2025, 02:00 PM', color: '#e65100' },
-                  { title: 'Ticket Closed by CDPO', date: '13/06/2025, 10:00 AM', color: '#1b5e20' },
-                  { title: 'Ticket Resolved by Supervisor', date: '12/06/2025, 03:00 PM', color: '#2e7d32' },
-                  { title: 'Reminder Sent — System', date: '08/06/2025, 09:00 AM', color: '#f59e0b' },
-                  { title: 'Assigned to Supervisor — Sector 1', date: '08/06/2025, 11:30 AM', color: '#1a237e', isLast: true },
-                ].map((item, idx) => (
-                  <View key={idx} style={ds.timelineRow}>
-                    <View style={ds.timelineLeft}>
-                      <View style={[ds.timelineDot, { backgroundColor: item.color }]} />
-                      {!item.isLast && <View style={ds.timelineLine} />}
-                    </View>
-                    <View style={ds.timelineRight}>
-                      <Text style={ds.timelineTitle}>{item.title}</Text>
-                      <Text style={ds.timelineDate}>{item.date}</Text>
-                    </View>
-                  </View>
-                ))
-              ) : (
-                [
-                  { title: 'Ticket Overdue', date: '21 days after assignment', color: '#d32f2f' },
-                  { title: 'Ticket Escalated to DPO (View Only)', date: '14 days after assignment', color: '#e65100' },
-                  { title: `Reminder Sent to ${ticket.roleLabel || 'AWW'}`, date: '7 days after assignment', color: '#f57f17' },
-                  { title: 'Ticket Assigned to Officer', date: '09:00 AM (Day 0)', color: '#1a237e', isLast: true },
-                ].map((item, idx) => (
-                  <View key={idx} style={ds.timelineRow}>
-                    <View style={ds.timelineLeft}>
-                      <View style={[ds.timelineDot, { backgroundColor: item.color }]} />
-                      {!item.isLast && <View style={ds.timelineLine} />}
-                    </View>
-                    <View style={ds.timelineRight}>
-                      <Text style={ds.timelineTitle}>{item.title}</Text>
-                      <Text style={ds.timelineDate}>{item.date}</Text>
-                    </View>
-                  </View>
-                ))
-              )}
-            </View>
-
-            {/* Read-only Banner */}
-            {!ticket.appealReason && ticket.roleLabel !== 'DPO' ? (
-              <View style={[ds.readOnlyBanner, { backgroundColor: '#ffebee', borderColor: '#ffcdd2', borderWidth: 1 }]}>
-                <Text style={[ds.readOnlyBannerTxt, { color: '#d32f2f', fontWeight: '700' }]}>
-                  Escalated to DPO (View Only). CDPO is the main Closing Officer.
-                </Text>
-              </View>
-            ) : ticket.status === 'resolved' ? (
-              <View style={ds.readOnlyBanner}>
-                <Text style={ds.readOnlyBannerTxt}>This ticket has been resolved and is read-only.</Text>
-              </View>
-            ) : null}
-
-          </View>
-        </ScrollView>
-      </Animated.View>
-    </View>
-  );
-};
-
 // ─── Main DPO Screen ──────────────────────────────────────────────────────────
 
-export default function DPODashboardScreen({ onBack }: { onBack?: () => void } = {}) {
-  const [activeTab, setActiveTab]             = useState<DPOTab>('Overdue');
-  const [cdpoActiveTab, setCdpoActiveTab]     = useState<'Pending' | 'Resolved'>('Pending');
-  const [assignFilter, setAssignFilter]       = useState<AssignFilter>('DPO');
+export default function DPODashboardScreen() {
+  const [activeTab, setActiveTab] = useState<'Pending' | 'Resolved'>('Pending');
+  const [assignFilter, setAssignFilter] = useState<AssignFilter>('DPO');
 
-  // Interactive state for appeal tickets
-  const [appealList, setAppealList] = useState<AppealTicket[]>(() =>
-    appealTickets.map(t => ({ ...t, status: t.status || ('raised' as const) }))
-  );
+  // Interactive local states for cards
+  const [myPendingCards, setMyPendingCards] = useState<TicketCard[]>(pendingCards);
+  const [myResolvedCards, setMyResolvedCards] = useState<ResolvedTicketCard[]>(resolvedCards);
 
-  // Summary breakdown sheets
+  // Filter states
+  const [isOverdueActive, setIsOverdueActive] = useState(false);
+  const [appliedDateOption, setAppliedDateOption] = useState<'7' | '14' | '21' | 'custom' | null>(null);
+  const [appliedFromDate, setAppliedFromDate] = useState('');
+  const [appliedToDate, setAppliedToDate] = useState('');
+  const [appliedTypes, setAppliedTypes] = useState<string[]>([]);
+  const [appliedCategories, setAppliedCategories] = useState<string[]>([]);
+  const [appliedStatuses, setAppliedStatuses] = useState<ResolvedStatus[]>([]);
+
+  // Sector / AWC / Project dropdowns
+  const [selectedSector, setSelectedSector] = useState('All Sectors');
+  const [selectedAWC, setSelectedAWC] = useState('All Centres');
+  const [selectedProject, setSelectedProject] = useState('All Projects');
+
+  // Sheet visibilities
   const [pendingBreakdown, setPendingBreakdown] = useState(false);
   const [resolvedBreakdown, setResolvedBreakdown] = useState(false);
+  const [dateRangeModalVisible, setDateRangeModalVisible] = useState(false);
+  const [typeModalVisible, setTypeModalVisible] = useState(false);
+  const [categoryModalVisible, setCategoryModalVisible] = useState(false);
+  const [statusModalVisible, setStatusModalVisible] = useState(false);
+  const [sectorPickVisible, setSectorPickVisible] = useState(false);
+  const [awcPickVisible, setAwcPickVisible] = useState(false);
+  const [projectPickVisible, setProjectPickVisible] = useState(false);
 
-  // Action Taken Modal
-  const [actionModalVisible, setActionModalVisible] = useState(false);
-  const [activeOverdueTicket, setActiveOverdueTicket] = useState<OverdueTicket | null>(null);
+  // Selected card for details overlay
+  const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
 
-  // Appeal Resolution Modal
-  const [appealModalVisible, setAppealModalVisible] = useState(false);
-  const [activeAppealTicket, setActiveAppealTicket] = useState<AppealTicket | null>(null);
-
-  // Ticket Details Modal
-  const [detailModalVisible, setDetailModalVisible] = useState(false);
-  const [activeDetailTicket, setActiveDetailTicket] = useState<AppealTicket | null>(null);
-
-  const handleOpenOverdueDetail = (ticket: OverdueTicket) => {
-    const detailTicket: AppealTicket = {
-      id: ticket.id,
-      ticketNumber: ticket.ticketNumber,
-      roleLabel: ticket.roleLabel,
-      title: ticket.title,
-      originalDescription: ticket.description,
-      appealReason: '',
-      submittedDate: ticket.submittedDate,
-      appealDate: '',
-      documents: ticket.documents,
-      byName: ticket.byName,
-      status: 'raised',
-      complaintType: ticket.complaintType,
-    };
-    setActiveDetailTicket(detailTicket);
-    setDetailModalVisible(true);
+  const getTicketAge = (submittedDate?: string) => {
+    if (!submittedDate) return 0;
+    const cleanStr = submittedDate.replace('Submitted:', '').replace('Resolved:', '').trim();
+    const match = cleanStr.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+    if (!match) return 0;
+    const day = parseInt(match[1], 10);
+    const month = parseInt(match[2], 10) - 1;
+    const year = parseInt(match[3], 10);
+    const ticketDate = new Date(year, month, day);
+    const mockToday = new Date(2025, 5, 30); // 30/06/2025
+    const diffTime = mockToday.getTime() - ticketDate.getTime();
+    return Math.floor(diffTime / (1000 * 60 * 60 * 24));
   };
 
-  const handleCloseTicket = (ticket: OverdueTicket) => {
-    setActiveOverdueTicket(ticket);
-    setActionModalVisible(true);
+  const handleResolveTicket = (ticketId: string, closureNote: string, decision?: 'uphold' | 'dismiss') => {
+    const pendingTicket = myPendingCards.find(t => t.id === ticketId);
+    if (pendingTicket) {
+      const newResolvedCard: ResolvedTicketCard = {
+        id: pendingTicket.id,
+        ticketNumber: pendingTicket.ticketNumber,
+        beneficiaryName: pendingTicket.beneficiaryName,
+        beneficiaryType: pendingTicket.beneficiaryType,
+        topic: pendingTicket.topic ?? pendingTicket.title ?? '',
+        description: pendingTicket.description,
+        resolvedDate: 'Resolved: 30/06/2025',
+        status: 'CLOSED',
+        actionTaken: closureNote,
+        awcName: pendingTicket.awcName,
+        helpTopic: pendingTicket.helpTopic ?? pendingTicket.topic ?? '',
+        subTopic: pendingTicket.subTopic ?? pendingTicket.topic ?? '',
+        beneficiaryMobile: pendingTicket.beneficiaryMobile ?? '',
+        beneficiaryEmail: pendingTicket.beneficiaryEmail,
+        awcCode: pendingTicket.awcCode ?? '',
+        district: pendingTicket.district ?? 'Jaipur',
+        project: pendingTicket.project ?? 'Sanganer',
+        sector: pendingTicket.sector ?? 'Sector 1',
+        assignedTo: 'DPO',
+      };
+      setMyPendingCards(prev => prev.filter(t => t.id !== ticketId));
+      setMyResolvedCards(prev => [newResolvedCard, ...prev]);
+    } else {
+      setMyResolvedCards(prev =>
+        prev.map(t =>
+          t.id === ticketId
+            ? {
+                ...t,
+                status: decision === 'uphold' ? 'APPEAL_RESOLVED' : 'CLOSED',
+                dpoActionTaken: closureNote,
+                actionTaken: t.actionTaken + `\n\nAppeal Resolution: ${closureNote}`,
+              }
+            : t
+        )
+      );
+    }
   };
 
-  const handleResolveAppeal = (ticket: AppealTicket) => {
-    setActiveAppealTicket(ticket);
-    setAppealModalVisible(true);
-  };
+  // Base list filtering (by assignedTo role and DPO 14-days viewing window)
+  const basePendingForRole = myPendingCards.filter(c => {
+    if (assignFilter === 'DPO') {
+      return c.assignedTo === 'DPO';
+    } else {
+      return c.assignedTo === assignFilter && getTicketAge(c.submittedDate) >= 14;
+    }
+  });
+  const baseResolvedForRole = myResolvedCards.filter(c => {
+    if (assignFilter === 'DPO') {
+      return c.assignedTo === 'DPO';
+    } else {
+      return c.assignedTo === assignFilter && getTicketAge(c.resolvedDate) >= 14;
+    }
+  });
 
-  const handleResolveSubmit = (ticketId: string, decision: AppealDecision, notes: string) => {
-    setAppealList(prev =>
-      prev.map(t =>
-        t.id === ticketId
-          ? { ...t, status: 'resolved', decision, resolutionNotes: notes }
-          : t
-      )
-    );
-  };
+  // Calculate dynamic tab counts
+  const totalPendingCount = basePendingForRole.length;
+  const totalResolvedCount = baseResolvedForRole.length;
+
+  // Apply filters to Pending
+  let displayedPending = [...basePendingForRole];
+
+  if (isOverdueActive) {
+    displayedPending = displayedPending.filter(c => c.isOverdue || c.daysType === 'overdue' || c.status === 'APPEAL_RAISED');
+  }
+
+  if (appliedDateOption) {
+    displayedPending = displayedPending.filter(c => {
+      const dateStr = c.submittedDate ? c.submittedDate.replace('Submitted:', '').trim() : '';
+      const tDate = parseDateString(dateStr);
+      if (!tDate) return true;
+      const diffDays = getTicketAge(dateStr);
+      if (appliedDateOption === '7') return diffDays <= 7;
+      if (appliedDateOption === '14') return diffDays <= 14;
+      if (appliedDateOption === '21') return diffDays <= 21;
+      if (appliedDateOption === 'custom' && appliedFromDate && appliedToDate) {
+        const fromD = parseInputDate(appliedFromDate);
+        const toD = parseInputDate(appliedToDate);
+        if (fromD && toD) {
+          return tDate >= fromD && tDate <= toD;
+        }
+      }
+      return true;
+    });
+  }
+
+  if ((assignFilter === 'DPO' || assignFilter === 'CDPO') && appliedTypes.length > 0) {
+    displayedPending = displayedPending.filter(c => c.complaintType && appliedTypes.includes(c.complaintType));
+  }
+
+  if ((assignFilter === 'Supervisor' || assignFilter === 'AWW') && appliedCategories.length > 0) {
+    displayedPending = displayedPending.filter(c => c.beneficiaryType && appliedCategories.includes(c.beneficiaryType));
+  }
+
+  if (assignFilter === 'Supervisor' && selectedSector !== 'All Sectors') {
+    displayedPending = displayedPending.filter(c => c.sector === selectedSector);
+  }
+
+  if (assignFilter === 'AWW' && selectedAWC !== 'All Centres') {
+    displayedPending = displayedPending.filter(c => c.awcName === selectedAWC);
+  }
+
+  if (assignFilter === 'CDPO' && selectedProject !== 'All Projects') {
+    displayedPending = displayedPending.filter(c => c.project === selectedProject);
+  }
+
+  // Apply filters to Resolved
+  let displayedResolved = [...baseResolvedForRole];
+
+  if (appliedDateOption) {
+    displayedResolved = displayedResolved.filter(c => {
+      const dateStr = c.resolvedDate ? c.resolvedDate.replace('Resolved:', '').trim() : '';
+      const tDate = parseDateString(dateStr);
+      if (!tDate) return true;
+      const diffDays = getTicketAge(dateStr);
+      if (appliedDateOption === '7') return diffDays <= 7;
+      if (appliedDateOption === '14') return diffDays <= 14;
+      if (appliedDateOption === '21') return diffDays <= 21;
+      if (appliedDateOption === 'custom' && appliedFromDate && appliedToDate) {
+        const fromD = parseInputDate(appliedFromDate);
+        const toD = parseInputDate(appliedToDate);
+        if (fromD && toD) {
+          return tDate >= fromD && tDate <= toD;
+        }
+      }
+      return true;
+    });
+  }
+
+  if (appliedCategories.length > 0) {
+    displayedResolved = displayedResolved.filter(c => c.beneficiaryType && appliedCategories.includes(c.beneficiaryType));
+  }
+
+  if (appliedStatuses.length > 0) {
+    displayedResolved = displayedResolved.filter(c => appliedStatuses.includes(c.status));
+  }
+
+  if (assignFilter === 'Supervisor' && selectedSector !== 'All Sectors') {
+    displayedResolved = displayedResolved.filter(c => c.sector === selectedSector);
+  }
+
+  if (assignFilter === 'AWW' && selectedAWC !== 'All Centres') {
+    displayedResolved = displayedResolved.filter(c => c.awcName === selectedAWC);
+  }
+
+  if (assignFilter === 'CDPO' && selectedProject !== 'All Projects') {
+    displayedResolved = displayedResolved.filter(c => c.project === selectedProject);
+  }
 
   return (
     <View style={s.root}>
       <StatusBar barStyle="light-content" backgroundColor="#1a237e" />
 
       <DPOStatusBar_ />
-      <DPOHeader onBack={onBack} />
+      <DPOHeader />
       <DPOSubHeader />
 
       <ScrollView
@@ -1339,81 +1331,219 @@ export default function DPODashboardScreen({ onBack }: { onBack?: () => void } =
         />
 
         {/* Assign Filter */}
-        <DPOAssignFilter selected={assignFilter} onSelect={setAssignFilter} />
+        <DPOAssignFilter
+          selected={assignFilter}
+          onSelect={val => {
+            setAssignFilter(val);
+            // Reset filters on role change
+            setIsOverdueActive(false);
+            setAppliedDateOption(null);
+            setAppliedFromDate('');
+            setAppliedToDate('');
+            setAppliedTypes([]);
+            setAppliedCategories([]);
+            setAppliedStatuses([]);
+            setSelectedSector('All Sectors');
+            setSelectedAWC('All Centres');
+            setSelectedProject('All Projects');
+          }}
+        />
 
-        {/* Tab Bar */}
-        {assignFilter === 'DPO' ? (
-          <DPOTabBar active={activeTab} onChange={setActiveTab} />
-        ) : (
-          <CDPOTabBar active={cdpoActiveTab} onChange={setCdpoActiveTab} />
+        {/* Sector dropdown (Supervisor chip) or Anganwadi Centre dropdown (AWW chip) */}
+        {assignFilter === 'Supervisor' && (
+          <SectorDropdown value={selectedSector} onPress={() => setSectorPickVisible(true)} />
+        )}
+        {assignFilter === 'AWW' && (
+          <AnganwadiCentreDropdown value={selectedAWC} onPress={() => setAwcPickVisible(true)} />
+        )}
+        {assignFilter === 'CDPO' && (
+          <ProjectDropdown value={selectedProject} onPress={() => setProjectPickVisible(true)} />
         )}
 
+        {/* Tab Bar */}
+        <CDPOTabBar
+          active={activeTab}
+          onChange={setActiveTab}
+          pendingCount={totalPendingCount}
+          resolvedCount={totalResolvedCount}
+        />
+
         {/* Filter Chips */}
-        <FilterChips showOverdue={assignFilter !== 'DPO'} />
+        <FilterChips
+          activeTab={activeTab}
+          assignedFilter={assignFilter}
+          isOverdueActive={isOverdueActive}
+          onOverdueToggle={() => setIsOverdueActive(v => !v)}
+          onClearAll={() => {
+            setIsOverdueActive(false);
+            setAppliedDateOption(null);
+            setAppliedFromDate('');
+            setAppliedToDate('');
+            setAppliedTypes([]);
+            setAppliedCategories([]);
+            setAppliedStatuses([]);
+          }}
+          appliedDateOption={appliedDateOption}
+          appliedTypes={appliedTypes}
+          appliedCategories={appliedCategories}
+          appliedStatuses={appliedStatuses}
+          onDateRangePress={() => setDateRangeModalVisible(true)}
+          onTypePress={() => setTypeModalVisible(true)}
+          onCategoryPress={() => setCategoryModalVisible(true)}
+          onStatusPress={() => setStatusModalVisible(true)}
+          onClearDateRange={() => {
+            setAppliedDateOption(null);
+            setAppliedFromDate('');
+            setAppliedToDate('');
+          }}
+          onClearType={() => setAppliedTypes([])}
+          onClearCategory={() => setAppliedCategories([])}
+          onClearStatus={() => setAppliedStatuses([])}
+        />
+
+        {/* Appeal Raised info banner — resolved tab */}
+        {activeTab === 'Resolved' && (() => {
+          const appealRaisedTickets = displayedResolved.filter(c => c.status === 'APPEAL_RAISED');
+          const appealRaisedCount = appealRaisedTickets.length;
+          if (appealRaisedCount === 0) return null;
+          let bannerText = '';
+          if (appealRaisedCount === 1) {
+            const tNum = appealRaisedTickets[0].ticketNumber.replace('Ticket# ', '#').replace(' ', '');
+            bannerText = `Appeal resolution is awaited for Ticket ${tNum} — tap to resolve`;
+          } else {
+            bannerText = `Appeal resolution is awaited for ${appealRaisedCount} tickets — tap to resolve`;
+          }
+          return (
+            <View style={s.closureBanner}>
+              <Text style={s.closureBannerText}>{bannerText}</Text>
+            </View>
+          );
+        })()}
 
         {/* Cards */}
         <View style={s.cardList}>
-          {assignFilter === 'DPO' ? (
-            activeTab === 'Overdue' ? (
-              overdueTickets.map(t => (
-                <OverdueCard
-                  key={t.id}
-                  ticket={t}
-                  onView={handleOpenOverdueDetail}
-                  onClose={handleCloseTicket}
-                />
-              ))
-            ) : (
-              appealList.map(t => (
-                <AppealCard
-                  key={t.id}
-                  ticket={t}
-                  onResolve={handleResolveAppeal}
-                  onViewDetails={ticket => {
-                    setActiveDetailTicket(ticket);
-                    setDetailModalVisible(true);
-                  }}
-                />
-              ))
-            )
-          ) : cdpoActiveTab === 'Pending' ? (
-            pendingCards
-              .filter(t => t.assignedTo === assignFilter)
-              .map(t => (
-                <TicketCardComponent key={t.id} card={t} />
-              ))
-          ) : (
-            pendingCards
-              .filter(c => !c.isOverdue && c.assignedTo === assignFilter)
-              .map(t => (
+          {activeTab === 'Pending' ? (
+            displayedPending.map(card => {
+              const isAppeal = card.status === 'APPEAL_RAISED';
+              return (
                 <TicketCardComponent
-                  key={t.id + '-r'}
-                  card={{ ...t, daysType: 'remaining', isOverdue: false, borderColor: '#e0e0e0' }}
+                  key={card.id}
+                  card={isAppeal ? {
+                    ...card,
+                    isOverdue: true,
+                    daysLabel: 'Appeal Raised',
+                    daysType: 'overdue',
+                    borderColor: '#ffcc80',
+                  } : card}
+                  showDocs={true}
+                  onPress={() => setSelectedTicket({ ...card, isPendingTicket: !isAppeal })}
                 />
-              ))
+              );
+            })
+          ) : (
+            displayedResolved.map(card => (
+              <ResolvedTicketCardComponent
+                key={card.id}
+                card={card}
+                onPress={() => setSelectedTicket(card)}
+              />
+            ))
           )}
         </View>
       </ScrollView>
 
-      {/* ── Inline Sheets ── */}
+      {/* ── Filter Sheets ── */}
+      <DateRangeFilterSheet
+        visible={dateRangeModalVisible}
+        onClose={() => setDateRangeModalVisible(false)}
+        appliedOption={appliedDateOption}
+        appliedFrom={appliedFromDate}
+        appliedTo={appliedToDate}
+        onApply={(opt, from, to) => {
+          setAppliedDateOption(opt);
+          setAppliedFromDate(from);
+          setAppliedToDate(to);
+          setDateRangeModalVisible(false);
+        }}
+      />
+
+      <TypeFilterSheet
+        visible={typeModalVisible}
+        onClose={() => setTypeModalVisible(false)}
+        appliedTypes={appliedTypes}
+        onApply={types => {
+          setAppliedTypes(types);
+          setTypeModalVisible(false);
+        }}
+      />
+
+      <CategoryFilterSheet
+        visible={categoryModalVisible}
+        onClose={() => setCategoryModalVisible(false)}
+        appliedCategories={appliedCategories}
+        onApply={categories => {
+          setAppliedCategories(categories);
+          setCategoryModalVisible(false);
+        }}
+      />
+
+      <StatusFilterSheet
+        visible={statusModalVisible}
+        onClose={() => setStatusModalVisible(false)}
+        appliedStatuses={appliedStatuses}
+        onApply={statuses => {
+          setAppliedStatuses(statuses);
+          setStatusModalVisible(false);
+        }}
+      />
+
+      {/* Dropdown Pick Sheets */}
+      <DropdownPickSheet
+        visible={sectorPickVisible}
+        title="Select Sector"
+        options={SECTOR_OPTIONS}
+        selected={selectedSector}
+        onSelect={val => {
+          setSelectedSector(val);
+          setSelectedAWC('All Centres');
+        }}
+        onClose={() => setSectorPickVisible(false)}
+      />
+
+      <DropdownPickSheet
+        visible={awcPickVisible}
+        title="Select Anganwadi Centre"
+        options={AWC_OPTIONS}
+        selected={selectedAWC}
+        onSelect={setSelectedAWC}
+        onClose={() => setAwcPickVisible(false)}
+      />
+
+      <DropdownPickSheet
+        visible={projectPickVisible}
+        title="Select Project"
+        options={PROJECT_OPTIONS}
+        selected={selectedProject}
+        onSelect={setSelectedProject}
+        onClose={() => setProjectPickVisible(false)}
+      />
+
+      {/* Breakdown Sheets */}
       <PendingBreakdownSheet  visible={pendingBreakdown} onClose={() => setPendingBreakdown(false)} />
       <ResolvedBreakdownSheet   visible={resolvedBreakdown}  onClose={() => setResolvedBreakdown(false)} />
-      <ActionTakenModal
-        visible={actionModalVisible}
-        ticket={activeOverdueTicket}
-        onClose={() => setActionModalVisible(false)}
-      />
-      <AppealResolutionModal
-        visible={appealModalVisible}
-        ticket={activeAppealTicket}
-        onClose={() => setAppealModalVisible(false)}
-        onResolveSubmit={handleResolveSubmit}
-      />
-      <TicketDetailModal
-        visible={detailModalVisible}
-        ticket={activeDetailTicket}
-        onClose={() => setDetailModalVisible(false)}
-      />
+
+      {/* Details Overlay */}
+      {selectedTicket && (
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: 375, zIndex: 999 }}>
+          <TicketDetailsScreen
+            card={selectedTicket}
+            assignedFilter={selectedTicket.assignedTo || 'AWW'}
+            onBack={() => setSelectedTicket(null)}
+            onResolveTicket={handleResolveTicket}
+            isDpoView={true}
+          />
+        </View>
+      )}
     </View>
   );
 }
@@ -1421,7 +1551,7 @@ export default function DPODashboardScreen({ onBack }: { onBack?: () => void } =
 // ─── Screen Styles ────────────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
-  root: { flex: 1, width: '100%', backgroundColor: '#fafafa', overflow: 'hidden' },
+  root: { flex: 1, width: 375, backgroundColor: '#fafafa', overflow: 'hidden' },
 
   // Status bar
   statusBar: { height: 24, backgroundColor: '#1a237e', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16 },
@@ -1433,8 +1563,8 @@ const s = StyleSheet.create({
 
   // Header
   header: { height: 56, backgroundColor: '#1a237e', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, gap: 12 },
-  backBtn: { width: 24, height: 24, justifyContent: 'center', alignItems: 'center' },
-  backIcon: { width: 24, height: 24, tintColor: '#ffffff' },
+  backBtn: { width: 29, height: 24, justifyContent: 'center', alignItems: 'center' },
+  backArrow: { fontSize: 28, color: '#ffffff', lineHeight: 28, fontWeight: '300' },
   headerTitle: { flex: 1, fontFamily: 'Inter', fontWeight: '700', fontSize: 16, color: '#fff', textAlign: 'center' },
   dpoBadge: { backgroundColor: 'rgba(255,255,255,0.22)', borderRadius: 100, paddingHorizontal: 10, paddingVertical: 3 },
   dpoBadgeText: { fontFamily: 'Inter', fontWeight: '700', fontSize: 11, color: '#fff', letterSpacing: 0.5 },
@@ -1487,65 +1617,54 @@ const s = StyleSheet.create({
 
   // Filter chips row
   filterRow: { backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f0f0f0', flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingVertical: 10, flexWrap: 'wrap' },
-  filterChip: { borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 100, paddingHorizontal: 13, paddingVertical: 5 },
+  filterChip: { borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 100, paddingHorizontal: 13, paddingVertical: 5, flexDirection: 'row', alignItems: 'center' },
+  filterChipActive: { borderColor: '#1a237e', backgroundColor: '#e8eaf6' },
+  filterChipOverdueActive: { borderColor: '#d32f2f', backgroundColor: '#ffebee' },
   filterChipTxt: { fontFamily: 'Inter', fontWeight: '400', fontSize: 13, color: '#424242' },
+  filterChipTextActive: { color: '#1a237e', fontWeight: '600' },
+  filterChipClose: { fontSize: 14, fontWeight: '700', color: '#1a237e' },
+  clearAllRow: { paddingHorizontal: 16, paddingVertical: 6, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
+  clearAllText: { color: '#1a237e', fontWeight: '600', fontSize: 12 },
+
+  // Dropdown card styling
+  dropdownWrapper: { paddingHorizontal: 16, paddingVertical: 10, backgroundColor: '#ffffff', borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
+  dropdownCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f5f6ff', borderWidth: 1, borderColor: '#c5cae9', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10 },
+  dropdownDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#1a237e', marginRight: 10 },
+  dropdownTextBlock: { flex: 1 },
+  dropdownLabel: { fontFamily: 'Inter', fontWeight: '600', fontSize: 10, color: '#5c6bc0', letterSpacing: 0.6 },
+  dropdownValue: { fontFamily: 'Inter', fontWeight: '700', fontSize: 14, color: '#1a237e', marginTop: 2 },
+  dropdownChevron: { fontSize: 16, color: '#1a237e', fontWeight: '700' },
 
   // Card list
   scrollView: { flex: 1 },
   scrollContent: { paddingBottom: 32 },
   cardList: { padding: 12, gap: 10 },
 
-  // Common card
-  card: { backgroundColor: '#fff', borderRadius: 10, borderWidth: 1, padding: 16, gap: 8 },
-  overdueCard: { borderColor: '#ffcdd2' },
-  appealCard: { borderColor: '#e0e0e0' },
-
-  cardTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  cardTicketNum: { fontFamily: 'Inter', fontWeight: '400', fontSize: 11, color: '#9e9e9e', lineHeight: 16.5 },
-  overdueBadge: { backgroundColor: '#d32f2f', borderRadius: 100, paddingHorizontal: 10, height: 19, justifyContent: 'center' },
-  overdueBadgeTxt: { fontFamily: 'Inter', fontWeight: '700', fontSize: 10, color: '#ffffff', lineHeight: 15, textTransform: 'uppercase' },
-  appealBadge: { backgroundColor: '#e65100', borderRadius: 100, paddingHorizontal: 10, height: 19, justifyContent: 'center' },
-  appealBadgeTxt: { fontFamily: 'Inter', fontWeight: '700', fontSize: 10, color: '#ffffff', lineHeight: 15, textTransform: 'uppercase' },
-
-  roleChip: { alignSelf: 'flex-start', borderWidth: 1, borderRadius: 4, paddingHorizontal: 8, paddingVertical: 2 },
-  roleChipTxt: { fontFamily: 'Inter', fontWeight: '600', fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.4 },
-
-  cardTitle: { fontFamily: 'Inter', fontWeight: '700', fontSize: 14, color: '#181818', lineHeight: 19.6 },
-  cardDesc: { fontFamily: 'Inter', fontWeight: '400', fontSize: 12, color: '#757575', lineHeight: 18 },
-
-  cardDateRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  cardDate: { fontFamily: 'Inter', fontWeight: '400', fontSize: 12, color: '#5c5c5c' },
-  daysBadge: { height: 24.5, borderRadius: 100, paddingHorizontal: 10, justifyContent: 'center' },
-  daysBadgeTxt: { fontFamily: 'Inter', fontWeight: '600', fontSize: 11, lineHeight: 16.5 },
-
-  appealReasonLabel: { fontFamily: 'Inter', fontWeight: '600', fontSize: 11, color: '#e65100', textTransform: 'uppercase', letterSpacing: 0.4 },
-  appealReasonTxt: { fontFamily: 'Inter', fontWeight: '400', fontSize: 12, color: '#616161', lineHeight: 18 },
-
-  docBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#e8eaf6', borderRadius: 4, paddingHorizontal: 10, paddingVertical: 5, alignSelf: 'flex-start' },
-  docIcon: { width: 13, height: 13, tintColor: '#1a237e' },
-  docTxt: { fontFamily: 'Inter', fontWeight: '500', fontSize: 11, color: '#1a237e' },
-
-  cardByRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  cardByLabel: { fontFamily: 'Inter', fontWeight: '400', fontSize: 12, color: '#9e9e9e' },
-  cardByName: { fontFamily: 'Inter', fontWeight: '500', fontSize: 12, color: '#424242' },
-
-  // CTA Buttons
-  ctaNavy: { backgroundColor: '#1a237e', borderRadius: 10, paddingVertical: 11, alignItems: 'center', marginTop: 4 },
-  ctaNavyTxt: { fontFamily: 'Inter', fontWeight: '700', fontSize: 13, color: '#fff', letterSpacing: 0.3 },
-  ctaGreen: { backgroundColor: '#2e7d32', borderRadius: 10, paddingVertical: 11, alignItems: 'center', marginTop: 4 },
-  ctaGreenTxt: { fontFamily: 'Inter', fontWeight: '700', fontSize: 13, color: '#fff', letterSpacing: 0.3 },
-  resolvedFooter: { borderTopWidth: 1, borderTopColor: '#f0f0f0', paddingTop: 10, marginTop: 4, alignItems: 'center' },
-  resolvedFooterTxt: { fontFamily: 'Inter', fontWeight: '700', fontSize: 12, color: '#2e7d32' },
+  // Closure info banner
+  closureBanner: {
+    backgroundColor: '#fff3e0',
+    borderBottomWidth: 1,
+    borderBottomColor: '#ffe0b2',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  closureBannerText: {
+    fontFamily: 'Inter',
+    fontWeight: '500',
+    fontSize: 12,
+    color: '#e65100',
+    lineHeight: 18,
+  },
 });
 
 // ─── Sheet Styles ─────────────────────────────────────────────────────────────
 
 const ms = StyleSheet.create({
-  overlayWrapper: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%' },
+  overlayWrapper: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: 375, zIndex: 999 },
   backdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)' },
   dismiss: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   sheet: {
-    position: 'absolute', bottom: 0, left: 0, width: '100%',
+    position: 'absolute', bottom: 0, left: 0, width: 375,
     backgroundColor: '#fff', borderTopLeftRadius: 16, borderTopRightRadius: 16, overflow: 'hidden',
   },
 
@@ -1554,7 +1673,7 @@ const ms = StyleSheet.create({
 
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 13, borderBottomWidth: 1, borderBottomColor: '#eee' },
   sheetTitle: { fontFamily: 'Inter', fontWeight: '700', fontSize: 15, color: '#1a237e' },
-  closeIcon: { width: 18, height: 18, tintColor: '#1a237e' },
+  closeIcon: { width: 18, height: 18 },
 
   body: { paddingHorizontal: 16, paddingTop: 16, gap: 12 },
 
@@ -1599,97 +1718,26 @@ const ms = StyleSheet.create({
   pendingTableRoleText: { fontFamily: 'Inter', fontWeight: '400', fontSize: 13, color: '#5c5c5c' },
   pendingTableStatVal: { fontFamily: 'Inter', fontWeight: '700', fontSize: 18, textAlign: 'center' },
 
-  // Action Taken form
-  miniCard: { backgroundColor: '#f5f5f5', borderRadius: 10, borderWidth: 1, borderColor: '#e0e0e0', padding: 12, gap: 4 },
-  miniCardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  miniCardNum: { fontFamily: 'Inter', fontWeight: '400', fontSize: 11, color: '#9e9e9e' },
-  miniCardTitle: { fontFamily: 'Inter', fontWeight: '600', fontSize: 13, color: '#212121', lineHeight: 18 },
-  rolePillSmall: { borderRadius: 4, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 2 },
-  rolePillSmallTxt: { fontFamily: 'Inter', fontWeight: '600', fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.4 },
-  overdueTagRed: { backgroundColor: '#ffebee', borderRadius: 100, paddingHorizontal: 10, paddingVertical: 3 },
-  overdueTagRedTxt: { fontFamily: 'Inter', fontWeight: '600', fontSize: 11, color: '#d32f2f' },
-  overdueTagRedTxtSm: { fontFamily: 'Inter', fontWeight: '600', fontSize: 10, color: '#d32f2f' },
-
-  fieldLabel: { fontFamily: 'Inter', fontWeight: '600', fontSize: 12, color: '#424242', letterSpacing: 0.3, marginBottom: -4 },
-
-  categoryChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  catChip: { borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 100, paddingHorizontal: 12, paddingVertical: 6 },
-  catChipActive: { backgroundColor: '#1a237e', borderColor: '#1a237e' },
-  catChipTxt: { fontFamily: 'Inter', fontWeight: '400', fontSize: 12, color: '#616161' },
-  catChipTxtActive: { fontFamily: 'Inter', fontWeight: '600', color: '#fff' },
-
-  textArea: {
-    borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 10,
-    padding: 12, minHeight: 96,
-    fontFamily: 'Inter', fontSize: 13, color: '#424242', lineHeight: 20,
-    backgroundColor: '#fafafa',
-  },
-
-  attachBtn: { borderWidth: 1.5, borderColor: '#1a237e', borderRadius: 8, borderStyle: 'dashed', paddingVertical: 11, alignItems: 'center' },
-  attachBtnTxt: { fontFamily: 'Inter', fontWeight: '500', fontSize: 13, color: '#1a237e' },
-
-  attachedFileBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 1.5,
-    borderColor: '#bfa8da',
-    borderRadius: 8,
-    borderStyle: 'solid',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    backgroundColor: '#f5f6ff',
-  },
-  attachedFileLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  attachedDocIcon: {
-    width: 18,
-    height: 18,
-    tintColor: '#1a237e',
-  },
-  attachedFileText: {
-    fontFamily: 'Inter',
-    fontWeight: '600',
-    fontSize: 13,
-    color: '#1a237e',
-  },
-  attachedFileSize: {
-    fontFamily: 'Inter',
-    fontWeight: '400',
-    fontSize: 11,
-    color: '#5c6bc0',
-  },
-  removeFileBtn: {
-    padding: 4,
-  },
-  removeFileIcon: {
-    width: 12,
-    height: 12,
-    tintColor: '#d32f2f',
-  },
-
-  submitBtn: { backgroundColor: '#1a237e', borderRadius: 8, paddingVertical: 13, alignItems: 'center' },
-  submitBtnDisabled: { backgroundColor: '#b0bec5' },
-  submitBtnTxt: { fontFamily: 'Inter', fontWeight: '700', fontSize: 14, color: '#fff', letterSpacing: 0.3 },
-
-  successBanner: { backgroundColor: '#e8f5e9', borderRadius: 8, paddingVertical: 13, alignItems: 'center' },
-  successBannerTxt: { fontFamily: 'Inter', fontWeight: '600', fontSize: 13, color: '#2e7d32' },
-
-  // Appeal Resolution
-  appealInfoRow: { gap: 2, marginTop: 4 },
-  appealInfoLabel: { fontFamily: 'Inter', fontWeight: '600', fontSize: 10, color: '#e65100', textTransform: 'uppercase', letterSpacing: 0.4 },
-  appealInfoTxt: { fontFamily: 'Inter', fontWeight: '400', fontSize: 12, color: '#616161', lineHeight: 17 },
-
-  decisionRow: { gap: 10 },
-  decisionOption: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1.5, borderRadius: 8, padding: 14 },
-  radioCircle: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, justifyContent: 'center', alignItems: 'center' },
+  // Filter layouts
+  radioRow: { height: 52, flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 16 },
+  radioCircle: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: '#bdbdbd', justifyContent: 'center', alignItems: 'center' },
   radioDot: { width: 10, height: 10, borderRadius: 5 },
-  decisionLabel: { fontFamily: 'Inter', fontWeight: '700', fontSize: 13 },
-  decisionSub: { fontFamily: 'Inter', fontWeight: '400', fontSize: 11, color: '#9e9e9e', marginTop: 1 },
-  cardDate: { fontFamily: 'Inter', fontWeight: '400', fontSize: 12, color: '#5c5c5c' },
+  radioLabel: { fontFamily: 'Inter', fontSize: 14, color: '#424242' },
+
+  customInputs: { paddingHorizontal: 16, paddingVertical: 10 },
+  inputLabel: { fontFamily: 'Inter', fontWeight: '600', fontSize: 11, color: '#757575', marginBottom: 4 },
+  inputWrapper: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 8, paddingHorizontal: 12, height: 44, backgroundColor: '#fafafa' },
+  textInput: { flex: 1, fontFamily: 'Inter', fontSize: 14, color: '#212121' },
+  inputCalIcon: { width: 20, height: 20, tintColor: '#757575' },
+
+  buttonsContainer: { flexDirection: 'row', paddingHorizontal: 16, gap: 10, marginTop: 14 },
+  applyBtn: { flex: 1, height: 44, backgroundColor: '#1a237e', borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  applyBtnDisabled: { backgroundColor: '#e0e0e0' },
+  applyBtnText: { fontFamily: 'Inter', fontWeight: '700', fontSize: 14, color: '#ffffff' },
+  clearBtn: { flex: 1, height: 44, borderRadius: 8, borderWidth: 1, borderColor: '#1a237e', backgroundColor: '#ffffff', alignItems: 'center', justifyContent: 'center' },
+  clearBtnText: { fontFamily: 'Inter', fontWeight: '700', fontSize: 14, color: '#1a237e' },
+
+  optionsList: { paddingTop: 8 },
 
   // Resolved sub-cards (matches Supervisor view for uniformity)
   subCard: {
@@ -1732,167 +1780,5 @@ const ms = StyleSheet.create({
     fontFamily: 'Inter',
     fontWeight: '700',
     fontSize: 13,
-  },
-  checkboxRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8, marginBottom: 8, paddingHorizontal: 4 },
-  checkboxCircle: { width: 20, height: 20, borderRadius: 4, borderWidth: 2, borderColor: '#bdbdbd', justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' },
-  checkboxCircleChecked: { borderColor: '#2e7d32', backgroundColor: '#e8f5e9' },
-  checkmark: { color: '#2e7d32', fontSize: 12, fontWeight: 'bold', lineHeight: 14 },
-  checkboxLabel: { flex: 1, fontFamily: 'Inter', fontSize: 12, color: '#616161', lineHeight: 16.5 },
-});
-
-const ds = StyleSheet.create({
-  sectionHeader: {
-    marginTop: 14,
-    marginBottom: 8,
-    gap: 6,
-  },
-  sectionHeaderTxt: {
-    fontFamily: 'Inter',
-    fontWeight: '700',
-    fontSize: 11,
-    color: '#1a237e',
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-  },
-  sectionHeaderLine: {
-    height: 1,
-    backgroundColor: '#e0e0e0',
-    width: '100%',
-  },
-  summaryTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 4,
-  },
-  summaryTitle: {
-    fontFamily: 'Inter',
-    fontWeight: '700',
-    fontSize: 20,
-    color: '#1a237e',
-    lineHeight: 30,
-  },
-  summaryBadge: {
-    backgroundColor: '#e8eaf6',
-    borderWidth: 1,
-    borderColor: '#9fa8da',
-    borderRadius: 100,
-    paddingHorizontal: 11,
-    paddingVertical: 5,
-  },
-  summaryBadgeTxt: {
-    fontFamily: 'Inter',
-    fontWeight: '700',
-    fontSize: 10,
-    color: '#1565c0',
-    letterSpacing: 0.4,
-    textTransform: 'uppercase',
-  },
-  infoList: {
-    gap: 12,
-    marginVertical: 4,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-  },
-  infoLabel: {
-    width: 120,
-    fontFamily: 'Inter',
-    fontWeight: '400',
-    fontSize: 12,
-    color: '#9e9e9e',
-    lineHeight: 18,
-  },
-  infoValue: {
-    fontFamily: 'Inter',
-    fontWeight: '500',
-    fontSize: 13,
-    color: '#212121',
-    lineHeight: 19.5,
-  },
-  textBlock: {
-    gap: 10,
-    marginTop: 6,
-  },
-  textBlockLabel: {
-    fontFamily: 'Inter',
-    fontWeight: '600',
-    fontSize: 10,
-    color: '#9e9e9e',
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-  },
-  blueBox: {
-    backgroundColor: '#e8eaf6',
-    borderWidth: 1,
-    borderColor: '#c5cae9',
-    borderRadius: 8,
-    padding: 15,
-  },
-  blueBoxTxt: {
-    fontFamily: 'Inter',
-    fontWeight: '400',
-    fontSize: 13,
-    color: '#1a237e',
-    lineHeight: 21.45,
-  },
-  timeline: {
-    paddingLeft: 8,
-    marginVertical: 8,
-  },
-  timelineRow: {
-    flexDirection: 'row',
-    gap: 16,
-    alignItems: 'flex-start',
-  },
-  timelineLeft: {
-    alignItems: 'center',
-    width: 12,
-    height: 52,
-  },
-  timelineDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-  },
-  timelineLine: {
-    width: 2,
-    flex: 1,
-    backgroundColor: '#e0e0e0',
-    marginTop: 4,
-  },
-  timelineRight: {
-    flex: 1,
-    paddingBottom: 20,
-  },
-  timelineTitle: {
-    fontFamily: 'Inter',
-    fontWeight: '600',
-    fontSize: 13,
-    color: '#212121',
-    lineHeight: 19.5,
-  },
-  timelineDate: {
-    fontFamily: 'Inter',
-    fontWeight: '400',
-    fontSize: 11,
-    color: '#9e9e9e',
-    lineHeight: 16.5,
-    marginTop: 2,
-  },
-  readOnlyBanner: {
-    backgroundColor: '#f5f5f5',
-    borderRadius: 8,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  readOnlyBannerTxt: {
-    fontFamily: 'Inter',
-    fontWeight: '400',
-    fontSize: 13,
-    color: '#757575',
   },
 });
