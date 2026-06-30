@@ -525,6 +525,13 @@ const PendingBreakdownSheet = ({ visible, onClose }: { visible: boolean; onClose
               </View>
             ))}
           </View>
+
+          {/* Help note */}
+          <View style={svModalStyles.helpNote}>
+            <Text style={svModalStyles.helpNoteText}>
+              <Text style={svModalStyles.helpNoteHighlight}>Pending</Text> is the count of tickets still awaiting action. <Text style={svModalStyles.helpNoteHighlight}>Overdue</Text> is the subset that has crossed its resolution deadline (SLA) and needs urgent attention.
+            </Text>
+          </View>
         </View>
         <View style={{ height: 28 }} />
       </Animated.View>
@@ -1232,6 +1239,9 @@ const svModalStyles = StyleSheet.create({
   tableHeaderCell: { fontFamily: 'Inter', fontWeight: '700', fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.6, color: '#757575' },
   tableRoleText: { fontFamily: 'Inter', fontWeight: '400', fontSize: 13, color: '#5c5c5c' },
   tableStatVal: { fontFamily: 'Inter', fontWeight: '700', fontSize: 18, textAlign: 'center' },
+  helpNote: { backgroundColor: '#f5f6fb', borderRadius: 8, borderWidth: 1, borderColor: '#e3e6f5', paddingHorizontal: 12, paddingVertical: 10, marginTop: 12 },
+  helpNoteText: { fontFamily: 'Inter', fontSize: 11, lineHeight: 16, color: '#5c6470' },
+  helpNoteHighlight: { fontWeight: '700', color: '#d32f2f' },
   subCard: { width: '47.5%', borderRadius: 10, borderWidth: 1, padding: 12 },
   subCardLabel: { fontFamily: 'Inter', fontWeight: '700', fontSize: 9, letterSpacing: 0.6, textTransform: 'uppercase', marginBottom: 2 },
   subCardValue: { fontFamily: 'Inter', fontWeight: '700', fontSize: 22, marginBottom: 8 },

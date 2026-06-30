@@ -1852,7 +1852,7 @@ const PendingBreakdownSheet = ({ visible, onClose }: { visible: boolean; onClose
       <TouchableOpacity style={modalStyles.inlineDismiss} activeOpacity={1} onPress={onClose} />
 
       {/* Sheet */}
-      <Animated.View style={[modalStyles.inlineSheet, { transform: [{ translateY: slideAnim }] }]}>
+      <Animated.View style={[modalStyles.inlineSheet, { height: 560, transform: [{ translateY: slideAnim }] }]}>
         {/* Handle */}
         <View style={modalStyles.handleRow}><View style={modalStyles.handle} /></View>
 
@@ -1867,36 +1867,43 @@ const PendingBreakdownSheet = ({ visible, onClose }: { visible: boolean; onClose
         {/* Body */}
         <View style={modalStyles.sheetBody}>
           {/* Total card — blue */}
-          <View style={[modalStyles.totalCard, { backgroundColor: '#e8eaf6' }]}>
-            <Text style={[modalStyles.totalLabel, { color: '#5c67b5' }]}>TOTAL PENDING</Text>
-            <Text style={[modalStyles.totalValue, { color: '#1a237e' }]}>2,057</Text>
+          <View style={[modalStyles.pendingTotalCard, { backgroundColor: '#e8eaf6' }]}>
+            <Text style={[modalStyles.pendingTotalLabel, { color: '#5c67b5' }]}>TOTAL PENDING</Text>
+            <Text style={[modalStyles.pendingTotalValue, { color: '#1a237e' }]}>2,057</Text>
           </View>
 
           {/* Table */}
-          <View style={modalStyles.tableWrapper}>
-            <View style={[modalStyles.tableRow, modalStyles.tableHeaderRow]}>
-              <View style={modalStyles.tableColRole}><Text style={modalStyles.tableHeaderCell}>ROLE</Text></View>
-              <View style={modalStyles.tableColStat}><Text style={[modalStyles.tableHeaderCell, { color: '#e65100' }]}>PENDING</Text></View>
-              <View style={modalStyles.tableColStat}><Text style={[modalStyles.tableHeaderCell, { color: '#d32f2f' }]}>OVERDUE</Text></View>
+          <View style={modalStyles.pendingTableWrapper}>
+            <View style={[modalStyles.pendingTableRow, modalStyles.pendingTableHeaderRow]}>
+              <View style={modalStyles.pendingTableColRole}><Text style={modalStyles.pendingTableHeaderCell}>ROLE</Text></View>
+              <View style={modalStyles.pendingTableColStat}><Text style={[modalStyles.pendingTableHeaderCell, { color: '#e65100' }]}>PENDING</Text></View>
+              <View style={modalStyles.pendingTableColStat}><Text style={[modalStyles.pendingTableHeaderCell, { color: '#d32f2f' }]}>OVERDUE</Text></View>
             </View>
             {rows.map((row, idx) => (
               <View key={row.role} style={[
-                modalStyles.tableRow,
+                modalStyles.pendingTableRow,
                 { height: 58 },
                 idx < rows.length - 1 ? { borderBottomWidth: 1, borderBottomColor: row.isSeparatorLight === false ? '#e0e0e0' : '#f5f5f5' } : {},
                 (row as any).isTotal ? { backgroundColor: '#fafafa' } : {},
               ]}>
-                <View style={modalStyles.tableColRole}>
-                  <Text style={[modalStyles.tableRoleText, (row as any).isTotal ? { fontWeight: '600', color: '#1a237e' } : {}]}>{row.role}</Text>
+                <View style={modalStyles.pendingTableColRole}>
+                  <Text style={[modalStyles.pendingTableRoleText, (row as any).isTotal ? { fontWeight: '600', color: '#1a237e' } : {}]}>{row.role}</Text>
                 </View>
-                <View style={modalStyles.tableColStat}>
-                  <Text style={[modalStyles.tableStatVal, { color: '#e65100' }]}>{row.pending}</Text>
+                <View style={modalStyles.pendingTableColStat}>
+                  <Text style={[modalStyles.pendingTableStatVal, { color: '#e65100' }]}>{row.pending}</Text>
                 </View>
-                <View style={modalStyles.tableColStat}>
-                  <Text style={[modalStyles.tableStatVal, { color: '#d32f2f' }]}>{row.overdue}</Text>
+                <View style={modalStyles.pendingTableColStat}>
+                  <Text style={[modalStyles.pendingTableStatVal, { color: '#d32f2f' }]}>{row.overdue}</Text>
                 </View>
               </View>
             ))}
+          </View>
+
+          {/* Help note */}
+          <View style={modalStyles.helpNote}>
+            <Text style={modalStyles.helpNoteText}>
+              <Text style={modalStyles.helpNoteHighlight}>Pending</Text> is the count of tickets still awaiting action. <Text style={modalStyles.helpNoteHighlight}>Overdue</Text> is the subset that has crossed its resolution deadline (SLA) and needs urgent attention.
+            </Text>
           </View>
         </View>
         <View style={{ height: 28 }} />
@@ -4000,8 +4007,7 @@ const modalStyles = StyleSheet.create({
   resolvedTotalCard: {
     backgroundColor: '#e8f5e9',
     borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -4057,49 +4063,80 @@ const modalStyles = StyleSheet.create({
     lineHeight: 30,
   },
 
-  // ── Resolved sub-cards
+  // ── Pending total card & table (matches Supervisor view for uniformity)
+  pendingTotalCard: { borderRadius: 10, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  pendingTotalLabel: { fontFamily: 'Inter', fontWeight: '700', fontSize: 10, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 2 },
+  pendingTotalValue: { fontFamily: 'Inter', fontWeight: '700', fontSize: 28 },
+  pendingTableWrapper: { marginTop: 16, borderRadius: 10, overflow: 'hidden', borderWidth: 1, borderColor: '#f0f0f0' },
+  pendingTableRow: { flexDirection: 'row', alignItems: 'center' },
+  pendingTableHeaderRow: { height: 40, backgroundColor: '#f5f5f5' },
+  pendingTableColRole: { width: 120, paddingHorizontal: 12 },
+  pendingTableColStat: { flex: 1, alignItems: 'center' },
+  pendingTableHeaderCell: { fontFamily: 'Inter', fontWeight: '700', fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.6, color: '#757575' },
+  pendingTableRoleText: { fontFamily: 'Inter', fontWeight: '400', fontSize: 13, color: '#5c5c5c' },
+  pendingTableStatVal: { fontFamily: 'Inter', fontWeight: '700', fontSize: 18, textAlign: 'center' },
+
+  // ── Help note
+  helpNote: {
+    backgroundColor: '#f5f6fb',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e3e6f5',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginTop: 12,
+  },
+  helpNoteText: {
+    fontFamily: 'Inter',
+    fontSize: 11,
+    lineHeight: 16,
+    color: '#5c6470',
+  },
+  helpNoteHighlight: {
+    fontWeight: '700',
+    color: '#d32f2f',
+  },
+
+  // ── Resolved sub-cards (matches Supervisor view for uniformity)
   subCard: {
-    width: 159,
-    minHeight: 134,
+    width: '47.5%',
     borderRadius: 10,
     borderWidth: 1,
-    paddingHorizontal: 13,
-    paddingVertical: 11,
+    padding: 12,
   },
   subCardLabel: {
     fontFamily: 'Inter',
-    fontWeight: '600',
+    fontWeight: '700',
     fontSize: 9,
-    letterSpacing: 0.5,
+    letterSpacing: 0.6,
     textTransform: 'uppercase',
-    lineHeight: 13.5,
+    marginBottom: 2,
   },
   subCardValue: {
     fontFamily: 'Inter',
     fontWeight: '700',
-    fontSize: 24,
-    lineHeight: 28,
-    marginTop: 4,
+    fontSize: 22,
+    marginBottom: 8,
   },
   subCardDivider: {
     borderTopWidth: 1,
-    marginTop: 8,
-    paddingTop: 7,
-    gap: 3,
+    paddingTop: 8,
+    gap: 4,
   },
   subCardRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
   },
   subCardRowLabel: {
     fontFamily: 'Inter',
     fontWeight: '400',
     fontSize: 11,
-    opacity: 0.8,
+    opacity: 0.75,
   },
   subCardRowVal: {
     fontFamily: 'Inter',
     fontWeight: '700',
-    fontSize: 11,
+    fontSize: 13,
   },
 });

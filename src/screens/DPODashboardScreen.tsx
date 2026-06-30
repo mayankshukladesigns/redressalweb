@@ -581,7 +581,7 @@ const PendingBreakdownSheet = ({ visible, onClose }: { visible: boolean; onClose
     <View pointerEvents={visible ? 'auto' : 'box-none'} style={ms.overlayWrapper}>
       <Animated.View style={[ms.backdrop, { opacity: fadeAnim }]} />
       <TouchableOpacity style={ms.dismiss} activeOpacity={1} onPress={onClose} />
-      <Animated.View style={[ms.sheet, { height: 480, transform: [{ translateY: slideAnim }] }]}>
+      <Animated.View style={[ms.sheet, { height: 545, transform: [{ translateY: slideAnim }] }]}>
         <View style={ms.handleRow}><View style={ms.handle} /></View>
         <View style={ms.titleRow}>
           <Text style={ms.sheetTitle}>Pending Breakdown</Text>
@@ -591,30 +591,37 @@ const PendingBreakdownSheet = ({ visible, onClose }: { visible: boolean; onClose
         </View>
         <View style={ms.body}>
           {/* Total card */}
-          <View style={[ms.totalCard, { backgroundColor: '#e8eaf6' }]}>
-            <Text style={[ms.totalLabel, { color: '#5c67b5' }]}>TOTAL PENDING</Text>
-            <Text style={[ms.totalVal, { color: '#1a237e' }]}>2,057</Text>
+          <View style={[ms.pendingTotalCard, { backgroundColor: '#e8eaf6' }]}>
+            <Text style={[ms.pendingTotalLabel, { color: '#5c67b5' }]}>TOTAL PENDING</Text>
+            <Text style={[ms.pendingTotalValue, { color: '#1a237e' }]}>2,057</Text>
           </View>
           {/* Table */}
-          <View style={ms.table}>
-            <View style={[ms.tRow, ms.tHeaderRow]}>
-              <View style={ms.tColRole}><Text style={ms.tHeaderCell}>ROLE</Text></View>
-              <View style={ms.tColCount}><Text style={[ms.tHeaderCell, { color: '#e65100' }]}>PENDING</Text></View>
-              <View style={ms.tColCount}><Text style={[ms.tHeaderCell, { color: '#d32f2f' }]}>OVERDUE</Text></View>
+          <View style={ms.pendingTableWrapper}>
+            <View style={[ms.pendingTableRow, ms.pendingTableHeaderRow]}>
+              <View style={ms.pendingTableColRole}><Text style={ms.pendingTableHeaderCell}>ROLE</Text></View>
+              <View style={ms.pendingTableColStat}><Text style={[ms.pendingTableHeaderCell, { color: '#e65100' }]}>PENDING</Text></View>
+              <View style={ms.pendingTableColStat}><Text style={[ms.pendingTableHeaderCell, { color: '#d32f2f' }]}>OVERDUE</Text></View>
             </View>
             {rows.map(row => (
-              <View key={row.role} style={[ms.tRow, { height: 52, borderBottomWidth: row.isTotal ? 0 : 1, borderBottomColor: '#f5f5f5' }, row.isTotal ? { backgroundColor: '#fafafa' } : {}]}>
-                <View style={ms.tColRole}>
-                  <Text style={[ms.tRoleText, row.isTotal ? { fontWeight: '600', color: '#1a237e' } : {}]}>{row.role}</Text>
+              <View key={row.role} style={[ms.pendingTableRow, { height: 58, borderBottomWidth: row.isTotal ? 0 : 1, borderBottomColor: '#f5f5f5' }, row.isTotal ? { backgroundColor: '#fafafa' } : {}]}>
+                <View style={ms.pendingTableColRole}>
+                  <Text style={[ms.pendingTableRoleText, row.isTotal ? { fontWeight: '600', color: '#1a237e' } : {}]}>{row.role}</Text>
                 </View>
-                <View style={ms.tColCount}>
-                  <Text style={[ms.tStatVal, { color: '#e65100' }]}>{row.pending}</Text>
+                <View style={ms.pendingTableColStat}>
+                  <Text style={[ms.pendingTableStatVal, { color: '#e65100' }]}>{row.pending}</Text>
                 </View>
-                <View style={ms.tColCount}>
-                  <Text style={[ms.tStatVal, { color: '#d32f2f' }]}>{row.overdue}</Text>
+                <View style={ms.pendingTableColStat}>
+                  <Text style={[ms.pendingTableStatVal, { color: '#d32f2f' }]}>{row.overdue}</Text>
                 </View>
               </View>
             ))}
+          </View>
+
+          {/* Help note */}
+          <View style={ms.helpNote}>
+            <Text style={ms.helpNoteText}>
+              <Text style={ms.helpNoteHighlight}>Pending</Text> is the count of tickets still awaiting action. <Text style={ms.helpNoteHighlight}>Overdue</Text> is the subset that has crossed its resolution deadline (SLA) and needs urgent attention.
+            </Text>
           </View>
         </View>
         <View style={{ height: 28 }} />
@@ -1560,8 +1567,7 @@ const ms = StyleSheet.create({
   resolvedTotalCard: {
     backgroundColor: '#e8f5e9',
     borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -1576,6 +1582,22 @@ const ms = StyleSheet.create({
   tHeaderCell: { fontFamily: 'Inter', fontWeight: '600', fontSize: 10, color: '#9e9e9e', textTransform: 'uppercase', letterSpacing: 0.4 },
   tRoleText: { fontFamily: 'Inter', fontWeight: '400', fontSize: 14, color: '#424242' },
   tStatVal: { fontFamily: 'Inter', fontWeight: '700', fontSize: 22, lineHeight: 28 },
+  helpNote: { backgroundColor: '#f5f6fb', borderRadius: 8, borderWidth: 1, borderColor: '#e3e6f5', paddingHorizontal: 12, paddingVertical: 10, marginTop: 12 },
+  helpNoteText: { fontFamily: 'Inter', fontSize: 11, lineHeight: 16, color: '#5c6470' },
+  helpNoteHighlight: { fontWeight: '700', color: '#d32f2f' },
+
+  // Pending total card & table (matches Supervisor view for uniformity)
+  pendingTotalCard: { borderRadius: 10, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  pendingTotalLabel: { fontFamily: 'Inter', fontWeight: '700', fontSize: 10, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 2 },
+  pendingTotalValue: { fontFamily: 'Inter', fontWeight: '700', fontSize: 28 },
+  pendingTableWrapper: { marginTop: 16, borderRadius: 10, overflow: 'hidden', borderWidth: 1, borderColor: '#f0f0f0' },
+  pendingTableRow: { flexDirection: 'row', alignItems: 'center' },
+  pendingTableHeaderRow: { height: 40, backgroundColor: '#f5f5f5' },
+  pendingTableColRole: { width: 120, paddingHorizontal: 12 },
+  pendingTableColStat: { flex: 1, alignItems: 'center' },
+  pendingTableHeaderCell: { fontFamily: 'Inter', fontWeight: '700', fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.6, color: '#757575' },
+  pendingTableRoleText: { fontFamily: 'Inter', fontWeight: '400', fontSize: 13, color: '#5c5c5c' },
+  pendingTableStatVal: { fontFamily: 'Inter', fontWeight: '700', fontSize: 18, textAlign: 'center' },
 
   // Action Taken form
   miniCard: { backgroundColor: '#f5f5f5', borderRadius: 10, borderWidth: 1, borderColor: '#e0e0e0', padding: 12, gap: 4 },
@@ -1669,50 +1691,47 @@ const ms = StyleSheet.create({
   decisionSub: { fontFamily: 'Inter', fontWeight: '400', fontSize: 11, color: '#9e9e9e', marginTop: 1 },
   cardDate: { fontFamily: 'Inter', fontWeight: '400', fontSize: 12, color: '#5c5c5c' },
 
-  // Resolved sub-cards
+  // Resolved sub-cards (matches Supervisor view for uniformity)
   subCard: {
-    width: 159,
-    minHeight: 134,
+    width: '47.5%',
     borderRadius: 10,
     borderWidth: 1,
-    paddingHorizontal: 13,
-    paddingVertical: 11,
+    padding: 12,
   },
   subCardLabel: {
     fontFamily: 'Inter',
-    fontWeight: '600',
+    fontWeight: '700',
     fontSize: 9,
-    letterSpacing: 0.5,
+    letterSpacing: 0.6,
     textTransform: 'uppercase',
-    lineHeight: 13.5,
+    marginBottom: 2,
   },
   subCardValue: {
     fontFamily: 'Inter',
     fontWeight: '700',
-    fontSize: 24,
-    lineHeight: 28,
-    marginTop: 4,
+    fontSize: 22,
+    marginBottom: 8,
   },
   subCardDivider: {
     borderTopWidth: 1,
-    marginTop: 8,
-    paddingTop: 7,
-    gap: 3,
+    paddingTop: 8,
+    gap: 4,
   },
   subCardRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
   },
   subCardRowLabel: {
     fontFamily: 'Inter',
     fontWeight: '400',
     fontSize: 11,
-    opacity: 0.8,
+    opacity: 0.75,
   },
   subCardRowVal: {
     fontFamily: 'Inter',
     fontWeight: '700',
-    fontSize: 11,
+    fontSize: 13,
   },
   checkboxRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8, marginBottom: 8, paddingHorizontal: 4 },
   checkboxCircle: { width: 20, height: 20, borderRadius: 4, borderWidth: 2, borderColor: '#bdbdbd', justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' },
