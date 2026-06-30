@@ -137,6 +137,7 @@ export default function TicketDetailsScreen({
   onResolveTicket,
   resolveLabel = 'Resolve and Close',
   hideResolveCTA = false,
+  isCdpoView = false,
 }: {
   card: any;
   assignedFilter: AssignedFilter;
@@ -144,6 +145,7 @@ export default function TicketDetailsScreen({
   onResolveTicket?: (ticketId: string, closureNote: string) => void;
   resolveLabel?: string;
   hideResolveCTA?: boolean;
+  isCdpoView?: boolean;
 }) {
   const [currentCard, setCurrentCard] = useState(card);
   const [actionModalVisible, setActionModalVisible] = useState(false);
@@ -159,58 +161,182 @@ export default function TicketDetailsScreen({
   const statusKey = isOverdue ? 'OVERDUE' : ((isPending ? 'PENDING' : currentCard.status) as keyof typeof STATUS_CFG);
   const cfg = STATUS_CFG[statusKey] ?? STATUS_CFG.CLOSED;
 
-  // Construct timeline items dynamically for pending tickets
+  // Construct timeline items dynamically for ALL tickets
   let timelineItems: TimelineItem[] = [];
-  if (isPending) {
-    const assignedLabel = `Assigned to ${assignedFilter}`;
-    const dateSubmitted = currentCard.submittedDate ? currentCard.submittedDate.replace('Submitted: ', '') : '25/06/2025';
-    
-    // Parse date parts
-    const subDateParts = dateSubmitted.split('/');
-    let subDay = 25, subMonth = 6, subYear = 2025;
-    if (subDateParts.length === 3) {
-      subDay = parseInt(subDateParts[0], 10);
-      subMonth = parseInt(subDateParts[1], 10);
-      subYear = parseInt(subDateParts[2], 10);
-    }
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const monthName = months[subMonth - 1] || 'Jun';
-    
-    // Base Assignment
-    timelineItems.push({
-      label: assignedLabel,
-      date: `${subDay < 10 ? '0' + subDay : subDay} ${monthName} ${subYear}, 09:00 AM`,
-      dotColor: '#1a237e'
-    });
+  const assignedRole = currentCard.assignedTo || 'AWW';
+  const dateSubmitted = currentCard.submittedDate 
+    ? currentCard.submittedDate.replace('Submitted: ', '') 
+    : '25/06/2025';
+  
+  // Parse date parts
+  const subDateParts = dateSubmitted.split('/');
+  let subDay = 25, subMonth = 6, subYear = 2025;
+  if (subDateParts.length === 3) {
+    subDay = parseInt(subDateParts[0], 10);
+    subMonth = parseInt(subDateParts[1], 10);
+    subYear = parseInt(subDateParts[2], 10);
+  }
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthName = months[subMonth - 1] || 'Jun';
+  
+  // Base Assignment
+  timelineItems.push({
+    label: `Assigned to ${assignedRole}`,
+    date: `${subDay < 10 ? '0' + subDay : subDay} ${monthName} ${subYear}, 09:00 AM`,
+    dotColor: '#1a237e'
+  });
 
-    // Reminder Sent (if submitted more than a few days ago)
-    const reminderDay = subDay + 2;
+  // Calculate age at the time of resolution/current date
+  const submissionDate = new Date(subYear, subMonth - 1, subDay);
+  const currentDate = new Date(2025, 5, 30); // 30/06/2025
+  const diffTime = currentDate.getTime() - submissionDate.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+  // Reminder Sent (after 7 days)
+  if (diffDays >= 7) {
+    const reminderDayVal = new Date(subYear, subMonth - 1, subDay + 7);
+    const reminderDay = reminderDayVal.getDate();
+    const reminderMonth = months[reminderDayVal.getMonth()];
+    const reminderYear = reminderDayVal.getFullYear();
     timelineItems.push({
-      label: 'Reminder Sent to AWC',
-      date: `${reminderDay < 10 ? '0' + reminderDay : reminderDay} ${monthName} ${subYear}, 10:30 AM`,
+      label: `Reminder Sent to ${assignedRole}`,
+      date: `${reminderDay < 10 ? '0' + reminderDay : reminderDay} ${reminderMonth} ${reminderYear}, 10:30 AM`,
       dotColor: '#f57f17'
     });
+  }
 
-    // Overdue event
-    if (isOverdue) {
+  // DPO Escalation (after 14 days)
+  if (diffDays >= 14) {
+    const escalationDayVal = new Date(subYear, subMonth - 1, subDay + 14);
+    const escalationDay = escalationDayVal.getDate();
+    const escalationMonth = months[escalationDayVal.getMonth()];
+    const escalationYear = escalationDayVal.getFullYear();
+    timelineItems.push({
+      label: 'Ticket Escalated to DPO (View Only)',
+      date: `${escalationDay < 10 ? '0' + escalationDay : escalationDay} ${escalationMonth} ${escalationYear}, 02:00 PM`,
+      dotColor: '#e65100'
+    });
+  }
+
+  // Ticket Overdue (after 21 days)
+  if (diffDays >= 21) {
+    const overdueDayVal = new Date(subYear, subMonth - 1, subDay + 21);
+    const overdueDay = overdueDayVal.getDate();
+    const overdueMonth = months[overdueDayVal.getMonth()];
+    const overdueYear = overdueDayVal.getFullYear();
+    timelineItems.push({
+      label: 'Ticket Overdue',
+      date: `${overdueDay < 10 ? '0' + overdueDay : overdueDay} ${overdueMonth} ${overdueYear}, 05:00 PM`,
+      dotColor: '#d32f2f'
+    });
+  }
+
+  // Add resolution & closure steps if not pending
+  if (!isPending) {
+    const resolvedDayVal = new Date(subYear, subMonth - 1, subDay + Math.min(diffDays, 9));
+    const resDay = resolvedDayVal.getDate();
+    const resMonth = months[resolvedDayVal.getMonth()];
+    const resYear = resolvedDayVal.getFullYear();
+
+    const closedDayVal = new Date(subYear, subMonth - 1, subDay + Math.min(diffDays, 12));
+    const clsDay = closedDayVal.getDate();
+    const clsMonth = months[closedDayVal.getMonth()];
+    const clsYear = closedDayVal.getFullYear();
+
+    const appealDayVal = new Date(subYear, subMonth - 1, subDay + Math.min(diffDays, 14));
+    const appDay = appealDayVal.getDate();
+    const appMonth = months[appealDayVal.getMonth()];
+    const appYear = appealDayVal.getFullYear();
+
+    if (currentCard.status === 'CLOSURE_PENDING') {
       timelineItems.push({
-        label: `Ticket Overdue — Escalated to CDPO`,
-        date: `${subDay + 5 < 10 ? '0' + (subDay + 5) : subDay + 5} ${monthName} ${subYear}, 05:00 PM`,
-        dotColor: '#d32f2f'
+        label: `Ticket Resolved by ${assignedRole}`,
+        date: `${resDay < 10 ? '0' + resDay : resDay} ${resMonth} ${resYear}, 03:00 PM`,
+        dotColor: '#2e7d32'
+      });
+    } else if (currentCard.status === 'CLOSED') {
+      if (assignedRole === 'CDPO') {
+        timelineItems.push({
+          label: 'Ticket Resolved & Closed by CDPO',
+          date: `${clsDay < 10 ? '0' + clsDay : clsDay} ${clsMonth} ${clsYear}, 10:00 AM`,
+          dotColor: '#2e7d32'
+        });
+      } else {
+        timelineItems.push({
+          label: `Ticket Resolved by ${assignedRole}`,
+          date: `${resDay < 10 ? '0' + resDay : resDay} ${resMonth} ${resYear}, 03:00 PM`,
+          dotColor: '#2e7d32'
+        });
+        timelineItems.push({
+          label: 'Ticket Closed by CDPO',
+          date: `${clsDay < 10 ? '0' + clsDay : clsDay} ${clsMonth} ${clsYear}, 10:00 AM`,
+          dotColor: '#2e7d32'
+        });
+      }
+    } else if (currentCard.status === 'APPEAL_RAISED') {
+      if (assignedRole === 'CDPO') {
+        timelineItems.push({
+          label: 'Ticket Resolved & Closed by CDPO',
+          date: `${clsDay < 10 ? '0' + clsDay : clsDay} ${clsMonth} ${clsYear}, 10:00 AM`,
+          dotColor: '#2e7d32'
+        });
+      } else {
+        timelineItems.push({
+          label: `Ticket Resolved by ${assignedRole}`,
+          date: `${resDay < 10 ? '0' + resDay : resDay} ${resMonth} ${resYear}, 03:00 PM`,
+          dotColor: '#2e7d32'
+        });
+        timelineItems.push({
+          label: 'Ticket Closed by CDPO',
+          date: `${clsDay < 10 ? '0' + clsDay : clsDay} ${clsMonth} ${clsYear}, 10:00 AM`,
+          dotColor: '#2e7d32'
+        });
+      }
+      timelineItems.push({
+        label: 'Appeal Raised by Beneficiary',
+        date: `${appDay < 10 ? '0' + appDay : appDay} ${appMonth} ${appYear}, 02:00 PM`,
+        dotColor: '#f57f17'
+      });
+    } else if (currentCard.status === 'APPEAL_RESOLVED') {
+      if (assignedRole === 'CDPO') {
+        timelineItems.push({
+          label: 'Ticket Resolved & Closed by CDPO',
+          date: `${clsDay < 10 ? '0' + clsDay : clsDay} ${clsMonth} ${clsYear}, 10:00 AM`,
+          dotColor: '#2e7d32'
+        });
+      } else {
+        timelineItems.push({
+          label: `Ticket Resolved by ${assignedRole}`,
+          date: `${resDay < 10 ? '0' + resDay : resDay} ${resMonth} ${resYear}, 03:00 PM`,
+          dotColor: '#2e7d32'
+        });
+        timelineItems.push({
+          label: 'Ticket Closed by CDPO',
+          date: `${clsDay < 10 ? '0' + clsDay : clsDay} ${clsMonth} ${clsYear}, 10:00 AM`,
+          dotColor: '#2e7d32'
+        });
+      }
+      timelineItems.push({
+        label: 'Appeal Raised by Beneficiary',
+        date: `${appDay < 10 ? '0' + appDay : appDay} ${appMonth} ${appYear}, 02:00 PM`,
+        dotColor: '#f57f17'
+      });
+      timelineItems.push({
+        label: 'Appeal Resolved by DPO',
+        date: `${appDay < 10 ? '0' + (appDay + 5) : (appDay + 5)} ${appMonth} ${appYear}, 11:00 AM`,
+        dotColor: '#1a237e'
       });
     }
-    
-    // Reverse so latest is first
-    timelineItems.reverse();
-  } else {
-    timelineItems = TIMELINE[currentCard.status as keyof typeof TIMELINE] ?? [];
   }
+
+  // Reverse so latest is first
+  timelineItems.reverse();
 
   const showDpoSection = !isPending && (currentCard.status === 'APPEAL_RAISED' || currentCard.status === 'APPEAL_RESOLVED');
   const showCloseButton =
     !isPending &&
     currentCard.status === 'CLOSURE_PENDING' &&
-    (assignedFilter === 'CDPO' || assignedFilter === 'Supervisor');
+    (isCdpoView || assignedFilter === 'CDPO');
 
   const ticketId = currentCard.ticketNumber.replace('Ticket# ', '#').replace(' ', '');
 
@@ -299,8 +425,8 @@ export default function TicketDetailsScreen({
           ))}
         </View>
 
-        {/* Supporting Documents (if documentsCount > 0 or documents is present) */}
-        {(currentCard.documentsCount > 0 || currentCard.documents) && (
+        {/* Supporting Documents (if documentsCount > 0 or documents is present, and only for Corruption/Urgent) */}
+        {(currentCard.complaintType === 'Corruption' || currentCard.complaintType === 'Urgent') && (currentCard.documentsCount > 0 || currentCard.documents) && (
           <>
             <SectionHeader title="Supporting Documents" />
             <View style={dtStyles.docsSection}>
@@ -366,16 +492,12 @@ export default function TicketDetailsScreen({
             style={dtStyles.closeBtn}
             activeOpacity={0.85}
             onPress={() => {
-              if (isPending) {
-                setActionModalVisible(true);
-              } else {
-                onBack();
-              }
+              setActionModalVisible(true);
             }}
           >
             <Text style={dtStyles.closeBtnText}>
               {isPending
-                ? resolveLabel
+                ? (resolveLabel || 'Resolve and Close')
                 : 'Close Ticket'}
             </Text>
           </TouchableOpacity>
@@ -385,6 +507,8 @@ export default function TicketDetailsScreen({
       {/* Action Taken Modal */}
       <ActionTakenModal
         visible={actionModalVisible}
+        title={isPending ? "Resolve & Close Ticket" : "Close Ticket"}
+        buttonText={isPending ? "Resolve & Close Ticket" : "Close Ticket"}
         onClose={() => setActionModalVisible(false)}
         onSubmit={(note) => {
           if (onResolveTicket) {
@@ -752,10 +876,14 @@ const dtStyles = StyleSheet.create({
 
 const ActionTakenModal = ({
   visible,
+  title = "Resolve & Close Ticket",
+  buttonText = "Resolve & Close Ticket",
   onClose,
   onSubmit,
 }: {
   visible: boolean;
+  title?: string;
+  buttonText?: string;
   onClose: () => void;
   onSubmit: (note: string) => void;
 }) => {
@@ -772,7 +900,7 @@ const ActionTakenModal = ({
 
   if (!mounted) return null;
 
-  const isValid = closureNote.trim().length > 0 && confirmClosed;
+  const isValid = closureNote.trim().length > 0;
 
   return (
     <View pointerEvents={visible ? 'auto' : 'box-none'} style={sheetStyles.inlineOverlayWrapper}>
@@ -782,7 +910,7 @@ const ActionTakenModal = ({
       <Animated.View
         style={[
           sheetStyles.inlineSheet,
-          { height: 420, transform: [{ translateY: slideAnim }] },
+          { height: 350, transform: [{ translateY: slideAnim }] },
         ]}
       >
         {/* Handle */}
@@ -792,14 +920,14 @@ const ActionTakenModal = ({
 
         {/* Title */}
         <View style={sheetStyles.titleRow}>
-          <Text style={sheetStyles.sheetTitle}>Resolve & Close Ticket</Text>
+          <Text style={sheetStyles.sheetTitle}>{title}</Text>
         </View>
 
         {/* Body */}
         <View style={sheetStyles.body}>
           {/* Label */}
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-            <Text style={sheetStyles.label}>Closure Note</Text>
+            <Text style={sheetStyles.label}>Action Taken</Text>
             <Text style={{ color: '#d32f2f', marginLeft: 3 }}>*</Text>
           </View>
 
@@ -817,31 +945,6 @@ const ActionTakenModal = ({
             />
             <Text style={sheetStyles.counter}>{closureNote.length} / 250</Text>
           </View>
-
-          {/* Checkbox Row */}
-          <TouchableOpacity
-            style={sheetStyles.checkboxRow}
-            activeOpacity={0.8}
-            onPress={() => setConfirmClosed(prev => !prev)}
-          >
-            <View
-              style={[
-                sheetStyles.checkbox,
-                confirmClosed && { backgroundColor: '#1a237e', borderColor: '#1a237e' },
-              ]}
-            >
-              {confirmClosed && (
-                <Image
-                  source={{ uri: 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/check.svg' }}
-                  style={sheetStyles.checkIcon}
-                />
-              )}
-            </View>
-            <Text style={sheetStyles.checkboxText}>
-              I confirm the action has been taken and the ticket can be permanently closed.{' '}
-              <Text style={{ color: '#d32f2f' }}>*</Text>
-            </Text>
-          </TouchableOpacity>
         </View>
 
         {/* Footer Buttons */}
@@ -852,7 +955,7 @@ const ActionTakenModal = ({
             onPress={() => onSubmit(closureNote)}
             activeOpacity={0.7}
           >
-            <Text style={sheetStyles.applyBtnText}>Mark as Closed</Text>
+            <Text style={sheetStyles.applyBtnText}>{buttonText}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={sheetStyles.clearBtn} onPress={onClose} activeOpacity={0.7}>

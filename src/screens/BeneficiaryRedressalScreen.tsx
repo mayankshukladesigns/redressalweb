@@ -54,6 +54,8 @@ export interface ResolvedTicketCard {
   sector: string;
   dpoActionTaken?: string;
   assignedTo?: AssignedFilter;
+  complaintType?: 'Corruption' | 'Urgent' | 'Others';
+  submittedDate?: string;
 }
 
 export interface TicketCard {
@@ -100,7 +102,7 @@ export const pendingCards: TicketCard[] = [
     daysLabel: '5 Days Remaining',
     daysType: 'remaining',
     awcName: 'Anganwadi Centre 1',
-    documentsCount: 1,
+    documentsCount: 0,
     isOverdue: false,
     borderColor: '#e0e0e0',
     complaintType: 'Others',
@@ -119,7 +121,7 @@ export const pendingCards: TicketCard[] = [
     ticketNumber: 'Ticket# 787868 898939',
     beneficiaryName: 'Pooja Sharma',
     beneficiaryType: 'Lactating Mother',
-    topic: 'THR/HCM',
+    topic: 'Corruption',
     description: 'Supplementary Nutrition not received for consecutive months despite eligibility',
     submittedDate: 'Submitted: 26/06/2025',
     daysLabel: '1 Day Remaining',
@@ -129,7 +131,7 @@ export const pendingCards: TicketCard[] = [
     isOverdue: false,
     borderColor: '#e0e0e0',
     complaintType: 'Corruption',
-    helpTopic: 'Supplementary Nutrition',
+    helpTopic: 'Corruption',
     subTopic: 'Take Home Ration',
     beneficiaryMobile: '98765 00124',
     awcCode: 'AWC-103',
@@ -143,7 +145,7 @@ export const pendingCards: TicketCard[] = [
     ticketNumber: 'Ticket# 787868 898940',
     beneficiaryName: 'Anita Yadav',
     beneficiaryType: 'Children (6m-3y)',
-    topic: 'Aadhar',
+    topic: 'Urgent',
     description: 'Aadhar Verification pending for child enrollment and benefit linkage',
     submittedDate: 'Submitted: 15/06/2025',
     daysLabel: 'Overdue by 3 Days',
@@ -153,23 +155,23 @@ export const pendingCards: TicketCard[] = [
     isOverdue: true,
     borderColor: '#ffcdd2',
     complaintType: 'Urgent',
-    helpTopic: 'Identity Linkage',
+    helpTopic: 'Urgent',
     subTopic: 'Aadhar Verification',
     beneficiaryMobile: '98765 00125',
     awcCode: 'AWC-106',
     district: 'Jaipur',
     project: 'Sanganer',
     sector: 'Sector 2',
-    assignedTo: 'Supervisor',
+    assignedTo: 'CDPO',
   },
   {
     id: '4',
     ticketNumber: 'Ticket# 787868 898941',
     beneficiaryName: 'Meena Kumari',
     beneficiaryType: 'Adolescent Girl',
-    topic: 'Kishori Shakti Yojana',
+    topic: 'Urgent',
     description: 'Unable to access KSY vocational training benefits despite completing registration last quarter',
-    submittedDate: 'Submitted: 10/06/2025',
+    submittedDate: 'Submitted: 05/06/2025',
     daysLabel: 'Overdue by 8 Days',
     daysType: 'overdue',
     awcName: 'Anganwadi Centre 2',
@@ -177,14 +179,14 @@ export const pendingCards: TicketCard[] = [
     isOverdue: true,
     borderColor: '#ffcdd2',
     complaintType: 'Urgent',
-    helpTopic: 'Kishori Shakti Yojana',
+    helpTopic: 'Urgent',
     subTopic: 'Vocational Training Access',
     beneficiaryMobile: '98765 00126',
     awcCode: 'AWC-102',
     district: 'Jaipur',
     project: 'Sanganer',
     sector: 'Sector 4',
-    assignedTo: 'AWW',
+    assignedTo: 'CDPO',
   },
   {
     id: '5',
@@ -197,7 +199,7 @@ export const pendingCards: TicketCard[] = [
     daysLabel: '10 Days Remaining',
     daysType: 'remaining',
     awcName: 'Anganwadi Centre 4',
-    documentsCount: 1,
+    documentsCount: 0,
     isOverdue: false,
     borderColor: '#e0e0e0',
     complaintType: 'Others',
@@ -239,7 +241,7 @@ export const pendingCards: TicketCard[] = [
     ticketNumber: 'Ticket# 787868 898944',
     beneficiaryName: 'Rekha Vyas',
     beneficiaryType: 'Lactating Mother',
-    topic: 'Maternity Benefit',
+    topic: 'Urgent',
     description: 'PMMVY second installment delayed due to verification issue',
     submittedDate: 'Submitted: 18/06/2025',
     daysLabel: 'Overdue by 2 Days',
@@ -249,7 +251,7 @@ export const pendingCards: TicketCard[] = [
     isOverdue: true,
     borderColor: '#ffcdd2',
     complaintType: 'Urgent',
-    helpTopic: 'Maternity Benefit',
+    helpTopic: 'Urgent',
     subTopic: 'PMMVY Delayed Payment',
     beneficiaryMobile: '98765 00129',
     awcCode: 'AWC-104',
@@ -257,6 +259,390 @@ export const pendingCards: TicketCard[] = [
     project: 'Sanganer',
     sector: 'Sector 1',
     assignedTo: 'CDPO',
+  },
+  {
+    id: '8',
+    ticketNumber: 'Ticket# 787868 898945',
+    beneficiaryName: 'Priyanka Sen',
+    beneficiaryType: 'Pregnant Woman',
+    topic: 'Corruption',
+    description: 'Anganwadi supervisor demanding bribes to release Supplementary Nutrition',
+    submittedDate: 'Submitted: 28/06/2025',
+    daysLabel: '7 Days Remaining',
+    daysType: 'remaining',
+    awcName: 'Anganwadi Centre 2',
+    documentsCount: 1,
+    isOverdue: false,
+    borderColor: '#e0e0e0',
+    complaintType: 'Corruption',
+    helpTopic: 'Corruption',
+    subTopic: 'Corruption / Bribe',
+    beneficiaryMobile: '98765 00130',
+    awcCode: 'AWC-102',
+    district: 'Jaipur',
+    project: 'Sanganer',
+    sector: 'Sector 4',
+    assignedTo: 'CDPO',
+  },
+  {
+    id: '9',
+    ticketNumber: 'Ticket# 787868 898946',
+    beneficiaryName: 'Kavita Sharma',
+    beneficiaryType: 'Lactating Mother',
+    topic: 'Urgent',
+    description: 'Critical referral services unavailable at sector health center',
+    submittedDate: 'Submitted: 14/06/2025',
+    daysLabel: 'Overdue by 2 Days',
+    daysType: 'overdue',
+    awcName: 'Anganwadi Centre 5',
+    documentsCount: 1,
+    isOverdue: true,
+    borderColor: '#ffcdd2',
+    complaintType: 'Urgent',
+    helpTopic: 'Urgent',
+    subTopic: 'Emergency Service',
+    beneficiaryMobile: '98765 00131',
+    awcCode: 'AWC-105',
+    district: 'Jaipur',
+    project: 'Sanganer',
+    sector: 'Sector 2',
+    assignedTo: 'CDPO',
+  },
+  {
+    id: 'p10',
+    ticketNumber: 'Ticket# 787868 898950',
+    beneficiaryName: 'Sunita Bai',
+    beneficiaryType: 'Lactating Mother',
+    topic: 'Growth Monitoring',
+    description: 'Growth monitoring register entries not shared with mother',
+    submittedDate: 'Submitted: 29/06/2025',
+    daysLabel: '13 Days Remaining',
+    daysType: 'remaining',
+    awcName: 'Anganwadi Centre 1',
+    documentsCount: 0,
+    isOverdue: false,
+    borderColor: '#e0e0e0',
+    complaintType: 'Others',
+    helpTopic: 'Growth Monitoring',
+    subTopic: 'Weight Recording',
+    beneficiaryMobile: '98765 00210',
+    awcCode: 'AWC-101',
+    district: 'Jaipur',
+    project: 'Sanganer',
+    sector: 'Sector 1',
+    assignedTo: 'CDPO',
+  },
+  {
+    id: 'p11',
+    ticketNumber: 'Ticket# 787868 898951',
+    beneficiaryName: 'Rajni Devi',
+    beneficiaryType: 'Pregnant Woman',
+    topic: 'Supplementary Nutrition',
+    description: 'Quality issues in Supplementary Nutrition packet delivered this month',
+    submittedDate: 'Submitted: 27/06/2025',
+    daysLabel: '11 Days Remaining',
+    daysType: 'remaining',
+    awcName: 'Anganwadi Centre 2',
+    documentsCount: 0,
+    isOverdue: false,
+    borderColor: '#e0e0e0',
+    complaintType: 'Others',
+    helpTopic: 'Supplementary Nutrition',
+    subTopic: 'Take Home Ration',
+    beneficiaryMobile: '98765 00211',
+    awcCode: 'AWC-102',
+    district: 'Jaipur',
+    project: 'Sanganer',
+    sector: 'Sector 4',
+    assignedTo: 'CDPO',
+  },
+  {
+    id: 'p12',
+    ticketNumber: 'Ticket# 787868 898952',
+    beneficiaryName: 'Preeti Sharma',
+    beneficiaryType: 'Children (6m-3y)',
+    topic: 'Urgent',
+    description: 'Immediate replacement of spoiled THR packets required for the sector',
+    submittedDate: 'Submitted: 23/06/2025',
+    daysLabel: '7 Days Remaining',
+    daysType: 'remaining',
+    awcName: 'Anganwadi Centre 3',
+    documentsCount: 1,
+    isOverdue: false,
+    borderColor: '#e0e0e0',
+    complaintType: 'Urgent',
+    helpTopic: 'Urgent',
+    subTopic: 'Emergency Service',
+    beneficiaryMobile: '98765 00212',
+    awcCode: 'AWC-103',
+    district: 'Jaipur',
+    project: 'Sanganer',
+    sector: 'Sector 3',
+    assignedTo: 'CDPO',
+  },
+  {
+    id: 'p13',
+    ticketNumber: 'Ticket# 787868 898953',
+    beneficiaryName: 'Kajal Gupta',
+    beneficiaryType: 'Children (3-6y)',
+    topic: 'Corruption',
+    description: 'THR supplies being sold in local market by local operator',
+    submittedDate: 'Submitted: 21/06/2025',
+    daysLabel: '5 Days Remaining',
+    daysType: 'remaining',
+    awcName: 'Anganwadi Centre 4',
+    documentsCount: 1,
+    isOverdue: false,
+    borderColor: '#e0e0e0',
+    complaintType: 'Corruption',
+    helpTopic: 'Corruption',
+    subTopic: 'THR Misappropriation',
+    beneficiaryMobile: '98765 00213',
+    awcCode: 'AWC-104',
+    district: 'Jaipur',
+    project: 'Sanganer',
+    sector: 'Sector 1',
+    assignedTo: 'CDPO',
+  },
+  {
+    id: 'p14',
+    ticketNumber: 'Ticket# 787868 898954',
+    beneficiaryName: 'Anjali Verma',
+    beneficiaryType: 'Lactating Mother',
+    topic: 'Immunization',
+    description: 'Pending vaccination schedule updates in the Poshan Tracker system',
+    submittedDate: 'Submitted: 16/06/2025',
+    daysLabel: '0 Days Remaining',
+    daysType: 'remaining',
+    awcName: 'Anganwadi Centre 5',
+    documentsCount: 0,
+    isOverdue: false,
+    borderColor: '#e0e0e0',
+    complaintType: 'Others',
+    helpTopic: 'Immunisation Pending',
+    subTopic: 'System Update',
+    beneficiaryMobile: '98765 00214',
+    awcCode: 'AWC-105',
+    district: 'Jaipur',
+    project: 'Sanganer',
+    sector: 'Sector 2',
+    assignedTo: 'CDPO',
+  },
+  {
+    id: 'p15',
+    ticketNumber: 'Ticket# 787868 898955',
+    beneficiaryName: 'Kusum Lata',
+    beneficiaryType: 'Pregnant Woman',
+    topic: 'Urgent',
+    description: 'Critical beneficiary requires immediate health referral documents from AWC',
+    submittedDate: 'Submitted: 14/06/2025',
+    daysLabel: 'Overdue by 2 Days',
+    daysType: 'overdue',
+    awcName: 'Anganwadi Centre 6',
+    documentsCount: 1,
+    isOverdue: true,
+    borderColor: '#ffcdd2',
+    complaintType: 'Urgent',
+    helpTopic: 'Urgent',
+    subTopic: 'Emergency Service',
+    beneficiaryMobile: '98765 00215',
+    awcCode: 'AWC-106',
+    district: 'Jaipur',
+    project: 'Sanganer',
+    sector: 'Sector 2',
+    assignedTo: 'CDPO',
+  },
+  {
+    id: 'p16',
+    ticketNumber: 'Ticket# 787868 898956',
+    beneficiaryName: 'Nisha Soni',
+    beneficiaryType: 'Lactating Mother',
+    topic: 'Maternity Benefit',
+    description: 'Maternity benefits installment delayed at treasury level',
+    submittedDate: 'Submitted: 09/06/2025',
+    daysLabel: 'Overdue by 7 Days',
+    daysType: 'overdue',
+    awcName: 'Anganwadi Centre 1',
+    documentsCount: 0,
+    isOverdue: true,
+    borderColor: '#ffcdd2',
+    complaintType: 'Others',
+    helpTopic: 'Maternity Benefit',
+    subTopic: 'Treasury Delay',
+    beneficiaryMobile: '98765 00216',
+    awcCode: 'AWC-101',
+    district: 'Jaipur',
+    project: 'Sanganer',
+    sector: 'Sector 1',
+    assignedTo: 'CDPO',
+  },
+  {
+    id: 'p17',
+    ticketNumber: 'Ticket# 787868 898957',
+    beneficiaryName: 'Suman Choudhary',
+    beneficiaryType: 'Pregnant Woman',
+    topic: 'Corruption',
+    description: 'Officer demanding commission for approving registration form',
+    submittedDate: 'Submitted: 05/06/2025',
+    daysLabel: 'Overdue by 11 Days',
+    daysType: 'overdue',
+    awcName: 'Anganwadi Centre 2',
+    documentsCount: 1,
+    isOverdue: true,
+    borderColor: '#ffcdd2',
+    complaintType: 'Corruption',
+    helpTopic: 'Corruption',
+    subTopic: 'Bribe Allegation',
+    beneficiaryMobile: '98765 00217',
+    awcCode: 'AWC-102',
+    district: 'Jaipur',
+    project: 'Sanganer',
+    sector: 'Sector 4',
+    assignedTo: 'CDPO',
+  },
+  {
+    id: 'p18',
+    ticketNumber: 'Ticket# 787868 898958',
+    beneficiaryName: 'Renu Bala',
+    beneficiaryType: 'Children (3-6y)',
+    topic: 'Growth Monitoring',
+    description: 'poshan tracking device is faulty and weights cannot be logged',
+    submittedDate: 'Submitted: 02/06/2025',
+    daysLabel: 'Overdue by 14 Days',
+    daysType: 'overdue',
+    awcName: 'Anganwadi Centre 3',
+    documentsCount: 0,
+    isOverdue: true,
+    borderColor: '#ffcdd2',
+    complaintType: 'Others',
+    helpTopic: 'Growth Monitoring',
+    subTopic: 'Device Failure',
+    beneficiaryMobile: '98765 00218',
+    awcCode: 'AWC-103',
+    district: 'Jaipur',
+    project: 'Sanganer',
+    sector: 'Sector 3',
+    assignedTo: 'CDPO',
+  },
+  {
+    id: 'p19',
+    ticketNumber: 'Ticket# 787868 898959',
+    beneficiaryName: 'Guddi Devi',
+    beneficiaryType: 'Pregnant Woman',
+    topic: 'Urgent',
+    description: 'Medical referral records misplaced by Anganwadi helper',
+    submittedDate: 'Submitted: 28/05/2025',
+    daysLabel: 'Overdue by 19 Days',
+    daysType: 'overdue',
+    awcName: 'Anganwadi Centre 4',
+    documentsCount: 1,
+    isOverdue: true,
+    borderColor: '#ffcdd2',
+    complaintType: 'Urgent',
+    helpTopic: 'Urgent',
+    subTopic: 'Emergency Service',
+    beneficiaryMobile: '98765 00219',
+    awcCode: 'AWC-104',
+    district: 'Jaipur',
+    project: 'Sanganer',
+    sector: 'Sector 1',
+    assignedTo: 'CDPO',
+  },
+  {
+    id: 'p20',
+    ticketNumber: 'Ticket# 787868 898970',
+    beneficiaryName: 'Raveena Tandon',
+    beneficiaryType: 'Pregnant Woman',
+    topic: 'Growth Monitoring',
+    description: 'Growth records are not being updated regularly.',
+    submittedDate: 'Submitted: 28/06/2025',
+    daysLabel: '12 Days Remaining',
+    daysType: 'remaining',
+    awcName: 'Anganwadi Centre 1',
+    documentsCount: 0,
+    isOverdue: false,
+    borderColor: '#e0e0e0',
+    complaintType: 'Others',
+    helpTopic: 'Growth Monitoring',
+    subTopic: 'Growth Recording',
+    beneficiaryMobile: '98765 00410',
+    awcCode: 'AWC-101',
+    district: 'Jaipur',
+    project: 'Sanganer',
+    sector: 'Sector 1',
+    assignedTo: 'Supervisor',
+  },
+  {
+    id: 'p21',
+    ticketNumber: 'Ticket# 787868 898971',
+    beneficiaryName: 'Madhuri Dixit',
+    beneficiaryType: 'Lactating Mother',
+    topic: 'Supplementary Nutrition',
+    description: 'Take-home ration packets were short by 1kg.',
+    submittedDate: 'Submitted: 20/06/2025',
+    daysLabel: '4 Days Remaining',
+    daysType: 'remaining',
+    awcName: 'Anganwadi Centre 2',
+    documentsCount: 0,
+    isOverdue: false,
+    borderColor: '#e0e0e0',
+    complaintType: 'Others',
+    helpTopic: 'Supplementary Nutrition',
+    subTopic: 'Take Home Ration',
+    beneficiaryMobile: '98765 00411',
+    awcCode: 'AWC-102',
+    district: 'Jaipur',
+    project: 'Sanganer',
+    sector: 'Sector 4',
+    assignedTo: 'AWW',
+  },
+  {
+    id: 'p22',
+    ticketNumber: 'Ticket# 787868 898972',
+    beneficiaryName: 'Juhi Chawla',
+    beneficiaryType: 'Children (3-6y)',
+    topic: 'Immunization',
+    description: 'AWC closed early on scheduled vaccination day.',
+    submittedDate: 'Submitted: 15/06/2025',
+    daysLabel: 'Overdue by 1 Day',
+    daysType: 'overdue',
+    awcName: 'Anganwadi Centre 3',
+    documentsCount: 0,
+    isOverdue: true,
+    borderColor: '#ffcdd2',
+    complaintType: 'Others',
+    helpTopic: 'Immunisation Pending',
+    subTopic: 'AWC Timing',
+    beneficiaryMobile: '98765 00412',
+    awcCode: 'AWC-103',
+    district: 'Jaipur',
+    project: 'Sanganer',
+    sector: 'Sector 3',
+    assignedTo: 'Supervisor',
+  },
+  {
+    id: 'p23',
+    ticketNumber: 'Ticket# 787868 898973',
+    beneficiaryName: 'Karisma Kapoor',
+    beneficiaryType: 'Pregnant Woman',
+    topic: 'Supplementary Nutrition',
+    description: 'Dry ration kit not delivered to home due to logistics issue.',
+    submittedDate: 'Submitted: 04/06/2025',
+    daysLabel: 'Overdue by 12 Days',
+    daysType: 'overdue',
+    awcName: 'Anganwadi Centre 4',
+    documentsCount: 0,
+    isOverdue: true,
+    borderColor: '#ffcdd2',
+    complaintType: 'Others',
+    helpTopic: 'Supplementary Nutrition',
+    subTopic: 'Dry Ration',
+    beneficiaryMobile: '98765 00413',
+    awcCode: 'AWC-104',
+    district: 'Jaipur',
+    project: 'Sanganer',
+    sector: 'Sector 1',
+    assignedTo: 'AWW',
   },
 ];
 
@@ -280,7 +666,7 @@ export const resolvedCards: ResolvedTicketCard[] = [
     district: 'Jaipur',
     project: 'Sanganer',
     sector: 'Sector 1',
-    assignedTo: 'CDPO',
+    assignedTo: 'AWW',
   },
   {
     id: 'r2',
@@ -352,6 +738,7 @@ export const resolvedCards: ResolvedTicketCard[] = [
     beneficiaryType: 'Children (3-6y)',
     topic: 'Pre-school Education',
     description: 'Child not enrolled in ECCE programme despite being of eligible age',
+    submittedDate: 'Submitted: 15/06/2025',
     resolvedDate: 'Resolved: 08/06/2025',
     status: 'CLOSED',
     actionTaken: 'Enrollment completed by AWW. Child attending ECCE sessions regularly as confirmed during last visit.',
@@ -392,6 +779,7 @@ export const resolvedCards: ResolvedTicketCard[] = [
     beneficiaryType: 'Pregnant Woman',
     topic: 'Aadhar verification',
     description: 'Aadhar linkage failing for mother profile',
+    submittedDate: 'Submitted: 10/06/2025',
     resolvedDate: 'Resolved: 28/06/2025',
     status: 'CLOSED',
     actionTaken: 'Biometric details re-submitted at Aadhaar center. Linked successfully.',
@@ -404,6 +792,300 @@ export const resolvedCards: ResolvedTicketCard[] = [
     project: 'Sanganer',
     sector: 'Sector 1',
     assignedTo: 'CDPO',
+  },
+  {
+    id: 'r10',
+    ticketNumber: 'Ticket# 787868 898960',
+    beneficiaryName: 'Lata Mangesh',
+    beneficiaryType: 'Lactating Mother',
+    topic: 'Growth Monitoring',
+    description: 'ECCE program enrollment updated on the POSHAN tracker app.',
+    submittedDate: 'Submitted: 29/06/2025',
+    resolvedDate: 'Resolved: 30/06/2025',
+    status: 'CLOSED',
+    actionTaken: 'ECCE program enrollment updated on the POSHAN tracker app.',
+    awcName: 'Anganwadi Centre 1',
+    helpTopic: 'Growth Monitoring',
+    subTopic: 'Poshan Tracker Update',
+    beneficiaryMobile: '98765 00310',
+    awcCode: 'AWC-101',
+    district: 'Jaipur',
+    project: 'Sanganer',
+    sector: 'Sector 1',
+    assignedTo: 'CDPO',
+  },
+  {
+    id: 'r11',
+    ticketNumber: 'Ticket# 787868 898961',
+    beneficiaryName: 'Pushpa Raj',
+    beneficiaryType: 'Pregnant Woman',
+    topic: 'Maternity Benefit',
+    description: 'PMMVY scheme installment processed and confirmed by beneficiary.',
+    submittedDate: 'Submitted: 26/06/2025',
+    resolvedDate: 'Resolved: 29/06/2025',
+    status: 'CLOSED',
+    actionTaken: 'PMMVY scheme installment processed and confirmed by beneficiary.',
+    awcName: 'Anganwadi Centre 2',
+    helpTopic: 'Maternity Benefit',
+    subTopic: 'PMMVY Installment',
+    beneficiaryMobile: '98765 00311',
+    awcCode: 'AWC-102',
+    district: 'Jaipur',
+    project: 'Sanganer',
+    sector: 'Sector 4',
+    assignedTo: 'CDPO',
+  },
+  {
+    id: 'r12',
+    ticketNumber: 'Ticket# 787868 898962',
+    beneficiaryName: 'Seema Mishra',
+    beneficiaryType: 'Children (6m-3y)',
+    topic: 'Urgent',
+    description: 'Emergency medical referral coordinated with PHC.',
+    submittedDate: 'Submitted: 23/06/2025',
+    resolvedDate: 'Resolved: 28/06/2025',
+    status: 'CLOSED',
+    actionTaken: 'Emergency medical referral coordinated with PHC.',
+    awcName: 'Anganwadi Centre 3',
+    helpTopic: 'Urgent',
+    subTopic: 'Emergency Service',
+    beneficiaryMobile: '98765 00312',
+    awcCode: 'AWC-103',
+    district: 'Jaipur',
+    project: 'Sanganer',
+    sector: 'Sector 3',
+    assignedTo: 'CDPO',
+  },
+  {
+    id: 'r13',
+    ticketNumber: 'Ticket# 787868 898963',
+    beneficiaryName: 'Mamta Banerjee',
+    beneficiaryType: 'Children (3-6y)',
+    topic: 'Corruption',
+    description: 'Investigation completed. Strict warning issued to the centre helper.',
+    submittedDate: 'Submitted: 21/06/2025',
+    resolvedDate: 'Resolved: 27/06/2025',
+    status: 'CLOSED',
+    actionTaken: 'Investigation completed. Strict warning issued to the centre helper.',
+    awcName: 'Anganwadi Centre 4',
+    helpTopic: 'Corruption',
+    subTopic: 'THR Misappropriation',
+    beneficiaryMobile: '98765 00313',
+    awcCode: 'AWC-104',
+    district: 'Jaipur',
+    project: 'Sanganer',
+    sector: 'Sector 1',
+    assignedTo: 'CDPO',
+  },
+  {
+    id: 'r14',
+    ticketNumber: 'Ticket# 787868 898964',
+    beneficiaryName: 'Neetu Chandra',
+    beneficiaryType: 'Lactating Mother',
+    topic: 'Growth Monitoring',
+    description: 'CDPO resolved. Appeal under review by DPO.',
+    submittedDate: 'Submitted: 16/06/2025',
+    resolvedDate: 'Resolved: 25/06/2025',
+    status: 'APPEAL_RAISED',
+    actionTaken: 'CDPO resolved. Appeal under review by DPO.',
+    awcName: 'Anganwadi Centre 5',
+    helpTopic: 'Growth Monitoring',
+    subTopic: 'Weight Recording',
+    beneficiaryMobile: '98765 00314',
+    awcCode: 'AWC-105',
+    district: 'Jaipur',
+    project: 'Sanganer',
+    sector: 'Sector 2',
+    assignedTo: 'CDPO',
+  },
+  {
+    id: 'r15',
+    ticketNumber: 'Ticket# 787868 898965',
+    beneficiaryName: 'Chitra Singh',
+    beneficiaryType: 'Pregnant Woman',
+    topic: 'Urgent',
+    description: 'Appeal resolved by DPO. Resolution upheld.',
+    submittedDate: 'Submitted: 14/06/2025',
+    resolvedDate: 'Resolved: 24/06/2025',
+    status: 'APPEAL_RESOLVED',
+    actionTaken: 'Appeal resolved by DPO. Resolution upheld.',
+    awcName: 'Anganwadi Centre 6',
+    helpTopic: 'Urgent',
+    subTopic: 'Emergency Service',
+    beneficiaryMobile: '98765 00315',
+    awcCode: 'AWC-106',
+    district: 'Jaipur',
+    project: 'Sanganer',
+    sector: 'Sector 2',
+    assignedTo: 'CDPO',
+  },
+  {
+    id: 'r16',
+    ticketNumber: 'Ticket# 787868 898966',
+    beneficiaryName: 'Ritu Karidhal',
+    beneficiaryType: 'Lactating Mother',
+    topic: 'Immunization',
+    description: 'Special immunization camp organized for pending children.',
+    submittedDate: 'Submitted: 09/06/2025',
+    resolvedDate: 'Resolved: 22/06/2025',
+    status: 'CLOSED',
+    actionTaken: 'Special immunization camp organized for pending children.',
+    awcName: 'Anganwadi Centre 1',
+    helpTopic: 'Immunisation Pending',
+    subTopic: 'Special Camp',
+    beneficiaryMobile: '98765 00316',
+    awcCode: 'AWC-101',
+    district: 'Jaipur',
+    project: 'Sanganer',
+    sector: 'Sector 1',
+    assignedTo: 'CDPO',
+  },
+  {
+    id: 'r17',
+    ticketNumber: 'Ticket# 787868 898967',
+    beneficiaryName: 'Shalini Sen',
+    beneficiaryType: 'Pregnant Woman',
+    topic: 'Corruption',
+    description: 'Bribe allegations investigated. Officer replaced.',
+    submittedDate: 'Submitted: 05/06/2025',
+    resolvedDate: 'Resolved: 20/06/2025',
+    status: 'CLOSED',
+    actionTaken: 'Bribe allegations investigated. Officer replaced.',
+    awcName: 'Anganwadi Centre 2',
+    helpTopic: 'Corruption',
+    subTopic: 'Bribe Allegation',
+    beneficiaryMobile: '98765 00317',
+    awcCode: 'AWC-102',
+    district: 'Jaipur',
+    project: 'Sanganer',
+    sector: 'Sector 4',
+    assignedTo: 'CDPO',
+  },
+  {
+    id: 'r18',
+    ticketNumber: 'Ticket# 787868 898968',
+    beneficiaryName: 'Babita Phogat',
+    beneficiaryType: 'Children (3-6y)',
+    topic: 'Supplementary Nutrition',
+    description: 'Rations supplied. Beneficiary raised appeal regarding quality.',
+    submittedDate: 'Submitted: 02/06/2025',
+    resolvedDate: 'Resolved: 18/06/2025',
+    status: 'APPEAL_RAISED',
+    actionTaken: 'Rations supplied. Beneficiary raised appeal regarding quality.',
+    awcName: 'Anganwadi Centre 3',
+    helpTopic: 'Supplementary Nutrition',
+    subTopic: 'Take Home Ration',
+    beneficiaryMobile: '98765 00318',
+    awcCode: 'AWC-103',
+    district: 'Jaipur',
+    project: 'Sanganer',
+    sector: 'Sector 3',
+    assignedTo: 'CDPO',
+  },
+  {
+    id: 'r19',
+    ticketNumber: 'Ticket# 787868 898969',
+    beneficiaryName: 'Kangana Ranaut',
+    beneficiaryType: 'Pregnant Woman',
+    topic: 'Urgent',
+    description: 'DPO resolved the appeal and ordered replacement delivery.',
+    submittedDate: 'Submitted: 28/05/2025',
+    resolvedDate: 'Resolved: 15/06/2025',
+    status: 'APPEAL_RESOLVED',
+    actionTaken: 'DPO resolved the appeal and ordered replacement delivery.',
+    awcName: 'Anganwadi Centre 4',
+    helpTopic: 'Urgent',
+    subTopic: 'Emergency Service',
+    beneficiaryMobile: '98765 00319',
+    awcCode: 'AWC-104',
+    district: 'Jaipur',
+    project: 'Sanganer',
+    sector: 'Sector 1',
+    assignedTo: 'CDPO',
+  },
+  {
+    id: 'r20',
+    ticketNumber: 'Ticket# 787868 898980',
+    beneficiaryName: 'Aishwarya Rai',
+    beneficiaryType: 'Pregnant Woman',
+    topic: 'Growth Monitoring',
+    description: 'Resolved: Supervisor visited centre and updated all weights.',
+    submittedDate: 'Submitted: 28/06/2025',
+    resolvedDate: 'Resolved: 29/06/2025',
+    status: 'CLOSED',
+    actionTaken: 'Supervisor visited centre and updated all pending weight entries.',
+    awcName: 'Anganwadi Centre 1',
+    helpTopic: 'Growth Monitoring',
+    subTopic: 'Growth Recording',
+    beneficiaryMobile: '98765 00510',
+    awcCode: 'AWC-101',
+    district: 'Jaipur',
+    project: 'Sanganer',
+    sector: 'Sector 1',
+    assignedTo: 'Supervisor',
+  },
+  {
+    id: 'r21',
+    ticketNumber: 'Ticket# 787868 898981',
+    beneficiaryName: 'Sushmita Sen',
+    beneficiaryType: 'Lactating Mother',
+    topic: 'Supplementary Nutrition',
+    description: 'Resolved: AWW delivered dry ration packet of correct weight.',
+    submittedDate: 'Submitted: 20/06/2025',
+    resolvedDate: 'Resolved: 25/06/2025',
+    status: 'CLOSED',
+    actionTaken: 'AWW delivered correct dry ration kit directly to beneficiary house.',
+    awcName: 'Anganwadi Centre 2',
+    helpTopic: 'Supplementary Nutrition',
+    subTopic: 'Take Home Ration',
+    beneficiaryMobile: '98765 00511',
+    awcCode: 'AWC-102',
+    district: 'Jaipur',
+    project: 'Sanganer',
+    sector: 'Sector 4',
+    assignedTo: 'AWW',
+  },
+  {
+    id: 'r22',
+    ticketNumber: 'Ticket# 787868 898982',
+    beneficiaryName: 'Kajol Devgan',
+    beneficiaryType: 'Children (3-6y)',
+    topic: 'Immunization',
+    description: 'Resolved: Next camp scheduled and parents notified.',
+    submittedDate: 'Submitted: 15/06/2025',
+    resolvedDate: 'Resolved: 22/06/2025',
+    status: 'CLOSED',
+    actionTaken: 'Next immunization session scheduled. Parents informed via SMS.',
+    awcName: 'Anganwadi Centre 3',
+    helpTopic: 'Immunisation Pending',
+    subTopic: 'Camp Scheduling',
+    beneficiaryMobile: '98765 00512',
+    awcCode: 'AWC-103',
+    district: 'Jaipur',
+    project: 'Sanganer',
+    sector: 'Sector 3',
+    assignedTo: 'Supervisor',
+  },
+  {
+    id: 'r23',
+    ticketNumber: 'Ticket# 787868 898983',
+    beneficiaryName: 'Tabu Hashmi',
+    beneficiaryType: 'Pregnant Woman',
+    topic: 'Supplementary Nutrition',
+    description: 'Resolved: Special home delivery route arranged.',
+    submittedDate: 'Submitted: 04/06/2025',
+    resolvedDate: 'Resolved: 18/06/2025',
+    status: 'CLOSED',
+    actionTaken: 'Arranged special home delivery of Take-Home-Ration kits via SHG.',
+    awcName: 'Anganwadi Centre 4',
+    helpTopic: 'Supplementary Nutrition',
+    subTopic: 'Dry Ration',
+    beneficiaryMobile: '98765 00513',
+    awcCode: 'AWC-104',
+    district: 'Jaipur',
+    project: 'Sanganer',
+    sector: 'Sector 1',
+    assignedTo: 'AWW',
   },
 ];
 
@@ -561,7 +1243,7 @@ const AssignedToFilter = ({
               selected === item ? styles.assignedChipTextActive : styles.assignedChipTextInactive,
             ]}
           >
-            {item}
+            {item === 'CDPO' ? 'me' : item}
           </Text>
         </TouchableOpacity>
       ))}
@@ -823,109 +1505,118 @@ export const TicketCardComponent = ({
   card: TicketCard;
   showDocs?: boolean;
   onPress?: () => void;
-}) => (
-  <TouchableOpacity
-    style={[styles.card, { borderColor: card.borderColor ?? (card.isOverdue ? '#ffcdd2' : '#e0e0e0') }]}
-    activeOpacity={0.85}
-    onPress={onPress}
-  >
-    {/* Ticket # + Overdue Badge Row */}
-    <View style={styles.cardTopRow}>
-      <Text style={styles.cardTicketNum}>{card.ticketNumber}</Text>
-      {card.isOverdue && (
-        <View style={styles.overdueBadge}>
-          <Text style={styles.overdueBadgeText}>OVERDUE</Text>
+}) => {
+  const isCorruptionOrUrgent = card.complaintType === 'Corruption' || card.complaintType === 'Urgent';
+  return (
+    <TouchableOpacity
+      style={[styles.card, { borderColor: card.borderColor ?? (card.isOverdue ? '#ffcdd2' : '#e0e0e0') }]}
+      activeOpacity={0.85}
+      onPress={onPress}
+    >
+      {/* Ticket # + Overdue Badge Row */}
+      <View style={styles.cardTopRow}>
+        <Text style={styles.cardTicketNum}>{card.ticketNumber}</Text>
+        {card.isOverdue && (
+          <View style={styles.overdueBadge}>
+            <Text style={styles.overdueBadgeText}>OVERDUE</Text>
+          </View>
+        )}
+      </View>
+
+      {/* Beneficiary Name + Tag Row */}
+      {(card.beneficiaryName || card.beneficiaryType) && (
+        <View style={styles.nameRow}>
+          {card.beneficiaryName && (
+            <Text style={styles.beneficiaryName}>{card.beneficiaryName}</Text>
+          )}
+          {card.beneficiaryType && (
+            <View style={styles.beneficiaryTag}>
+              <Text style={styles.beneficiaryTagText}>{card.beneficiaryType}</Text>
+            </View>
+          )}
         </View>
       )}
-    </View>
 
-    {/* Beneficiary Name + Tag Row */}
-    {(card.beneficiaryName || card.beneficiaryType) && (
-      <View style={styles.nameRow}>
-        {card.beneficiaryName && (
-          <Text style={styles.beneficiaryName}>{card.beneficiaryName}</Text>
-        )}
-        {card.beneficiaryType && (
-          <View style={styles.beneficiaryTag}>
-            <Text style={styles.beneficiaryTagText}>{card.beneficiaryType}</Text>
-          </View>
-        )}
+      {/* Fallback to old title if beneficiaryName is not available */}
+      {!card.beneficiaryName && card.title && (
+        <Text style={styles.cardTitle}>{card.title}</Text>
+      )}
+
+      {/* Topic + Description */}
+      <View style={styles.topicRow}>
+        {card.topic ? (
+          <Text style={styles.topicText}>{card.topic}</Text>
+        ) : null}
+        <Text style={styles.cardDescription} numberOfLines={1}>
+          {card.description}
+        </Text>
       </View>
-    )}
 
-    {/* Fallback to old title if beneficiaryName is not available */}
-    {!card.beneficiaryName && card.title && (
-      <Text style={styles.cardTitle}>{card.title}</Text>
-    )}
-
-    {/* Topic + Description */}
-    <View style={styles.topicRow}>
-      {card.topic ? (
-        <Text style={styles.topicText}>{card.topic}</Text>
-      ) : null}
-      <Text style={styles.cardDescription} numberOfLines={1}>
-        {card.description}
-      </Text>
-    </View>
-
-    {/* Date + Days Remaining/Overdue */}
-    <View style={styles.cardDateRow}>
-      <Text style={styles.cardDate}>{card.submittedDate}</Text>
-      {card.daysLabel ? (
-        <View
-          style={[
-            styles.daysBadge,
-            card.daysType === 'overdue'
-              ? { backgroundColor: '#ffebee' }
-              : { backgroundColor: '#fff3e0' },
-          ]}
-        >
-          <Text
+      {/* Date + Days Remaining/Overdue */}
+      <View style={styles.cardDateRow}>
+        <Text style={styles.cardDate}>{card.submittedDate}</Text>
+        {card.daysLabel ? (
+          <View
             style={[
-              styles.daysBadgeText,
-              card.daysType === 'overdue' ? { color: '#d32f2f' } : { color: '#e65100' },
+              styles.daysBadge,
+              card.daysType === 'overdue'
+                ? { backgroundColor: '#ffebee' }
+                : { backgroundColor: '#fff3e0' },
             ]}
           >
-            {card.daysLabel}
-          </Text>
-        </View>
-      ) : null}
-    </View>
+            <Text
+              style={[
+                styles.daysBadgeText,
+                card.daysType === 'overdue' ? { color: '#d32f2f' } : { color: '#e65100' },
+              ]}
+            >
+              {card.daysLabel}
+            </Text>
+          </View>
+        ) : null}
+      </View>
 
-    {/* Bottom row: AWC Name + Doc uploaded badge OR old Fallbacks (byName & documents) */}
-    {card.awcName ? (
-      <View style={styles.cardBottomRow}>
-        <View style={styles.awcInfo}>
-          <Text style={styles.awcLabel}>AWC: </Text>
-          <Text style={styles.awcName}>{card.awcName}</Text>
+      {/* Bottom row: AWC Name + Doc uploaded badge OR old Fallbacks (byName & documents) */}
+      {card.awcName ? (
+        <View style={styles.cardBottomRow}>
+          <View style={styles.awcInfo}>
+            <Text style={styles.awcLabel}>AWC: </Text>
+            <Text style={styles.awcName}>{card.awcName}</Text>
+          </View>
+          {showDocs && isCorruptionOrUrgent && card.documentsCount !== undefined && card.documentsCount > 0 ? (
+            <View style={styles.docChip}>
+              <Text style={styles.docChipText}>
+                {card.documentsCount === 1 ? 'Doc Uploaded' : `${card.documentsCount} Docs Uploaded`}
+              </Text>
+            </View>
+          ) : (isCorruptionOrUrgent && card.documents) ? (
+            <View style={styles.docChip}>
+              <Text style={styles.docChipText}>
+                {card.documents.toLowerCase().includes('1 ') || card.documents.toLowerCase() === '1 document' ? 'Doc Uploaded' : card.documents}
+              </Text>
+            </View>
+          ) : null}
         </View>
-        {showDocs && card.documentsCount !== undefined && card.documentsCount > 0 ? (
-          <View style={styles.docChip}>
-            <Text style={styles.docChipText}>{card.documentsCount} Doc{card.documentsCount > 1 ? 's' : ''} Uploaded</Text>
-          </View>
-        ) : card.documents ? (
-          <View style={styles.docChip}>
-            <Text style={styles.docChipText}>{card.documents}</Text>
-          </View>
-        ) : null}
-      </View>
-    ) : (
-      <View style={styles.cardBottomRow}>
-        {card.byName ? (
-          <View style={styles.cardByRow}>
-            <Text style={styles.cardByLabel}>By:</Text>
-            <Text style={styles.cardByName}>{card.byName}</Text>
-          </View>
-        ) : <View />}
-        {card.documents ? (
-          <View style={styles.docChip}>
-            <Text style={styles.docChipText}>{card.documents}</Text>
-          </View>
-        ) : null}
-      </View>
-    )}
-  </TouchableOpacity>
-);
+      ) : (
+        <View style={styles.cardBottomRow}>
+          {card.byName ? (
+            <View style={styles.cardByRow}>
+              <Text style={styles.cardByLabel}>By:</Text>
+              <Text style={styles.cardByName}>{card.byName}</Text>
+            </View>
+          ) : <View />}
+          {(isCorruptionOrUrgent && card.documents) ? (
+            <View style={styles.docChip}>
+              <Text style={styles.docChipText}>
+                {card.documents.toLowerCase().includes('1 ') || card.documents.toLowerCase() === '1 document' ? 'Doc Uploaded' : card.documents}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+      )}
+    </TouchableOpacity>
+  );
+};
 
 const STATUS_CONFIG: Record<ResolvedStatus, { label: string; color: string; bg: string; border: string; hasIcon: boolean }> = {
   CLOSED:          { label: 'CLOSED',          color: '#2e7d32', bg: '#e8f5e9', border: '#a5d6a7', hasIcon: false },
@@ -1324,6 +2015,7 @@ const TicketDetailsOverlay = ({
       assignedFilter={assignedFilter}
       onBack={onBack}
       onResolveTicket={onResolveTicket}
+      isCdpoView={true}
     />
   </View>
 );
@@ -2075,6 +2767,14 @@ export default function BeneficiaryRedressalScreen({
 
       setMyPendingCards((prev) => prev.filter((t) => t.id !== ticketId));
       setMyResolvedCards((prev) => [newResolvedCard, ...prev]);
+    } else {
+      setMyResolvedCards((prev) =>
+        prev.map((t) =>
+          t.id === ticketId
+            ? { ...t, status: 'CLOSED', actionTaken: closureNote, awaitingCdpoClosure: false }
+            : t
+        )
+      );
     }
   };
 

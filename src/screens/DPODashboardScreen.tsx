@@ -35,6 +35,7 @@ interface OverdueTicket {
   overdueDays: number;
   documents?: string;
   byName: string;
+  complaintType?: 'Corruption' | 'Urgent' | 'Others';
 }
 
 interface AppealTicket {
@@ -51,6 +52,7 @@ interface AppealTicket {
   status?: 'raised' | 'resolved';
   decision?: AppealDecision;
   resolutionNotes?: string;
+  complaintType?: 'Corruption' | 'Urgent' | 'Others';
 }
 
 // ─── Sample Data ──────────────────────────────────────────────────────────────
@@ -66,6 +68,7 @@ const overdueTickets: OverdueTicket[] = [
     overdueDays: 22,
     documents: '3 documents',
     byName: 'Kamla Devi',
+    complaintType: 'Corruption',
   },
   {
     id: 'o2',
@@ -78,6 +81,7 @@ const overdueTickets: OverdueTicket[] = [
     overdueDays: 13,
     documents: '2 documents',
     byName: 'Anonymous',
+    complaintType: 'Corruption',
   },
   {
     id: 'o3',
@@ -89,6 +93,7 @@ const overdueTickets: OverdueTicket[] = [
     submittedDate: 'Submitted: 15/06/2025',
     overdueDays: 3,
     byName: 'Supervisor Priya Devi',
+    complaintType: 'Corruption',
   },
   {
     id: 'o4',
@@ -101,6 +106,20 @@ const overdueTickets: OverdueTicket[] = [
     overdueDays: 21,
     documents: '1 document',
     byName: 'Sunita Rani',
+    complaintType: 'Urgent',
+  },
+  {
+    id: 'o5',
+    ticketNumber: 'Ticket# DPO 000100',
+    roleLabel: 'DPO',
+    title: 'District Redressal Policy Drafting',
+    description:
+      'Drafting new guidelines for Anganwadi grievance redressal portal integration and escalations.',
+    submittedDate: 'Submitted: 02/06/2025',
+    overdueDays: 16,
+    documents: '1 document',
+    byName: 'DPO Admin',
+    complaintType: 'Others',
   },
 ];
 
@@ -118,6 +137,7 @@ const appealTickets: AppealTicket[] = [
     appealDate: 'Appeal Filed: 28/06/2025',
     documents: '2 documents',
     byName: 'Kamla Devi',
+    complaintType: 'Corruption',
   },
   {
     id: 'a2',
@@ -131,6 +151,7 @@ const appealTickets: AppealTicket[] = [
     submittedDate: 'Submitted: 20/06/2025',
     appealDate: 'Appeal Filed: 25/06/2025',
     byName: 'Rekha Sharma',
+    complaintType: 'Others',
   },
   {
     id: 'a3',
@@ -145,6 +166,7 @@ const appealTickets: AppealTicket[] = [
     appealDate: 'Appeal Filed: 22/06/2025',
     documents: '4 documents',
     byName: 'Dr. Suresh Mehta (PHC)',
+    complaintType: 'Others',
   },
   {
     id: 'a4',
@@ -162,6 +184,7 @@ const appealTickets: AppealTicket[] = [
     decision: 'dismiss',
     resolutionNotes:
       'Appeal reviewed on 12 Jun 2025. Vaccination records verified at PHC — DPT booster and OPV confirmed administered on 11 Jun 2025. Immunisation card entries are accurate and complete. Resolution by Supervisor upheld. Appeal resolved in favour of existing resolution.',
+    complaintType: 'Others',
   },
 ];
 
@@ -394,10 +417,12 @@ const getRoleChipStyles = (role: string) => {
 
 const OverdueCard = ({
   ticket,
+  onView,
   onClose,
 }: {
   ticket: OverdueTicket;
-  onClose: (t: OverdueTicket) => void;
+  onView: (t: OverdueTicket) => void;
+  onClose?: (t: OverdueTicket) => void;
 }) => {
   const roleStyle = getRoleChipStyles(ticket.roleLabel);
   return (
@@ -406,18 +431,18 @@ const OverdueCard = ({
       <View style={s.cardTopRow}>
         <Text style={s.cardTicketNum}>{ticket.ticketNumber}</Text>
       </View>
-
+ 
       {/* Role chip */}
       <View style={[s.roleChip, { backgroundColor: roleStyle.bg, borderColor: roleStyle.border }]}>
         <Text style={[s.roleChipTxt, { color: roleStyle.text }]}>{ticket.roleLabel}</Text>
       </View>
-
+ 
       {/* Title */}
       <Text style={s.cardTitle}>{ticket.title}</Text>
-
+ 
       {/* Description */}
       <Text style={s.cardDesc} numberOfLines={2}>{ticket.description}</Text>
-
+ 
       {/* Date + Overdue days */}
       <View style={s.cardDateRow}>
         <Text style={s.cardDate}>{ticket.submittedDate}</Text>
@@ -425,25 +450,33 @@ const OverdueCard = ({
           <Text style={[s.daysBadgeTxt, { color: '#d32f2f' }]}>Overdue by {ticket.overdueDays} Days</Text>
         </View>
       </View>
-
+ 
       {/* Documents */}
-      {ticket.documents && (
+      {ticket.documents && (ticket.complaintType === 'Corruption' || ticket.complaintType === 'Urgent') && (
         <View style={s.docBtn}>
           <Image source={{ uri: imgDocIcon }} style={s.docIcon} />
-          <Text style={s.docTxt}>{ticket.documents}</Text>
+          <Text style={s.docTxt}>
+            {ticket.documents.toLowerCase().includes('1 ') || ticket.documents.toLowerCase() === '1 document' ? 'Doc Uploaded' : ticket.documents}
+          </Text>
         </View>
       )}
-
+ 
       {/* By */}
       <View style={s.cardByRow}>
         <Text style={s.cardByLabel}>By:</Text>
         <Text style={s.cardByName}>{ticket.byName}</Text>
       </View>
-
+ 
       {/* CTA */}
-      <TouchableOpacity style={s.ctaNavy} onPress={() => onClose(ticket)} activeOpacity={0.8}>
-        <Text style={s.ctaNavyTxt}>Close Ticket</Text>
-      </TouchableOpacity>
+      {ticket.roleLabel === 'DPO' ? (
+        <TouchableOpacity style={s.ctaNavy} onPress={() => onClose && onClose(ticket)} activeOpacity={0.8}>
+          <Text style={s.ctaNavyTxt}>Close Ticket</Text>
+        </TouchableOpacity>
+      ) : (
+        <TouchableOpacity style={s.ctaNavy} onPress={() => onView(ticket)} activeOpacity={0.8}>
+          <Text style={s.ctaNavyTxt}>View Details</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 };
@@ -500,10 +533,12 @@ const AppealCard = ({
       </View>
 
       {/* Documents */}
-      {ticket.documents && (
+      {ticket.documents && (ticket.complaintType === 'Corruption' || ticket.complaintType === 'Urgent') && (
         <View style={s.docBtn}>
           <Image source={{ uri: imgDocIcon }} style={s.docIcon} />
-          <Text style={s.docTxt}>{ticket.documents}</Text>
+          <Text style={s.docTxt}>
+            {ticket.documents.toLowerCase().includes('1 ') || ticket.documents.toLowerCase() === '1 document' ? 'Doc Uploaded' : ticket.documents}
+          </Text>
         </View>
       )}
 
@@ -762,34 +797,36 @@ const ActionTakenModal = ({
             />
 
             {/* Attach Document / Attached Document Card */}
-            <View style={{ marginVertical: 14 }}>
-              {attachedFile === null ? (
-                <TouchableOpacity
-                  style={ms.attachBtn}
-                  activeOpacity={0.75}
-                  onPress={() => setAttachedFile('supporting_document.pdf')}
-                >
-                  <Text style={ms.attachBtnTxt}>＋  Attach Supporting Document</Text>
-                </TouchableOpacity>
-              ) : (
-                <View style={ms.attachedFileBox}>
-                  <View style={ms.attachedFileLeft}>
-                    <Image source={{ uri: imgDocIcon }} style={ms.attachedDocIcon} />
-                    <Text style={ms.attachedFileText}>
-                      {attachedFile}
-                      <Text style={ms.attachedFileSize}>  (2.4 MB)</Text>
-                    </Text>
-                  </View>
+            {(ticket.complaintType === 'Corruption' || ticket.complaintType === 'Urgent') && (
+              <View style={{ marginVertical: 14 }}>
+                {attachedFile === null ? (
                   <TouchableOpacity
-                    style={ms.removeFileBtn}
-                    onPress={() => setAttachedFile(null)}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={ms.attachBtn}
+                    activeOpacity={0.75}
+                    onPress={() => setAttachedFile('supporting_document.pdf')}
                   >
-                    <Image source={{ uri: imgCloseIcon }} style={ms.removeFileIcon} />
+                    <Text style={ms.attachBtnTxt}>＋  Attach Supporting Document</Text>
                   </TouchableOpacity>
-                </View>
-              )}
-            </View>
+                ) : (
+                  <View style={ms.attachedFileBox}>
+                    <View style={ms.attachedFileLeft}>
+                      <Image source={{ uri: imgDocIcon }} style={ms.attachedDocIcon} />
+                      <Text style={ms.attachedFileText}>
+                        {attachedFile}
+                        <Text style={ms.attachedFileSize}>  (2.4 MB)</Text>
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      style={ms.removeFileBtn}
+                      onPress={() => setAttachedFile(null)}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <Image source={{ uri: imgCloseIcon }} style={ms.removeFileIcon} />
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            )}
 
             {/* Submit */}
             {submitted ? (
@@ -1027,9 +1064,11 @@ const TicketDetailModal = ({
             </View>
 
             <View style={ds.summaryTitleRow}>
-              <Text style={ds.summaryTitle}>Ticket #787868898904</Text>
+              <Text style={ds.summaryTitle}>{ticket.ticketNumber}</Text>
               <View style={ds.summaryBadge}>
-                <Text style={ds.summaryBadgeTxt}>APPEAL RESOLVED</Text>
+                <Text style={ds.summaryBadgeTxt}>
+                  {ticket.appealReason ? (ticket.status === 'resolved' ? 'APPEAL RESOLVED' : 'APPEAL RAISED') : 'OVERDUE'}
+                </Text>
               </View>
             </View>
 
@@ -1101,34 +1140,42 @@ const TicketDetailModal = ({
             </View>
 
             {/* Section 4: Resolution Details */}
-            <View style={ds.sectionHeader}>
-              <Text style={ds.sectionHeaderTxt}>Resolution Details</Text>
-              <View style={ds.sectionHeaderLine} />
-            </View>
+            {ticket.appealReason !== '' && (
+              <>
+                <View style={ds.sectionHeader}>
+                  <Text style={ds.sectionHeaderTxt}>Resolution Details</Text>
+                  <View style={ds.sectionHeaderLine} />
+                </View>
 
-            <View style={ds.textBlock}>
-              <Text style={ds.textBlockLabel}>Action Taken</Text>
-              <View style={ds.blueBox}>
-                <Text style={ds.blueBoxTxt}>
-                  Vaccination rescheduled with PHC medical officer. Child vaccinated on 11 Jun 2025 — DPT booster and OPV administered. Immunisation card updated. Parents counselled on next scheduled vaccination date of 15 Sep 2025.
-                </Text>
-              </View>
-            </View>
+                <View style={ds.textBlock}>
+                  <Text style={ds.textBlockLabel}>Action Taken</Text>
+                  <View style={ds.blueBox}>
+                    <Text style={ds.blueBoxTxt}>
+                      Vaccination rescheduled with PHC medical officer. Child vaccinated on 11 Jun 2025 — DPT booster and OPV administered. Immunisation card updated. Parents counselled on next scheduled vaccination date of 15 Sep 2025.
+                    </Text>
+                  </View>
+                </View>
+              </>
+            )}
 
             {/* Section 5: DPO Appeal Resolution */}
-            <View style={ds.sectionHeader}>
-              <Text style={ds.sectionHeaderTxt}>DPO Appeal Resolution</Text>
-              <View style={ds.sectionHeaderLine} />
-            </View>
+            {ticket.appealReason !== '' && (
+              <>
+                <View style={ds.sectionHeader}>
+                  <Text style={ds.sectionHeaderTxt}>DPO Appeal Resolution</Text>
+                  <View style={ds.sectionHeaderLine} />
+                </View>
 
-            <View style={ds.textBlock}>
-              <Text style={ds.textBlockLabel}>Action Taken by DPO</Text>
-              <View style={ds.blueBox}>
-                <Text style={ds.blueBoxTxt}>
-                  Appeal reviewed on 12 Jun 2025. Vaccination records verified at PHC — DPT booster and OPV confirmed administered on 11 Jun 2025. Immunisation card entries are accurate and complete. Resolution by Supervisor upheld. Appeal resolved in favour of existing resolution.
-                </Text>
-              </View>
-            </View>
+                <View style={ds.textBlock}>
+                  <Text style={ds.textBlockLabel}>Action Taken by DPO</Text>
+                  <View style={ds.blueBox}>
+                    <Text style={ds.blueBoxTxt}>
+                      Appeal reviewed on 12 Jun 2025. Vaccination records verified at PHC — DPT booster and OPV confirmed administered on 11 Jun 2025. Immunisation card entries are accurate and complete. Resolution by Supervisor upheld. Appeal resolved in favour of existing resolution.
+                    </Text>
+                  </View>
+                </View>
+              </>
+            )}
 
             {/* Section 6: Timeline */}
             <View style={ds.sectionHeader}>
@@ -1137,31 +1184,59 @@ const TicketDetailModal = ({
             </View>
 
             <View style={ds.timeline}>
-              {[
-                { title: 'Appeal Resolved by DPO', date: '12/06/2025, 11:00 AM', color: '#1565c0' },
-                { title: 'Appeal Raised by Beneficiary', date: '14/06/2025, 02:00 PM', color: '#e65100' },
-                { title: 'Ticket Closed by CDPO', date: '13/06/2025, 10:00 AM', color: '#1b5e20' },
-                { title: 'Ticket Resolved by Supervisor', date: '12/06/2025, 03:00 PM', color: '#2e7d32' },
-                { title: 'Reminder Sent — System', date: '08/06/2025, 09:00 AM', color: '#f59e0b' },
-                { title: 'Assigned to Supervisor — Sector 1', date: '08/06/2025, 11:30 AM', color: '#1a237e', isLast: true },
-              ].map((item, idx) => (
-                <View key={idx} style={ds.timelineRow}>
-                  <View style={ds.timelineLeft}>
-                    <View style={[ds.timelineDot, { backgroundColor: item.color }]} />
-                    {!item.isLast && <View style={ds.timelineLine} />}
+              {ticket.appealReason !== '' ? (
+                [
+                  { title: 'Appeal Resolved by DPO', date: '12/06/2025, 11:00 AM', color: '#1565c0' },
+                  { title: 'Appeal Raised by Beneficiary', date: '14/06/2025, 02:00 PM', color: '#e65100' },
+                  { title: 'Ticket Closed by CDPO', date: '13/06/2025, 10:00 AM', color: '#1b5e20' },
+                  { title: 'Ticket Resolved by Supervisor', date: '12/06/2025, 03:00 PM', color: '#2e7d32' },
+                  { title: 'Reminder Sent — System', date: '08/06/2025, 09:00 AM', color: '#f59e0b' },
+                  { title: 'Assigned to Supervisor — Sector 1', date: '08/06/2025, 11:30 AM', color: '#1a237e', isLast: true },
+                ].map((item, idx) => (
+                  <View key={idx} style={ds.timelineRow}>
+                    <View style={ds.timelineLeft}>
+                      <View style={[ds.timelineDot, { backgroundColor: item.color }]} />
+                      {!item.isLast && <View style={ds.timelineLine} />}
+                    </View>
+                    <View style={ds.timelineRight}>
+                      <Text style={ds.timelineTitle}>{item.title}</Text>
+                      <Text style={ds.timelineDate}>{item.date}</Text>
+                    </View>
                   </View>
-                  <View style={ds.timelineRight}>
-                    <Text style={ds.timelineTitle}>{item.title}</Text>
-                    <Text style={ds.timelineDate}>{item.date}</Text>
+                ))
+              ) : (
+                [
+                  { title: 'Ticket Overdue', date: '21 days after assignment', color: '#d32f2f' },
+                  { title: 'Ticket Escalated to DPO (View Only)', date: '14 days after assignment', color: '#e65100' },
+                  { title: `Reminder Sent to ${ticket.roleLabel || 'AWW'}`, date: '7 days after assignment', color: '#f57f17' },
+                  { title: 'Ticket Assigned to Officer', date: '09:00 AM (Day 0)', color: '#1a237e', isLast: true },
+                ].map((item, idx) => (
+                  <View key={idx} style={ds.timelineRow}>
+                    <View style={ds.timelineLeft}>
+                      <View style={[ds.timelineDot, { backgroundColor: item.color }]} />
+                      {!item.isLast && <View style={ds.timelineLine} />}
+                    </View>
+                    <View style={ds.timelineRight}>
+                      <Text style={ds.timelineTitle}>{item.title}</Text>
+                      <Text style={ds.timelineDate}>{item.date}</Text>
+                    </View>
                   </View>
-                </View>
-              ))}
+                ))
+              )}
             </View>
 
             {/* Read-only Banner */}
-            <View style={ds.readOnlyBanner}>
-              <Text style={ds.readOnlyBannerTxt}>This ticket has been resolved and is read-only.</Text>
-            </View>
+            {!ticket.appealReason && ticket.roleLabel !== 'DPO' ? (
+              <View style={[ds.readOnlyBanner, { backgroundColor: '#ffebee', borderColor: '#ffcdd2', borderWidth: 1 }]}>
+                <Text style={[ds.readOnlyBannerTxt, { color: '#d32f2f', fontWeight: '700' }]}>
+                  Escalated to DPO (View Only). CDPO is the main Closing Officer.
+                </Text>
+              </View>
+            ) : ticket.status === 'resolved' ? (
+              <View style={ds.readOnlyBanner}>
+                <Text style={ds.readOnlyBannerTxt}>This ticket has been resolved and is read-only.</Text>
+              </View>
+            ) : null}
 
           </View>
         </ScrollView>
@@ -1197,6 +1272,25 @@ export default function DPODashboardScreen({ onBack }: { onBack?: () => void } =
   // Ticket Details Modal
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [activeDetailTicket, setActiveDetailTicket] = useState<AppealTicket | null>(null);
+
+  const handleOpenOverdueDetail = (ticket: OverdueTicket) => {
+    const detailTicket: AppealTicket = {
+      id: ticket.id,
+      ticketNumber: ticket.ticketNumber,
+      roleLabel: ticket.roleLabel,
+      title: ticket.title,
+      originalDescription: ticket.description,
+      appealReason: '',
+      submittedDate: ticket.submittedDate,
+      appealDate: '',
+      documents: ticket.documents,
+      byName: ticket.byName,
+      status: 'raised',
+      complaintType: ticket.complaintType,
+    };
+    setActiveDetailTicket(detailTicket);
+    setDetailModalVisible(true);
+  };
 
   const handleCloseTicket = (ticket: OverdueTicket) => {
     setActiveOverdueTicket(ticket);
@@ -1255,7 +1349,12 @@ export default function DPODashboardScreen({ onBack }: { onBack?: () => void } =
           {assignFilter === 'DPO' ? (
             activeTab === 'Overdue' ? (
               overdueTickets.map(t => (
-                <OverdueCard key={t.id} ticket={t} onClose={handleCloseTicket} />
+                <OverdueCard
+                  key={t.id}
+                  ticket={t}
+                  onView={handleOpenOverdueDetail}
+                  onClose={handleCloseTicket}
+                />
               ))
             ) : (
               appealList.map(t => (
@@ -1271,12 +1370,14 @@ export default function DPODashboardScreen({ onBack }: { onBack?: () => void } =
               ))
             )
           ) : cdpoActiveTab === 'Pending' ? (
-            pendingCards.map(t => (
-              <TicketCardComponent key={t.id} card={t} />
-            ))
+            pendingCards
+              .filter(t => t.assignedTo === assignFilter)
+              .map(t => (
+                <TicketCardComponent key={t.id} card={t} />
+              ))
           ) : (
             pendingCards
-              .filter(c => !c.isOverdue)
+              .filter(c => !c.isOverdue && c.assignedTo === assignFilter)
               .map(t => (
                 <TicketCardComponent
                   key={t.id + '-r'}
