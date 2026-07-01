@@ -12,10 +12,10 @@ import {
 } from 'react-native';
 import { ResolvedTicketCard, AssignedFilter } from './BeneficiaryRedressalScreen';
 
-const imgBackIconWhite = 'http://localhost:3845/assets/7f8f3adda2b5ee6b329aa4bec9e698dafbe66a4e.svg';
-const imgIcon  = 'http://localhost:3845/assets/68a3d96cc9d535751db0556c4ec051a7b10232bc.svg';
-const imgIcon1 = 'http://localhost:3845/assets/4e4c20143662c7fa550404d6af1b4a67fff5a25a.svg';
-const imgIcon2 = 'http://localhost:3845/assets/d8fb18a3620042e5865afa1aa020f61987b34fbb.svg';
+const imgBackIconWhite = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/arrow-left.svg';
+const imgIcon  = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/reception-4.svg';
+const imgIcon1 = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/wifi.svg';
+const imgIcon2 = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/battery-full.svg';
 
 // ─── Status config ────────────────────────────────────────────────────────────
 
@@ -136,22 +136,32 @@ export default function TicketDetailsScreen({
   onBack,
   onResolveTicket,
   resolveLabel = 'Resolve and Close',
+  hideResolveCTA = false,
   isCdpoView = false,
-  isDpoView = false,
+  isAppealTicket = false,
+  onResolveAppeal,
 }: {
   card: any;
   assignedFilter: AssignedFilter;
   onBack: () => void;
-  onResolveTicket?: (ticketId: string, closureNote: string, decision?: 'uphold' | 'dismiss') => void;
+  onResolveTicket?: (ticketId: string, closureNote: string) => void;
   resolveLabel?: string;
+  hideResolveCTA?: boolean;
   isCdpoView?: boolean;
-  isDpoView?: boolean;
+  isAppealTicket?: boolean;
+  onResolveAppeal?: (ticketId: string, decision: 'uphold' | 'dismiss', notes: string) => void;
 }) {
   const [currentCard, setCurrentCard] = useState(card);
   const [actionModalVisible, setActionModalVisible] = useState(false);
   const [closureNote, setClosureNote] = useState('');
-  const [appealDecision, setAppealDecision] = useState<'uphold' | 'dismiss' | undefined>(undefined);
   const [showSuccess, setShowSuccess] = useState(false);
+
+  // Appeal resolution state
+  const [appealModalVisible, setAppealModalVisible] = useState(false);
+  const [appealDecision, setAppealDecision] = useState<'uphold' | 'dismiss' | null>(null);
+  const [appealNotes, setAppealNotes] = useState('');
+  const [appealConfirmed, setAppealConfirmed] = useState(false);
+  const [showAppealSuccess, setShowAppealSuccess] = useState(false);
 
   useEffect(() => {
     setCurrentCard(card);
@@ -207,7 +217,7 @@ export default function TicketDetailsScreen({
   }
 
   // DPO Escalation (after 14 days)
-  if (diffDays >= 14 && assignedRole !== 'DPO') {
+  if (diffDays >= 14) {
     const escalationDayVal = new Date(subYear, subMonth - 1, subDay + 14);
     const escalationDay = escalationDayVal.getDate();
     const escalationMonth = months[escalationDayVal.getMonth()];
@@ -249,11 +259,6 @@ export default function TicketDetailsScreen({
     const appMonth = months[appealDayVal.getMonth()];
     const appYear = appealDayVal.getFullYear();
 
-    const appealResolvedDayVal = new Date(subYear, subMonth - 1, subDay + Math.min(diffDays, 14) + 5);
-    const appResDay = appealResolvedDayVal.getDate();
-    const appResMonth = months[appealResolvedDayVal.getMonth()];
-    const appResYear = appealResolvedDayVal.getFullYear();
-
     if (currentCard.status === 'CLOSURE_PENDING') {
       timelineItems.push({
         label: `Ticket Resolved by ${assignedRole}`,
@@ -261,9 +266,9 @@ export default function TicketDetailsScreen({
         dotColor: '#2e7d32'
       });
     } else if (currentCard.status === 'CLOSED') {
-      if (assignedRole === 'CDPO' || assignedRole === 'DPO') {
+      if (assignedRole === 'CDPO') {
         timelineItems.push({
-          label: `Ticket Resolved & Closed by ${assignedRole}`,
+          label: 'Ticket Resolved & Closed by CDPO',
           date: `${clsDay < 10 ? '0' + clsDay : clsDay} ${clsMonth} ${clsYear}, 10:00 AM`,
           dotColor: '#2e7d32'
         });
@@ -280,9 +285,9 @@ export default function TicketDetailsScreen({
         });
       }
     } else if (currentCard.status === 'APPEAL_RAISED') {
-      if (assignedRole === 'CDPO' || assignedRole === 'DPO') {
+      if (assignedRole === 'CDPO') {
         timelineItems.push({
-          label: `Ticket Resolved & Closed by ${assignedRole}`,
+          label: 'Ticket Resolved & Closed by CDPO',
           date: `${clsDay < 10 ? '0' + clsDay : clsDay} ${clsMonth} ${clsYear}, 10:00 AM`,
           dotColor: '#2e7d32'
         });
@@ -304,9 +309,9 @@ export default function TicketDetailsScreen({
         dotColor: '#f57f17'
       });
     } else if (currentCard.status === 'APPEAL_RESOLVED') {
-      if (assignedRole === 'CDPO' || assignedRole === 'DPO') {
+      if (assignedRole === 'CDPO') {
         timelineItems.push({
-          label: `Ticket Resolved & Closed by ${assignedRole}`,
+          label: 'Ticket Resolved & Closed by CDPO',
           date: `${clsDay < 10 ? '0' + clsDay : clsDay} ${clsMonth} ${clsYear}, 10:00 AM`,
           dotColor: '#2e7d32'
         });
@@ -329,7 +334,7 @@ export default function TicketDetailsScreen({
       });
       timelineItems.push({
         label: 'Appeal Resolved by DPO',
-        date: `${appResDay < 10 ? '0' + appResDay : appResDay} ${appResMonth} ${appResYear}, 11:00 AM`,
+        date: `${appDay < 10 ? '0' + (appDay + 5) : (appDay + 5)} ${appMonth} ${appYear}, 11:00 AM`,
         dotColor: '#1a237e'
       });
     }
@@ -357,21 +362,7 @@ export default function TicketDetailsScreen({
     { label: 'Sector',   value: currentCard.sector ?? 'Sector 1' },
   ];
 
-  let hasBottomCTA = false;
-  let actionLabel = resolveLabel || 'Resolve and Close';
-
-  if (isDpoView) {
-    if (isPending && assignedRole === 'DPO') {
-      hasBottomCTA = true;
-      actionLabel = 'Resolve & Close Ticket';
-    } else if (currentCard.status === 'APPEAL_RAISED') {
-      hasBottomCTA = true;
-      actionLabel = 'Resolve Appeal';
-    }
-  } else {
-    hasBottomCTA = isPending || showCloseButton;
-    actionLabel = isPending ? (resolveLabel || 'Resolve and Close') : 'Close Ticket';
-  }
+  const hasBottomCTA = (isPending && !hideResolveCTA) || showCloseButton || isAppealTicket;
 
   return (
     <View style={dtStyles.root}>
@@ -390,7 +381,7 @@ export default function TicketDetailsScreen({
       {/* Header */}
       <View style={dtStyles.header}>
         <TouchableOpacity style={dtStyles.backBtn} onPress={onBack} activeOpacity={0.7}>
-          <Text style={dtStyles.backArrow}>{'←'}</Text>
+          <Image source={{ uri: imgBackIconWhite }} style={dtStyles.backIcon} />
         </TouchableOpacity>
         <Text style={dtStyles.headerTitle}>Ticket Details</Text>
         <View style={dtStyles.headerSpacer} />
@@ -451,7 +442,7 @@ export default function TicketDetailsScreen({
             <SectionHeader title="Supporting Documents" />
             <View style={dtStyles.docsSection}>
               <View style={dtStyles.docItem}>
-                <Image source={{ uri: 'http://localhost:3845/assets/73be45dd812dab1ed305e0e71138eed35eb8bd6d.svg' }} style={dtStyles.docIcon} />
+                <Image source={{ uri: 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/file-earmark-pdf-fill.svg' }} style={dtStyles.docIcon} />
                 <View style={dtStyles.docInfo}>
                   <Text style={dtStyles.docName}>
                     {currentCard.id === '1' ? 'pmmvy_enrollment_form.pdf' :
@@ -502,29 +493,29 @@ export default function TicketDetailsScreen({
           ))}
         </View>
 
-        {isDpoView && assignedRole !== 'DPO' && isPending && (
-          <View style={{ backgroundColor: '#ffebee', borderColor: '#ffcdd2', borderWidth: 1, padding: 14, borderRadius: 8, marginTop: 12, alignItems: 'center' }}>
-            <Text style={{ color: '#d32f2f', fontWeight: '700', fontFamily: 'Inter', fontSize: 13, textAlign: 'center' }}>
-              Escalated to DPO (View Only). {assignedRole === 'CDPO' ? 'CDPO' : assignedRole === 'Supervisor' ? 'Supervisor' : 'AWW'} is the main Closing Officer.
-            </Text>
-          </View>
-        )}
-
         <View style={{ height: 32 }} />
       </ScrollView>
 
-      {/* Sticky Bottom Footer CTA (Shown for both Pending and closure pending Resolved tickets) */}
+      {/* Sticky Bottom Footer CTA */}
       {hasBottomCTA && (
         <View style={dtStyles.stickyFooter}>
           <TouchableOpacity
-            style={dtStyles.closeBtn}
+            style={[dtStyles.closeBtn, isAppealTicket && { backgroundColor: '#e65100' }]}
             activeOpacity={0.85}
             onPress={() => {
-              setActionModalVisible(true);
+              if (isAppealTicket) {
+                setAppealModalVisible(true);
+              } else {
+                setActionModalVisible(true);
+              }
             }}
           >
             <Text style={dtStyles.closeBtnText}>
-              {actionLabel}
+              {isAppealTicket
+                ? 'Resolve Appeal'
+                : isPending
+                  ? (resolveLabel || 'Resolve and Close')
+                  : 'Close Ticket'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -533,18 +524,31 @@ export default function TicketDetailsScreen({
       {/* Action Taken Modal */}
       <ActionTakenModal
         visible={actionModalVisible}
-        title={currentCard.status === 'APPEAL_RAISED' ? 'Resolve Appeal' : (isPending ? "Resolve & Close Ticket" : "Close Ticket")}
-        buttonText={currentCard.status === 'APPEAL_RAISED' ? 'Confirm Decision' : (isPending ? "Resolve & Close Ticket" : "Close Ticket")}
+        title={isPending ? "Resolve & Close Ticket" : "Close Ticket"}
+        buttonText={isPending ? "Resolve & Close Ticket" : "Close Ticket"}
         onClose={() => setActionModalVisible(false)}
-        isAppeal={currentCard.status === 'APPEAL_RAISED'}
-        onSubmit={(note, decision) => {
+        onSubmit={(note) => {
           if (onResolveTicket) {
-            onResolveTicket(currentCard.id, note, decision);
+            onResolveTicket(currentCard.id, note);
           }
           setClosureNote(note);
-          setAppealDecision(decision);
           setActionModalVisible(false);
           setShowSuccess(true);
+        }}
+      />
+
+      {/* Appeal Resolution Modal */}
+      <AppealResolutionSheet
+        visible={appealModalVisible}
+        notes={appealNotes}
+        setNotes={setAppealNotes}
+        onClose={() => {
+          setAppealModalVisible(false);
+          setAppealNotes('');
+        }}
+        onSubmit={() => {
+          setAppealModalVisible(false);
+          setShowAppealSuccess(true);
         }}
       />
 
@@ -553,18 +557,27 @@ export default function TicketDetailsScreen({
         <SuccessScreen
           ticketNumber={currentCard.ticketNumber}
           onBack={onBack}
-          isAppeal={currentCard.status === 'APPEAL_RAISED'}
-          decision={appealDecision}
-          isDpo={assignedRole === 'DPO'}
           onViewDetails={() => {
             setShowSuccess(false);
             setCurrentCard((prev: any) => ({
               ...prev,
               isPendingTicket: false,
-              status: currentCard.status === 'APPEAL_RAISED' ? 'APPEAL_RESOLVED' : 'CLOSED',
+              status: 'CLOSED',
               actionTaken: closureNote,
-              dpoActionTaken: currentCard.status === 'APPEAL_RAISED' ? closureNote : undefined,
             }));
+          }}
+        />
+      )}
+
+      {/* Appeal Success Screen */}
+      {showAppealSuccess && (
+        <AppealSuccessScreen
+          ticketNumber={currentCard.ticketNumber}
+          onBack={() => {
+            if (onResolveAppeal) {
+              onResolveAppeal(currentCard.id, appealNotes);
+            }
+            onBack();
           }}
         />
       )}
@@ -610,8 +623,8 @@ const dtStyles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
   },
-  backBtn: { width: 29, height: 24, justifyContent: 'center', alignItems: 'center' },
-  backArrow: { fontSize: 28, color: '#ffffff', lineHeight: 28, fontWeight: '300', includeFontPadding: false },
+  backBtn: { width: 29, height: 24, justifyContent: 'center' },
+  backIcon: { width: 29, height: 24, tintColor: '#ffffff' },
   headerTitle: {
     flex: 1,
     fontFamily: 'Inter',
@@ -912,29 +925,27 @@ const ActionTakenModal = ({
   buttonText = "Resolve & Close Ticket",
   onClose,
   onSubmit,
-  isAppeal = false,
 }: {
   visible: boolean;
   title?: string;
   buttonText?: string;
   onClose: () => void;
-  onSubmit: (note: string, decision?: 'uphold' | 'dismiss') => void;
-  isAppeal?: boolean;
+  onSubmit: (note: string) => void;
 }) => {
   const { slideAnim, fadeAnim, mounted } = useSheetAnim(visible);
   const [closureNote, setClosureNote] = useState('');
-  const [decision, setDecision] = useState<'uphold' | 'dismiss' | null>(null);
+  const [confirmClosed, setConfirmClosed] = useState(false);
 
   useEffect(() => {
     if (visible) {
       setClosureNote('');
-      setDecision(null);
+      setConfirmClosed(false);
     }
   }, [visible]);
 
   if (!mounted) return null;
 
-  const isValid = closureNote.trim().length > 0 && (!isAppeal || decision !== null);
+  const isValid = closureNote.trim().length > 0;
 
   return (
     <View pointerEvents={visible ? 'auto' : 'box-none'} style={sheetStyles.inlineOverlayWrapper}>
@@ -944,7 +955,7 @@ const ActionTakenModal = ({
       <Animated.View
         style={[
           sheetStyles.inlineSheet,
-          { height: isAppeal ? 440 : 350, transform: [{ translateY: slideAnim }] },
+          { height: 350, transform: [{ translateY: slideAnim }] },
         ]}
       >
         {/* Handle */}
@@ -959,64 +970,9 @@ const ActionTakenModal = ({
 
         {/* Body */}
         <View style={sheetStyles.body}>
-          {isAppeal && (
-            <View style={{ marginBottom: 12 }}>
-              <Text style={[sheetStyles.label, { marginBottom: 6 }]}>Your Decision *</Text>
-              <View style={{ flexDirection: 'row', gap: 10 }}>
-                {/* Uphold */}
-                <TouchableOpacity
-                  style={{
-                    flex: 1,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 8,
-                    borderWidth: 1.5,
-                    borderRadius: 8,
-                    padding: 10,
-                    borderColor: decision === 'uphold' ? '#2e7d32' : '#e0e0e0',
-                    backgroundColor: decision === 'uphold' ? '#e8f5e9' : '#fff',
-                  }}
-                  onPress={() => setDecision('uphold')}
-                  activeOpacity={0.8}
-                >
-                  <View style={{ width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: decision === 'uphold' ? '#2e7d32' : '#bdbdbd', justifyContent: 'center', alignItems: 'center' }}>
-                    {decision === 'uphold' && <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#2e7d32' }} />}
-                  </View>
-                  <View>
-                    <Text style={{ fontFamily: 'Inter', fontWeight: '700', fontSize: 12, color: decision === 'uphold' ? '#2e7d32' : '#424242' }}>Uphold Appeal</Text>
-                  </View>
-                </TouchableOpacity>
-
-                {/* Dismiss */}
-                <TouchableOpacity
-                  style={{
-                    flex: 1,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 8,
-                    borderWidth: 1.5,
-                    borderRadius: 8,
-                    padding: 10,
-                    borderColor: decision === 'dismiss' ? '#d32f2f' : '#e0e0e0',
-                    backgroundColor: decision === 'dismiss' ? '#ffebee' : '#fff',
-                  }}
-                  onPress={() => setDecision('dismiss')}
-                  activeOpacity={0.8}
-                >
-                  <View style={{ width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: decision === 'dismiss' ? '#d32f2f' : '#bdbdbd', justifyContent: 'center', alignItems: 'center' }}>
-                    {decision === 'dismiss' && <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#d32f2f' }} />}
-                  </View>
-                  <View>
-                    <Text style={{ fontFamily: 'Inter', fontWeight: '700', fontSize: 12, color: decision === 'dismiss' ? '#d32f2f' : '#424242' }}>Dismiss Appeal</Text>
-                  </View>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-
           {/* Label */}
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-            <Text style={sheetStyles.label}>{isAppeal ? "Resolution Notes" : "Action Taken"}</Text>
+            <Text style={sheetStyles.label}>Action Taken</Text>
             <Text style={{ color: '#d32f2f', marginLeft: 3 }}>*</Text>
           </View>
 
@@ -1024,7 +980,7 @@ const ActionTakenModal = ({
           <View style={sheetStyles.textareaWrapper}>
             <TextInput
               style={sheetStyles.textarea}
-              placeholder={isAppeal ? "Provide the basis for your decision..." : "Describe the action taken and reason for closure..."}
+              placeholder="Describe the action taken and reason for closure..."
               placeholderTextColor="#9e9e9e"
               multiline
               numberOfLines={4}
@@ -1041,7 +997,7 @@ const ActionTakenModal = ({
           <TouchableOpacity
             style={[sheetStyles.applyBtn, !isValid && sheetStyles.applyBtnDisabled]}
             disabled={!isValid}
-            onPress={() => onSubmit(closureNote, decision || undefined)}
+            onPress={() => onSubmit(closureNote)}
             activeOpacity={0.7}
           >
             <Text style={sheetStyles.applyBtnText}>{buttonText}</Text>
@@ -1063,16 +1019,10 @@ const SuccessScreen = ({
   ticketNumber,
   onBack,
   onViewDetails,
-  isAppeal = false,
-  decision,
-  isDpo = false,
 }: {
   ticketNumber: string;
   onBack: () => void;
   onViewDetails: () => void;
-  isAppeal?: boolean;
-  decision?: 'uphold' | 'dismiss';
-  isDpo?: boolean;
 }) => {
   return (
     <View style={successStyles.container}>
@@ -1080,21 +1030,17 @@ const SuccessScreen = ({
         {/* Checked Circle */}
         <View style={successStyles.checkCircle}>
           <Image
-            source={{ uri: 'http://localhost:3845/assets/73be45dd812dab1ed305e0e71138eed35eb8bd6d.svg' }}
+            source={{ uri: 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/check-circle-fill.svg' }}
             style={successStyles.checkIcon}
           />
         </View>
 
         {/* Title */}
-        <Text style={successStyles.title}>{isAppeal ? "Appeal Resolved!" : "Ticket Closed!"}</Text>
+        <Text style={successStyles.title}>Ticket Closed!</Text>
 
         {/* Description */}
         <Text style={successStyles.description}>
-          {isAppeal
-            ? `Appeal for Ticket ${ticketNumber} has been ${decision === 'uphold' ? 'upheld (reopened)' : 'dismissed'} by DPO.`
-            : isDpo
-            ? `Ticket ${ticketNumber} has been marked as resolved & closed by DPO.`
-            : `Ticket ${ticketNumber} has been marked as closed by CDPO.`}
+          Ticket {ticketNumber} has been marked as closed by CDPO.
         </Text>
 
         {/* Buttons */}
@@ -1113,6 +1059,122 @@ const SuccessScreen = ({
 };
 
 
+
+const AppealResolutionSheet = ({
+  visible,
+  notes,
+  setNotes,
+  onClose,
+  onSubmit,
+}: {
+  visible: boolean;
+  notes: string;
+  setNotes: (n: string) => void;
+  onClose: () => void;
+  onSubmit: () => void;
+}) => {
+  const { slideAnim, fadeAnim, mounted } = useSheetAnim(visible);
+  if (!mounted) return null;
+
+  const canSubmit = notes.trim().length > 0;
+
+  return (
+    <View pointerEvents={visible ? 'auto' : 'box-none'} style={sheetStyles.inlineOverlayWrapper}>
+      <Animated.View style={[sheetStyles.inlineBackdrop, { opacity: fadeAnim }]} />
+      <TouchableOpacity style={sheetStyles.inlineDismiss} activeOpacity={1} onPress={onClose} />
+
+      <Animated.View
+        style={[
+          sheetStyles.inlineSheet,
+          { height: 395, transform: [{ translateY: slideAnim }] },
+        ]}
+      >
+        <View style={sheetStyles.handleRow}><View style={sheetStyles.handle} /></View>
+
+        <View style={sheetStyles.titleRow}>
+          <Text style={sheetStyles.sheetTitle}>Resolve Appeal</Text>
+        </View>
+
+        <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+          <View style={sheetStyles.body}>
+            {/* Action Taken */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+              <Text style={sheetStyles.label}>Action Taken</Text>
+              <Text style={{ color: '#d32f2f', marginLeft: 3 }}>*</Text>
+            </View>
+            <View style={sheetStyles.textareaWrapper}>
+              <TextInput
+                style={sheetStyles.textarea}
+                placeholder="Describe the action taken to resolve this appeal..."
+                placeholderTextColor="#9e9e9e"
+                multiline
+                numberOfLines={4}
+                maxLength={250}
+                value={notes}
+                onChangeText={setNotes}
+              />
+              <Text style={sheetStyles.counter}>{notes.length} / 250</Text>
+            </View>
+          </View>
+        </ScrollView>
+
+        {/* Footer Buttons */}
+        <View style={sheetStyles.buttonsContainer}>
+          <TouchableOpacity
+            style={[
+              sheetStyles.applyBtn,
+              { backgroundColor: '#2e7d32' },
+              !canSubmit && sheetStyles.applyBtnDisabled,
+            ]}
+            disabled={!canSubmit}
+            onPress={onSubmit}
+            activeOpacity={0.7}
+          >
+            <Text style={sheetStyles.applyBtnText}>Submit Resolution</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={sheetStyles.clearBtn} onPress={onClose} activeOpacity={0.7}>
+            <Text style={sheetStyles.clearBtnText}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      </Animated.View>
+    </View>
+  );
+};
+
+const AppealSuccessScreen = ({
+  ticketNumber,
+  onBack,
+}: {
+  ticketNumber: string;
+  onBack: () => void;
+}) => {
+  return (
+    <View style={successStyles.container}>
+      <View style={successStyles.content}>
+        <View style={[successStyles.checkCircle, { backgroundColor: '#e8f5e9' }]}>
+          <Image
+            source={{ uri: 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/check-circle-fill.svg' }}
+            style={[successStyles.checkIcon, { tintColor: '#2e7d32' }]}
+          />
+        </View>
+
+        <Text style={successStyles.title}>Appeal Resolved!</Text>
+
+        <Text style={successStyles.description}>
+          Appeal for {ticketNumber} has been resolved successfully.
+        </Text>
+
+        <View style={successStyles.buttonGroup}>
+          <TouchableOpacity style={successStyles.primaryBtn} onPress={onBack} activeOpacity={0.8}>
+            <Text style={successStyles.primaryBtnText}>Back to Ticket List</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+};
+
 // ─── Style Sheets ─────────────────────────────────────────────────────────────
 
 const sheetStyles = StyleSheet.create({
@@ -1122,7 +1184,7 @@ const sheetStyles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    width: 375,
+    width: '100%',
     zIndex: 999,
   },
   inlineBackdrop: {
@@ -1144,7 +1206,7 @@ const sheetStyles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     left: 0,
-    width: 375,
+    width: '100%',
     backgroundColor: '#ffffff',
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
@@ -1288,7 +1350,7 @@ const successStyles = StyleSheet.create({
     backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
-    width: 375,
+    width: '100%',
     zIndex: 9999,
   },
   content: {

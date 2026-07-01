@@ -13,17 +13,17 @@ import {
 } from 'react-native';
 
 // Asset URLs from Figma MCP localhost server
-const imgIcon = 'http://localhost:3845/assets/68a3d96cc9d535751db0556c4ec051a7b10232bc.svg';
-const imgIcon1 = 'http://localhost:3845/assets/4e4c20143662c7fa550404d6af1b4a67fff5a25a.svg';
-const imgIcon2 = 'http://localhost:3845/assets/d8fb18a3620042e5865afa1aa020f61987b34fbb.svg';
-const imgBackIconWhite = 'http://localhost:3845/assets/7f8f3adda2b5ee6b329aa4bec9e698dafbe66a4e.svg';
-const imgChevronDown = 'http://localhost:3845/assets/9d6c55a5780b87734427bb57f75bd6fccbb58623.svg';
-const imgChevronDown1 = 'http://localhost:3845/assets/30b64f7f06cc94d25556e6f34cdfe12c0935dcbd.svg';
-const imgIcon3 = 'http://localhost:3845/assets/73be45dd812dab1ed305e0e71138eed35eb8bd6d.svg';
-const imgCloseIcon = 'http://localhost:3845/assets/67d1da512779267315b557231287a65b73068fac.svg';
-const imgCalendarIcon = 'http://localhost:3845/assets/0d2b9fb8a52edbca2ea04c0077d5e0c53c39e57a.svg';
-const imgCalendarIcon1 = 'http://localhost:3845/assets/266749b2e21c71d3d5c06cac6425a6fd2ad0fba5.svg';
-const imgCalendarIcon2 = 'http://localhost:3845/assets/bca71dec266f858973c00891d906be6c76faca29.svg';
+const imgIcon = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/reception-4.svg';
+const imgIcon1 = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/wifi.svg';
+const imgIcon2 = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/battery-full.svg';
+const imgBackIconWhite = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/arrow-left.svg';
+const imgChevronDown = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/chevron-down.svg';
+const imgChevronDown1 = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/chevron-down.svg';
+const imgIcon3 = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/check.svg';
+const imgCloseIcon = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/x.svg';
+const imgCalendarIcon = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/calendar3.svg';
+const imgCalendarIcon1 = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/calendar3.svg';
+const imgCalendarIcon2 = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/calendar3.svg';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -740,102 +740,6 @@ export const pendingCards: TicketCard[] = [
     sector: 'Sector 1',
     assignedTo: 'DPO',
   },
-  {
-    id: 'p34',
-    ticketNumber: 'Ticket# 787868 898994',
-    beneficiaryName: 'Sunita Kashyap',
-    beneficiaryType: 'Pregnant Woman',
-    topic: 'Corruption',
-    description: 'Local distributor demanding extra charge for issuing nutrition kit.',
-    submittedDate: 'Submitted: 29/06/2025',
-    daysLabel: '13 Days Remaining',
-    daysType: 'remaining',
-    awcName: 'Anganwadi Centre 1',
-    documentsCount: 1,
-    isOverdue: false,
-    borderColor: '#e0e0e0',
-    complaintType: 'Corruption',
-    helpTopic: 'Corruption',
-    subTopic: 'Bribe Allegation',
-    beneficiaryMobile: '98765 00614',
-    awcCode: 'AWC-101',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 1',
-    assignedTo: 'DPO',
-  },
-  {
-    id: 'p35',
-    ticketNumber: 'Ticket# 787868 898995',
-    beneficiaryName: 'Rani Mukerji',
-    beneficiaryType: 'Lactating Mother',
-    topic: 'Urgent',
-    description: 'AWC helper absent for two weeks, no hot meals served to infants.',
-    submittedDate: 'Submitted: 25/06/2025',
-    daysLabel: '9 Days Remaining',
-    daysType: 'remaining',
-    awcName: 'Anganwadi Centre 3',
-    documentsCount: 1,
-    isOverdue: false,
-    borderColor: '#e0e0e0',
-    complaintType: 'Urgent',
-    helpTopic: 'Urgent',
-    subTopic: 'Staff Absence',
-    beneficiaryMobile: '98765 00615',
-    awcCode: 'AWC-103',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 3',
-    assignedTo: 'DPO',
-  },
-  {
-    id: 'p36',
-    ticketNumber: 'Ticket# 787868 898996',
-    beneficiaryName: 'Kajol Devgan',
-    beneficiaryType: 'Pregnant Woman',
-    topic: 'Corruption',
-    description: 'AWW diverting milk packets to local tea shops instead of distribution.',
-    submittedDate: 'Submitted: 20/06/2025',
-    daysLabel: '4 Days Remaining',
-    daysType: 'remaining',
-    awcName: 'Anganwadi Centre 2',
-    documentsCount: 1,
-    isOverdue: false,
-    borderColor: '#e0e0e0',
-    complaintType: 'Corruption',
-    helpTopic: 'Corruption',
-    subTopic: 'THR Misappropriation',
-    beneficiaryMobile: '98765 00616',
-    awcCode: 'AWC-102',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 4',
-    assignedTo: 'DPO',
-  },
-  {
-    id: 'p37',
-    ticketNumber: 'Ticket# 787868 898997',
-    beneficiaryName: 'Madhuri Dixit',
-    beneficiaryType: 'Lactating Mother',
-    topic: 'Urgent',
-    description: 'Severe contamination found in supplementary food packages.',
-    submittedDate: 'Submitted: 02/06/2025',
-    daysLabel: 'Overdue by 14 Days',
-    daysType: 'overdue',
-    awcName: 'Anganwadi Centre 5',
-    documentsCount: 1,
-    isOverdue: true,
-    borderColor: '#ffcdd2',
-    complaintType: 'Urgent',
-    helpTopic: 'Urgent',
-    subTopic: 'Food Quality',
-    beneficiaryMobile: '98765 00617',
-    awcCode: 'AWC-105',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 2',
-    assignedTo: 'DPO',
-  },
 ];
 
 export const resolvedCards: ResolvedTicketCard[] = [
@@ -1363,197 +1267,6 @@ export const resolvedCards: ResolvedTicketCard[] = [
     sector: 'Sector 1',
     assignedTo: 'DPO',
   },
-  {
-    id: 'r34',
-    ticketNumber: 'Ticket# 787868 898994',
-    beneficiaryName: 'Urmila Matondkar',
-    beneficiaryType: 'Pregnant Woman',
-    topic: 'Corruption',
-    description: 'AWW demanding bribe for releasing maternity benefit documents.',
-    resolvedDate: 'Resolved: 28/06/2025',
-    status: 'APPEAL_RESOLVED',
-    actionTaken: 'AWW suspended. Documents processed and delivered directly by CDPO.',
-    awcName: 'Anganwadi Centre 1',
-    helpTopic: 'Corruption',
-    subTopic: 'Bribe Allegation',
-    beneficiaryMobile: '98765 00714',
-    awcCode: 'AWC-101',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 1',
-    assignedTo: 'CDPO',
-    dpoActionTaken: 'Appeal resolved. CDPO action upheld and warning letter issued to Sector supervisor.',
-  },
-  {
-    id: 'r35',
-    ticketNumber: 'Ticket# 787868 898995',
-    beneficiaryName: 'Preity Zinta',
-    beneficiaryType: 'Lactating Mother',
-    topic: 'Urgent',
-    description: 'Emergency medical aid kit not available at Anganwadi Centre.',
-    resolvedDate: 'Resolved: 27/06/2025',
-    status: 'APPEAL_RESOLVED',
-    actionTaken: 'CDPO arranged delivery of emergency aid kit from central store.',
-    awcName: 'Anganwadi Centre 3',
-    helpTopic: 'Urgent',
-    subTopic: 'Emergency Service',
-    beneficiaryMobile: '98765 00715',
-    awcCode: 'AWC-103',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 3',
-    assignedTo: 'CDPO',
-    dpoActionTaken: 'Appeal resolved. Inventory checked district-wide to prevent future stockouts.',
-  },
-  {
-    id: 'r36',
-    ticketNumber: 'Ticket# 787868 898996',
-    beneficiaryName: 'Shilpa Shetty',
-    beneficiaryType: 'Children (3-6y)',
-    topic: 'Corruption',
-    description: 'Supervisor asking for money to clear ECCE kit supplies.',
-    resolvedDate: 'Resolved: 26/06/2025',
-    status: 'APPEAL_RESOLVED',
-    actionTaken: 'CDPO conducted inquiry. Supervisor cleared of charges due to lack of evidence.',
-    awcName: 'Anganwadi Centre 2',
-    helpTopic: 'Corruption',
-    subTopic: 'Bribe Allegation',
-    beneficiaryMobile: '98765 00716',
-    awcCode: 'AWC-102',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 4',
-    assignedTo: 'CDPO',
-    dpoActionTaken: 'Appeal resolved. Re-inquiry ordered by DPO. Bribe confirmed, Supervisor penalised.',
-  },
-  {
-    id: 'r37',
-    ticketNumber: 'Ticket# 787868 898997',
-    beneficiaryName: 'Raveena Tandon',
-    beneficiaryType: 'Children (6m-3y)',
-    topic: 'Urgent',
-    description: 'AWC roof leaking severely during rainy season.',
-    resolvedDate: 'Resolved: 25/06/2025',
-    status: 'APPEAL_RESOLVED',
-    actionTaken: 'Supervisor patched the roof using local fund allocations.',
-    awcName: 'Anganwadi Centre 4',
-    helpTopic: 'Urgent',
-    subTopic: 'Infrastructure Repair',
-    beneficiaryMobile: '98765 00717',
-    awcCode: 'AWC-104',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 1',
-    assignedTo: 'Supervisor',
-    dpoActionTaken: 'Appeal resolved. Complete roof renovation approved and funds disbursed from district budget.',
-  },
-  {
-    id: 'r38',
-    ticketNumber: 'Ticket# 787868 898998',
-    beneficiaryName: 'Sushmita Sen',
-    beneficiaryType: 'Pregnant Woman',
-    topic: 'Corruption',
-    description: 'Dry rations package contents short-weighted consistently.',
-    resolvedDate: 'Resolved: 24/06/2025',
-    status: 'APPEAL_RESOLVED',
-    actionTaken: 'AWW warned and instructed to weigh packages in front of beneficiaries.',
-    awcName: 'Anganwadi Centre 6',
-    helpTopic: 'Corruption',
-    subTopic: 'Short Weight THR',
-    beneficiaryMobile: '98765 00718',
-    awcCode: 'AWC-106',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 2',
-    assignedTo: 'AWW',
-    dpoActionTaken: 'Appeal resolved. Weighing scale calibration checked and certified at the centre.',
-  },
-  {
-    id: 'r39',
-    ticketNumber: 'Ticket# 787868 898999',
-    beneficiaryName: 'Madhuri Dixit',
-    beneficiaryType: 'Pregnant Woman',
-    topic: 'Urgent',
-    description: 'Severe shortage of supplementary nutrition supply at center.',
-    submittedDate: 'Submitted: 10/06/2025',
-    resolvedDate: 'Resolved: 18/06/2025',
-    status: 'APPEAL_RAISED',
-    actionTaken: 'Stock replenished from district reserve.',
-    awcName: 'Anganwadi Centre 5',
-    helpTopic: 'Urgent',
-    subTopic: 'Supply Shortage',
-    beneficiaryMobile: '98765 00810',
-    awcCode: 'AWC-105',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 2',
-    assignedTo: 'DPO',
-  },
-  {
-    id: 'r40',
-    ticketNumber: 'Ticket# 787868 899000',
-    beneficiaryName: 'Juhi Chawla',
-    beneficiaryType: 'Lactating Mother',
-    topic: 'Corruption',
-    description: 'Worker demanding money for registering child under PMMVY.',
-    submittedDate: 'Submitted: 12/06/2025',
-    resolvedDate: 'Resolved: 20/06/2025',
-    status: 'APPEAL_RAISED',
-    actionTaken: 'Inquiry conducted. Worker warned and registration completed without charges.',
-    awcName: 'Anganwadi Centre 1',
-    helpTopic: 'Corruption',
-    subTopic: 'Bribe Allegation',
-    beneficiaryMobile: '98765 00811',
-    awcCode: 'AWC-101',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 1',
-    assignedTo: 'DPO',
-  },
-  {
-    id: 'r41',
-    ticketNumber: 'Ticket# 787868 899001',
-    beneficiaryName: 'Karisma Kapoor',
-    beneficiaryType: 'Pregnant Woman',
-    topic: 'Urgent',
-    description: 'Immediate medical reference required for high risk pregnancy.',
-    submittedDate: 'Submitted: 14/06/2025',
-    resolvedDate: 'Resolved: 18/06/2025',
-    status: 'APPEAL_RESOLVED',
-    actionTaken: 'Reference arranged to Sub-district hospital. Beneficiary admitted.',
-    awcName: 'Anganwadi Centre 3',
-    helpTopic: 'Urgent',
-    subTopic: 'Emergency Service',
-    beneficiaryMobile: '98765 00812',
-    awcCode: 'AWC-103',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 3',
-    assignedTo: 'DPO',
-    dpoActionTaken: 'Appeal resolved. Hospital admission confirmed, mother and child are stable.',
-  },
-  {
-    id: 'r42',
-    ticketNumber: 'Ticket# 787868 899002',
-    beneficiaryName: 'Kajol Devgan',
-    beneficiaryType: 'Lactating Mother',
-    topic: 'Corruption',
-    description: 'Irregular distribution of THR packets to selected beneficiaries only.',
-    submittedDate: 'Submitted: 16/06/2025',
-    resolvedDate: 'Resolved: 25/06/2025',
-    status: 'APPEAL_RESOLVED',
-    actionTaken: 'Distribution log audited. Rectification ordered and correct distribution verified.',
-    awcName: 'Anganwadi Centre 6',
-    helpTopic: 'Corruption',
-    subTopic: 'THR Misappropriation',
-    beneficiaryMobile: '98765 00813',
-    awcCode: 'AWC-106',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 2',
-    assignedTo: 'DPO',
-    dpoActionTaken: 'Appeal resolved. Random physical verification of distribution logs conducted.',
-  },
 ];
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
@@ -1572,7 +1285,7 @@ const StatusBar_ = () => (
 const Header = ({ onBack }: { onBack?: () => void }) => (
   <View style={styles.header}>
     <TouchableOpacity style={styles.backButton} onPress={onBack} activeOpacity={0.7}>
-      <Text style={styles.backArrow}>{'←'}</Text>
+      <Image source={{ uri: imgBackIconWhite }} style={styles.backIcon} />
     </TouchableOpacity>
     <Text style={styles.headerTitle}>Beneficiary Redressal</Text>
     <View style={styles.headerSpacer} />
@@ -1819,11 +1532,11 @@ const FilterChips = ({
               onPress={onOverdueToggle}
               activeOpacity={0.7}
             >
-              <Text style={[styles.filterChipText, isOverdueActive && styles.filterChipTextActive]}>
+              <Text style={[styles.filterChipText, isOverdueActive && styles.filterChipTextOverdueActive]}>
                 Overdue
               </Text>
               {isOverdueActive && (
-                <Text style={styles.filterChipClose}> ×</Text>
+                <Text style={styles.filterChipCloseOverdue}> ×</Text>
               )}
             </TouchableOpacity>
 
@@ -1974,20 +1687,50 @@ export const TicketCardComponent = ({
   onPress?: () => void;
 }) => {
   const isCorruptionOrUrgent = card.complaintType === 'Corruption' || card.complaintType === 'Urgent';
+  const roleColor = (card.status === 'APPEAL_RAISED' || (card as any)._isAppeal) && card.assignedTo ? (
+    card.assignedTo.toUpperCase() === 'CDPO' ? { bg: '#e3f2fd', border: '#90caf9', text: '#1565c0' } :
+    card.assignedTo.toUpperCase() === 'SUPERVISOR' ? { bg: '#f3e5f5', border: '#ce93d8', text: '#7b1fa2' } :
+    card.assignedTo.toUpperCase() === 'AWW' ? { bg: '#e8f5e9', border: '#a5d6a7', text: '#2e7d32' } :
+    { bg: '#f5f5f5', border: '#e0e0e0', text: '#616161' }
+  ) : null;
+
   return (
     <TouchableOpacity
       style={[styles.card, { borderColor: card.borderColor ?? (card.isOverdue ? '#ffcdd2' : '#e0e0e0') }]}
       activeOpacity={0.85}
       onPress={onPress}
     >
-      {/* Ticket # + Overdue Badge Row */}
+      {/* Ticket # + Badges Row */}
       <View style={styles.cardTopRow}>
         <Text style={styles.cardTicketNum}>{card.ticketNumber}</Text>
-        {card.isOverdue && (
-          <View style={styles.overdueBadge}>
-            <Text style={styles.overdueBadgeText}>OVERDUE</Text>
-          </View>
-        )}
+        <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+          {roleColor && (
+            <View style={{
+              backgroundColor: roleColor.bg,
+              borderColor: roleColor.border,
+              borderWidth: 1,
+              borderRadius: 4,
+              paddingHorizontal: 6,
+              height: 19,
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}>
+              <Text style={{
+                fontFamily: 'Inter',
+                fontWeight: '600',
+                fontSize: 10,
+                color: roleColor.text,
+              }}>
+                {card.assignedTo}
+              </Text>
+            </View>
+          )}
+          {card.isOverdue && (
+            <View style={styles.overdueBadge}>
+              <Text style={styles.overdueBadgeText}>OVERDUE</Text>
+            </View>
+          )}
+        </View>
       </View>
 
       {/* Beneficiary Name + Tag Row */}
@@ -2050,17 +1793,9 @@ export const TicketCardComponent = ({
             <Text style={styles.awcLabel}>AWC: </Text>
             <Text style={styles.awcName}>{card.awcName}</Text>
           </View>
-          {showDocs && isCorruptionOrUrgent && card.documentsCount !== undefined && card.documentsCount > 0 ? (
+          {showDocs && isCorruptionOrUrgent && (card.documentsCount !== undefined && card.documentsCount > 0 || card.documents) ? (
             <View style={styles.docChip}>
-              <Text style={styles.docChipText}>
-                {card.documentsCount === 1 ? 'Doc Uploaded' : `${card.documentsCount} Docs Uploaded`}
-              </Text>
-            </View>
-          ) : (isCorruptionOrUrgent && card.documents) ? (
-            <View style={styles.docChip}>
-              <Text style={styles.docChipText}>
-                {card.documents.toLowerCase().includes('1 ') || card.documents.toLowerCase() === '1 document' ? 'Doc Uploaded' : card.documents}
-              </Text>
+              <Text style={styles.docChipText}>Doc Uploaded</Text>
             </View>
           ) : null}
         </View>
@@ -2074,9 +1809,7 @@ export const TicketCardComponent = ({
           ) : <View />}
           {(isCorruptionOrUrgent && card.documents) ? (
             <View style={styles.docChip}>
-              <Text style={styles.docChipText}>
-                {card.documents.toLowerCase().includes('1 ') || card.documents.toLowerCase() === '1 document' ? 'Doc Uploaded' : card.documents}
-              </Text>
+              <Text style={styles.docChipText}>Doc Uploaded</Text>
             </View>
           ) : null}
         </View>
@@ -2111,14 +1844,9 @@ export const ResolvedTicketCardComponent = ({
   onPress?: () => void;
 }) => {
   const cfg = STATUS_CONFIG[card.status];
-  const isAppealAwaiting = card.status === 'APPEAL_RAISED';
   return (
     <TouchableOpacity
-      style={[
-        resolvedCardStyles.card,
-        card.awaitingCdpoClosure && resolvedCardStyles.cardAwaitingClosure,
-        isAppealAwaiting && resolvedCardStyles.cardAwaitingAppeal
-      ]}
+      style={[resolvedCardStyles.card, card.awaitingCdpoClosure && resolvedCardStyles.cardAwaitingClosure]}
       activeOpacity={0.85}
       onPress={onPress}
     >
@@ -2126,13 +1854,6 @@ export const ResolvedTicketCardComponent = ({
       {card.awaitingCdpoClosure && (
         <View style={resolvedCardStyles.awaitingClosureRow}>
           <Text style={resolvedCardStyles.awaitingClosureText}>Awaiting CDPO Closure</Text>
-        </View>
-      )}
-
-      {/* Appeal Raised indicator row */}
-      {isAppealAwaiting && (
-        <View style={resolvedCardStyles.awaitingAppealRow}>
-          <Text style={resolvedCardStyles.awaitingAppealText}>Appeal Resolution Awaited</Text>
         </View>
       )}
 
@@ -2381,7 +2102,7 @@ const PendingBreakdownSheet = ({ visible, onClose }: { visible: boolean; onClose
           {/* Help note */}
           <View style={modalStyles.helpNote}>
             <Text style={modalStyles.helpNoteText}>
-              <Text style={modalStyles.helpNoteHighlight}>Pending</Text> is the count of tickets still awaiting action. <Text style={modalStyles.helpNoteHighlight}>Overdue</Text> is the subset that has crossed its resolution deadline (SLA) and needs urgent attention.
+              <Text style={modalStyles.helpNoteHighlight}>Pending</Text> is the count of tickets still awaiting action. <Text style={modalStyles.helpNoteHighlight}>Overdue</Text> tickets are the grievances which are pending for more than 21 days and need your immediate attention.
             </Text>
           </View>
         </View>
@@ -2495,7 +2216,7 @@ const TicketDetailsOverlay = ({
   onBack: () => void;
   onResolveTicket?: (ticketId: string, closureNote: string) => void;
 }) => (
-  <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: 375 }}>
+  <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%' }}>
     <TicketDetailsScreen
       card={card}
       assignedFilter={assignedFilter}
@@ -2653,7 +2374,7 @@ const filterSheetStyles = StyleSheet.create({
 
 // ─── Date Range Filter Sheet ──────────────────────────────────────────────────
 
-const DateRangeFilterSheet = ({
+export const DateRangeFilterSheet = ({
   visible,
   onClose,
   appliedOption,
@@ -2848,7 +2569,7 @@ const DateRangeFilterSheet = ({
 
 // ─── Type Filter Sheet ────────────────────────────────────────────────────────
 
-const TypeFilterSheet = ({
+export const TypeFilterSheet = ({
   visible,
   onClose,
   appliedTypes,
@@ -3283,17 +3004,10 @@ export default function BeneficiaryRedressalScreen({
 
   const displayedPendingCards = myPendingCards.filter((card) => {
     // 0. Role assignment filter
-    if (assignedFilter === 'CDPO') {
-      const isDirectlyToCdpo = card.assignedTo === 'CDPO';
-      const isCorruptionOrUrgentToOthers = (card.complaintType === 'Corruption' || card.complaintType === 'Urgent') &&
-                                           (card.assignedTo === 'Supervisor' || card.assignedTo === 'AWW');
-      if (!isDirectlyToCdpo && !isCorruptionOrUrgentToOthers) return false;
-    } else {
-      if (card.assignedTo && card.assignedTo !== assignedFilter) return false;
-    }
+    if (card.assignedTo && card.assignedTo !== assignedFilter) return false;
 
-    // 0a. Sector filter (Supervisor tab) — filter by sector field
-    if (assignedFilter === 'Supervisor' && selectedSector !== 'All Sectors') {
+    // 0a. Sector filter (Supervisor tab or AWW tab) — filter by sector field
+    if ((assignedFilter === 'Supervisor' || assignedFilter === 'AWW') && selectedSector !== 'All Sectors') {
       if (!card.sector || card.sector !== selectedSector) return false;
     }
     // 0b. AWC filter (AWW tab) — filter by awcName field
@@ -3351,8 +3065,8 @@ export default function BeneficiaryRedressalScreen({
     // 0. Role assignment filter
     if (card.assignedTo && card.assignedTo !== assignedFilter) return false;
 
-    // 0a. Sector filter (Supervisor tab)
-    if (assignedFilter === 'Supervisor' && selectedSector !== 'All Sectors') {
+    // 0a. Sector filter (Supervisor tab or AWW tab)
+    if ((assignedFilter === 'Supervisor' || assignedFilter === 'AWW') && selectedSector !== 'All Sectors') {
       if (!card.sector || card.sector !== selectedSector) return false;
     }
     // 0b. AWC filter (AWW tab)
@@ -3441,6 +3155,8 @@ export default function BeneficiaryRedressalScreen({
           selected={assignedFilter}
           onSelect={(val) => {
             setAssignedFilter(val);
+            setSelectedSector('All Sectors');
+            setSelectedAWC('All Centres');
             // Clear filters when role changes
             setIsOverdueActive(false);
             setAppliedDateOption(null);
@@ -3457,7 +3173,10 @@ export default function BeneficiaryRedressalScreen({
           <SectorDropdown value={selectedSector} onPress={() => setSectorPickVisible(true)} />
         )}
         {assignedFilter === 'AWW' && (
-          <AnganwadiCentreDropdown value={selectedAWC} onPress={() => setAwcPickVisible(true)} />
+          <>
+            <SectorDropdown value={selectedSector} onPress={() => setSectorPickVisible(true)} />
+            <AnganwadiCentreDropdown value={selectedAWC} onPress={() => setAwcPickVisible(true)} />
+          </>
         )}
 
         {/* Tab Bar */}
@@ -3627,7 +3346,7 @@ export default function BeneficiaryRedressalScreen({
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    width: 375,
+    width: '100%',
     backgroundColor: '#fafafa',
     overflow: 'hidden',
   },
@@ -3669,15 +3388,8 @@ const styles = StyleSheet.create({
     width: 29,
     height: 24,
     justifyContent: 'center',
-    alignItems: 'center',
   },
-  backArrow: {
-    fontSize: 28,
-    color: '#ffffff',
-    lineHeight: 28,
-    fontWeight: '300',
-    includeFontPadding: false,
-  },
+  backIcon: { width: 29, height: 24, tintColor: '#ffffff' },
   headerTitle: {
     flex: 1,
     fontFamily: 'Inter',
@@ -3936,8 +3648,8 @@ const styles = StyleSheet.create({
     lineHeight: 19.5,
   },
   filterChipOverdueActive: {
-    backgroundColor: '#c62828',
-    borderColor: '#c62828',
+    backgroundColor: '#ffebee',
+    borderColor: '#ef9a9a',
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -3945,14 +3657,28 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter',
     fontWeight: '600',
     fontSize: 13,
-    color: '#ffffff',
+    color: '#1a237e',
+    lineHeight: 19.5,
+  },
+  filterChipTextOverdueActive: {
+    fontFamily: 'Inter',
+    fontWeight: '600',
+    fontSize: 13,
+    color: '#c62828',
     lineHeight: 19.5,
   },
   filterChipClose: {
     fontFamily: 'Inter',
     fontWeight: '700',
     fontSize: 14,
-    color: '#ffffff',
+    color: '#1a237e',
+    lineHeight: 19.5,
+  },
+  filterChipCloseOverdue: {
+    fontFamily: 'Inter',
+    fontWeight: '700',
+    fontSize: 14,
+    color: '#c62828',
     lineHeight: 19.5,
   },
   clearAllRow: {
@@ -4206,10 +3932,6 @@ const resolvedCardStyles = StyleSheet.create({
     borderColor: '#ffe082',
     borderWidth: 1.5,
   },
-  cardAwaitingAppeal: {
-    borderColor: '#ffcc80',
-    borderWidth: 1.5,
-  },
   awaitingClosureRow: {
     marginHorizontal: -16,
     marginTop: -16,
@@ -4225,25 +3947,6 @@ const resolvedCardStyles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 11,
     color: '#f57f17',
-    lineHeight: 16.5,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-  },
-  awaitingAppealRow: {
-    marginHorizontal: -16,
-    marginTop: -16,
-    marginBottom: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    backgroundColor: '#fff3e0',
-    borderBottomWidth: 1,
-    borderBottomColor: '#ffcc80',
-  },
-  awaitingAppealText: {
-    fontFamily: 'Inter',
-    fontWeight: '600',
-    fontSize: 11,
-    color: '#e65100',
     lineHeight: 16.5,
     textTransform: 'uppercase',
     letterSpacing: 0.4,
@@ -4428,7 +4131,7 @@ const modalStyles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    width: 375,
+    width: '100%',
   },
   inlineBackdrop: {
     position: 'absolute',
@@ -4449,7 +4152,7 @@ const modalStyles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     left: 0,
-    width: 375,
+    width: '100%',
     height: 491,
     backgroundColor: '#ffffff',
     borderTopLeftRadius: 16,
