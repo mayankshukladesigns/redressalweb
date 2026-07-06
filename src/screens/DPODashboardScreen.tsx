@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import BeneficiaryRedressalScreen, {
   TicketCard,
+  ResolvedTicketCard,
+  AssignedFilter,
   pendingCards,
   resolvedCards,
   TicketCardComponent,
@@ -395,6 +397,7 @@ const DPOSummaryTable = ({
       </View>
 
       {[
+        { label: 'DPO',        pending: '4',     resolved: '4',     total: '8' },
         { label: 'CDPO',       pending: '7',     resolved: '5',     total: '12' },
         { label: 'Supervisor', pending: '50',    resolved: '150',    total: '200' },
         { label: 'AWW',        pending: '2,000', resolved: '1,000', total: '3,000' },
@@ -413,9 +416,9 @@ const DPOSummaryTable = ({
       {/* Total Row */}
       <View style={[s.sRow, s.sDataRow, { borderBottomWidth: 0 }]}>
         <View style={s.sCol0}><Text style={[s.sRowLabel, { fontWeight: '600', color: '#1a237e' }]}>Total</Text></View>
-        <View style={s.sColData}><Text style={[s.sDataVal, { color: '#e65100' }]}>2,057</Text></View>
-        <View style={s.sColData}><Text style={[s.sDataVal, { color: '#2e7d32' }]}>1,155</Text></View>
-        <View style={s.sColData}><Text style={[s.sDataVal, { color: '#1a237e' }]}>3,212</Text></View>
+        <View style={s.sColData}><Text style={[s.sDataVal, { color: '#e65100' }]}>2,061</Text></View>
+        <View style={s.sColData}><Text style={[s.sDataVal, { color: '#2e7d32' }]}>1,159</Text></View>
+        <View style={s.sColData}><Text style={[s.sDataVal, { color: '#1a237e' }]}>3,220</Text></View>
       </View>
     </View>
   </View>
@@ -480,20 +483,36 @@ const CDPOTabBar = ({
   onChange,
   showAppealTab,
   appealCount,
+  overdueCount,
+  pendingCount,
+  resolvedCount,
 }: {
-  active: 'Pending' | 'Resolved' | 'Appeal Pending';
-  onChange: (t: 'Pending' | 'Resolved' | 'Appeal Pending') => void;
+  active: 'Pending' | 'Overdue' | 'Resolved' | 'Appeal Pending';
+  onChange: (t: 'Pending' | 'Overdue' | 'Resolved' | 'Appeal Pending') => void;
   showAppealTab?: boolean;
   appealCount?: number;
+  overdueCount?: number;
+  pendingCount?: number;
+  resolvedCount?: number;
 }) => {
-  const tabs: ('Pending' | 'Resolved' | 'Appeal Pending')[] = showAppealTab
-    ? ['Pending', 'Resolved', 'Appeal Pending']
+  const tabs: ('Pending' | 'Overdue' | 'Resolved' | 'Appeal Pending')[] = showAppealTab
+    ? ['Pending', 'Overdue', 'Resolved', 'Appeal Pending']
     : ['Pending', 'Resolved'];
 
+  const isFourTabs = tabs.length === 4;
+
+  const formatCountStr = (num: number) => {
+    if (num >= 1000) {
+      return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+    }
+    return String(num);
+  };
+
   const getCount = (tab: string) => {
-    if (tab === 'Pending') return '7';
-    if (tab === 'Resolved') return '5';
-    if (tab === 'Appeal Pending') return String(appealCount ?? 0);
+    if (tab === 'Pending') return formatCountStr(pendingCount ?? 7);
+    if (tab === 'Overdue') return formatCountStr(overdueCount ?? 0);
+    if (tab === 'Resolved') return formatCountStr(resolvedCount ?? 5);
+    if (tab === 'Appeal Pending') return formatCountStr(appealCount ?? 0);
     return '0';
   };
 
@@ -501,12 +520,12 @@ const CDPOTabBar = ({
     <View style={s.tabBar}>
       {tabs.map(tab => (
         <TouchableOpacity key={tab} style={s.tabItem} onPress={() => onChange(tab)} activeOpacity={0.8}>
-          <View style={s.tabContent}>
-            <Text style={[s.tabText, active === tab && s.tabTextActive]}>
+          <View style={[s.tabContent, isFourTabs && { gap: 4 }]}>
+            <Text style={[s.tabText, active === tab && s.tabTextActive, isFourTabs && { fontSize: 12 }]}>
               {tab === 'Appeal Pending' ? 'Appeals' : tab}
             </Text>
-            <View style={[s.tabBadge, active === tab ? s.tabBadgeOn : s.tabBadgeOff]}>
-              <Text style={[s.tabBadgeTxt, active === tab ? s.tabBadgeTxtOn : s.tabBadgeTxtOff]}>
+            <View style={[s.tabBadge, active === tab ? s.tabBadgeOn : s.tabBadgeOff, isFourTabs && { minWidth: 18, height: 16, borderRadius: 8, paddingHorizontal: 4 }]}>
+              <Text style={[s.tabBadgeTxt, active === tab ? s.tabBadgeTxtOn : s.tabBadgeTxtOff, isFourTabs && { fontSize: 9 }]}>
                 {getCount(tab)}
               </Text>
             </View>
@@ -802,17 +821,18 @@ const PendingBreakdownSheet = ({ visible, onClose }: { visible: boolean; onClose
   if (!mounted) return null;
 
   const rows = [
+    { role: 'DPO',         pending: '4',     overdue: '2',   isSeparatorLight: true },
     { role: 'CDPO',        pending: '7',     overdue: '3',   isSeparatorLight: true },
     { role: 'Supervisor',  pending: '50',    overdue: '10',  isSeparatorLight: true },
     { role: 'AWW',         pending: '2,000', overdue: '503', isSeparatorLight: false },
-    { role: 'Total',       pending: '2,057', overdue: '516', isTotal: true },
+    { role: 'Total',       pending: '2,061', overdue: '518', isTotal: true },
   ];
 
   return (
     <View pointerEvents={visible ? 'auto' : 'box-none'} style={ms.overlayWrapper}>
       <Animated.View style={[ms.backdrop, { opacity: fadeAnim }]} />
       <TouchableOpacity style={ms.dismiss} activeOpacity={1} onPress={onClose} />
-      <Animated.View style={[ms.sheet, { height: 545, transform: [{ translateY: slideAnim }] }]}>
+      <Animated.View style={[ms.sheet, { height: 640, transform: [{ translateY: slideAnim }] }]}>
         <View style={ms.handleRow}><View style={ms.handle} /></View>
         <View style={ms.titleRow}>
           <Text style={ms.sheetTitle}>Pending Breakdown</Text>
@@ -824,7 +844,7 @@ const PendingBreakdownSheet = ({ visible, onClose }: { visible: boolean; onClose
           {/* Total card */}
           <View style={[ms.pendingTotalCard, { backgroundColor: '#e8eaf6' }]}>
             <Text style={[ms.pendingTotalLabel, { color: '#5c67b5' }]}>TOTAL PENDING</Text>
-            <Text style={[ms.pendingTotalValue, { color: '#1a237e' }]}>2,057</Text>
+            <Text style={[ms.pendingTotalValue, { color: '#1a237e' }]}>2,061</Text>
           </View>
           {/* Table */}
           <View style={ms.pendingTableWrapper}>
@@ -871,22 +891,22 @@ const ResolvedBreakdownSheet = ({ visible, onClose }: { visible: boolean; onClos
     {
       label: 'Closure Pending', value: '104', color: '#f57f17',
       bg: '#fff8e1', border: '#ffe082', divider: '#ffe082',
-      rows: [{ role: 'CDPO', val: '1' }, { role: 'Supervisor', val: '3' }, { role: 'AWW', val: '100' }],
+      rows: [{ role: 'DPO', val: '0' }, { role: 'CDPO', val: '1' }, { role: 'Supervisor', val: '3' }, { role: 'AWW', val: '100' }],
     },
     {
-      label: 'Closed', value: '863', color: '#2e7d32',
+      label: 'Closed', value: '867', color: '#2e7d32',
       bg: '#e8f5e9', border: '#a5d6a7', divider: '#a5d6a7',
-      rows: [{ role: 'CDPO', val: '3' }, { role: 'Supervisor', val: '110' }, { role: 'AWW', val: '750' }],
+      rows: [{ role: 'DPO', val: '4' }, { role: 'CDPO', val: '3' }, { role: 'Supervisor', val: '110' }, { role: 'AWW', val: '750' }],
     },
     {
       label: 'Appeal Raised', value: '92', color: '#e65100',
       bg: '#fff3e0', border: '#ffcc80', divider: '#ffcc80',
-      rows: [{ role: 'CDPO', val: '0' }, { role: 'Supervisor', val: '12' }, { role: 'AWW', val: '80' }],
+      rows: [{ role: 'DPO', val: '0' }, { role: 'CDPO', val: '0' }, { role: 'Supervisor', val: '12' }, { role: 'AWW', val: '80' }],
     },
     {
       label: 'Appeal Resolved', value: '79', color: '#1565c0',
       bg: '#e8eaf6', border: '#90caf9', divider: '#90caf9',
-      rows: [{ role: 'CDPO', val: '1' }, { role: 'Supervisor', val: '8' }, { role: 'AWW', val: '70' }],
+      rows: [{ role: 'DPO', val: '0' }, { role: 'CDPO', val: '1' }, { role: 'Supervisor', val: '8' }, { role: 'AWW', val: '70' }],
     },
   ];
 
@@ -894,7 +914,7 @@ const ResolvedBreakdownSheet = ({ visible, onClose }: { visible: boolean; onClos
     <View pointerEvents={visible ? 'auto' : 'box-none'} style={ms.overlayWrapper}>
       <Animated.View style={[ms.backdrop, { opacity: fadeAnim }]} />
       <TouchableOpacity style={ms.dismiss} activeOpacity={1} onPress={onClose} />
-      <Animated.View style={[ms.sheet, { height: 510, transform: [{ translateY: slideAnim }] }]}>
+      <Animated.View style={[ms.sheet, { height: 550, transform: [{ translateY: slideAnim }] }]}>
         <View style={ms.handleRow}><View style={ms.handle} /></View>
         <View style={titleRowStyle}>
           <Text style={ms.sheetTitle}>Resolved Breakdown</Text>
@@ -907,10 +927,15 @@ const ResolvedBreakdownSheet = ({ visible, onClose }: { visible: boolean; onClos
           <View style={ms.resolvedTotalCard}>
             <View>
               <Text style={[ms.totalLabel, { color: '#388e3c' }]}>TOTAL RESOLVED</Text>
-              <Text style={[ms.totalVal, { color: '#2e7d32' }]}>1,155</Text>
+              <Text style={[ms.totalVal, { color: '#2e7d32' }]}>1,159</Text>
             </View>
             <View style={{ gap: 3, alignItems: 'flex-end' }}>
-              {[{ label: 'CDPO', val: '5' }, { label: 'Supervisor', val: '150' }, { label: 'AWW', val: '1,000' }].map(r => (
+              {[
+                { label: 'DPO', val: '4' },
+                { label: 'CDPO', val: '5' },
+                { label: 'Supervisor', val: '150' },
+                { label: 'AWW', val: '1,000' },
+              ].map(r => (
                 <View key={r.label} style={{ flexDirection: 'row', gap: 6 }}>
                   <Text style={{ fontFamily: 'Inter', fontSize: 11, color: '#66bb6a' }}>{r.label}</Text>
                   <Text style={{ fontFamily: 'Inter', fontWeight: '700', fontSize: 13, color: '#2e7d32' }}>{r.val}</Text>
@@ -1679,15 +1704,35 @@ const dropdownStyles = StyleSheet.create({
 
 // ─── Main DPO Screen ──────────────────────────────────────────────────────────
 
-export default function DPODashboardScreen({ onBack }: { onBack?: () => void } = {}) {
+export default function DPODashboardScreen({
+  onBack,
+  sharedPendingCards,
+  setSharedPendingCards,
+  sharedResolvedCards,
+  setSharedResolvedCards,
+}: {
+  onBack?: () => void;
+  sharedPendingCards?: TicketCard[];
+  setSharedPendingCards?: React.Dispatch<React.SetStateAction<TicketCard[]>>;
+  sharedResolvedCards?: ResolvedTicketCard[];
+  setSharedResolvedCards?: React.Dispatch<React.SetStateAction<ResolvedTicketCard[]>>;
+} = {}) {
   const [activeTab, setActiveTab]             = useState<DPOTab>('Overdue');
-  const [cdpoActiveTab, setCdpoActiveTab]     = useState<'Pending' | 'Resolved' | 'Appeal Pending'>('Pending');
+  const [cdpoActiveTab, setCdpoActiveTab]     = useState<'Pending' | 'Overdue' | 'Resolved' | 'Appeal Pending'>('Pending');
   const [assignFilter, setAssignFilter]       = useState<AssignFilter>('DPO');
 
   // Interactive state for appeal tickets
   const [appealList, setAppealList] = useState<AppealTicket[]>(() =>
     appealTickets.map(t => ({ ...t, status: t.status || ('raised' as const) }))
   );
+
+  const [localPending, setLocalPending] = useState<TicketCard[]>(() => pendingCards);
+  const [localResolved, setLocalResolved] = useState<ResolvedTicketCard[]>(() => resolvedCards);
+
+  const myPendingCards = sharedPendingCards ?? localPending;
+  const setMyPendingCards = setSharedPendingCards ?? setLocalPending;
+  const myResolvedCards = sharedResolvedCards ?? localResolved;
+  const setMyResolvedCards = setSharedResolvedCards ?? setLocalResolved;
 
   // Summary breakdown sheets
   const [pendingBreakdown, setPendingBreakdown] = useState(false);
@@ -1739,7 +1784,33 @@ export default function DPODashboardScreen({ onBack }: { onBack?: () => void } =
   };
 
   const filterByAgeAndRole = (t: any) => {
-    if (t.assignedTo !== assignFilter) return false;
+    const age = getTicketAge(t.submittedDate);
+
+    // 1. Role assignment check based on active tab
+    if (assignFilter === 'DPO') {
+      if (cdpoActiveTab === 'Pending') {
+        // Direct DPO pending tickets (not escalated overdue from other roles)
+        if (t.assignedTo !== 'DPO') return false;
+      } else if (cdpoActiveTab === 'Overdue') {
+        // Show directly assigned DPO overdue tickets OR escalated overdue tickets from other roles
+        const isOverdueTicket = t.isOverdue || age >= 21;
+        if (!isOverdueTicket) return false;
+      } else if (cdpoActiveTab === 'Resolved') {
+        // Resolved DPO tickets + overdue tickets resolved by DPO
+        if (t.assignedTo !== 'DPO' && !t.resolvedByDPO) return false;
+      } else {
+        if (t.assignedTo !== 'DPO' && !t.resolvedByDPO) return false;
+      }
+    } else {
+      // CDPO / Supervisor / AWW filters
+      if (t.assignedTo !== assignFilter) return false;
+
+      // Exclude if it crossed 21 days (reassigned to DPO)
+      if (age >= 21) return false;
+
+      // DPO can only view their pending tickets after 14 days
+      if (age < 14) return false;
+    }
 
     // Project filter
     if (assignFilter === 'CDPO' && selectedProject !== 'All Projects') {
@@ -1761,7 +1832,6 @@ export default function DPODashboardScreen({ onBack }: { onBack?: () => void } =
 
     // Date range filter
     if (appliedDateOption !== null) {
-      const age = getTicketAge(t.submittedDate);
       if (appliedDateOption === '7' && age > 7) return false;
       if (appliedDateOption === '14' && age > 14) return false;
       if (appliedDateOption === '21' && age > 21) return false;
@@ -1782,10 +1852,6 @@ export default function DPODashboardScreen({ onBack }: { onBack?: () => void } =
       if (!t.complaintType || !appliedTypes.includes(t.complaintType)) return false;
     }
 
-    if (assignFilter !== 'DPO') {
-      // Must be >= 14 days old
-      return getTicketAge(t.submittedDate) >= 14;
-    }
     return true;
   };
 
@@ -1823,14 +1889,31 @@ export default function DPODashboardScreen({ onBack }: { onBack?: () => void } =
     setAppealModalVisible(true);
   };
 
-  const handleResolveSubmit = (ticketId: string, notes: string) => {
+  const handleResolveSubmit = (ticketId: string, decision: AppealDecision, notes: string) => {
     setAppealList(prev =>
       prev.map(t =>
         t.id === ticketId
-          ? { ...t, status: 'resolved', decision: 'uphold', resolutionNotes: notes }
+          ? { ...t, status: 'resolved', decision: decision || 'uphold', resolutionNotes: notes }
           : t
       )
     );
+  };
+
+  const getDpoPendingCount = () => {
+    return myPendingCards.filter(t => t.assignedTo === 'DPO').length;
+  };
+  const getDpoOverdueCount = () => {
+    return myPendingCards.filter(t => (t.isOverdue || getTicketAge(t.submittedDate) >= 21)).length;
+  };
+  const getDpoResolvedCount = () => {
+    return myResolvedCards.filter(t => t.assignedTo === 'DPO' || t.resolvedByDPO).length + appealList.filter(t => t.status === 'resolved').length;
+  };
+
+  const getRolePendingCount = (role: AssignFilter) => {
+    return myPendingCards.filter(t => t.assignedTo === role && getTicketAge(t.submittedDate) < 21 && getTicketAge(t.submittedDate) >= 14).length;
+  };
+  const getRoleResolvedCount = (role: AssignFilter) => {
+    return myResolvedCards.filter(t => t.assignedTo === role).length;
   };
 
   return (
@@ -1884,6 +1967,9 @@ export default function DPODashboardScreen({ onBack }: { onBack?: () => void } =
           onChange={setCdpoActiveTab}
           showAppealTab={assignFilter === 'DPO'}
           appealCount={appealList.filter(t => t.status !== 'resolved').length}
+          overdueCount={getDpoOverdueCount()}
+          pendingCount={assignFilter === 'DPO' ? getDpoPendingCount() : getRolePendingCount(assignFilter)}
+          resolvedCount={assignFilter === 'DPO' ? getDpoResolvedCount() : getRoleResolvedCount(assignFilter)}
         />
 
         {/* Helper text for Appeals tab */}
@@ -1904,7 +1990,7 @@ export default function DPODashboardScreen({ onBack }: { onBack?: () => void } =
               color: '#1a237e',
               lineHeight: 18,
             }}>
-              <Text style={{ fontWeight: '700' }}>Appeals</Text> are grievances escalated by beneficiaries who are unsatisfied with the resolution. Review the details below to resolve.
+              <Text style={{ fontWeight: '700' }}>Appeals</Text> are grievances escalated by beneficiaries who are unsatisfied with the resolution.
             </Text>
           </View>
         )}
@@ -1912,7 +1998,7 @@ export default function DPODashboardScreen({ onBack }: { onBack?: () => void } =
         {/* Filter Chips */}
         {cdpoActiveTab !== 'Appeal Pending' && (
           <FilterChips
-            showOverdue={true}
+            showOverdue={cdpoActiveTab !== 'Overdue'}
             isOverdueActive={isOverdueActive}
             onOverdueToggle={() => setIsOverdueActive(!isOverdueActive)}
             appliedDateOption={appliedDateOption}
@@ -1939,13 +2025,29 @@ export default function DPODashboardScreen({ onBack }: { onBack?: () => void } =
         {/* Cards */}
         <View style={s.cardList}>
           {cdpoActiveTab === 'Pending' ? (
-            pendingCards
+            myPendingCards
               .filter(filterByAgeAndRole)
               .map(t => (
                 <TicketCardComponent
                   key={t.id}
                   card={t}
-                  onPress={() => handleOpenCardDetail(t)}
+                  onPress={() => handleOpenCardDetail({ ...t, isPendingTicket: true })}
+                />
+              ))
+          ) : cdpoActiveTab === 'Overdue' ? (
+            myPendingCards
+              .filter(filterByAgeAndRole)
+              .map(t => (
+                <TicketCardComponent
+                  key={t.id}
+                  card={{
+                    ...t,
+                    daysLabel: t.daysLabel,
+                    isOverdue: true,
+                    isPendingTicket: true,
+                    _isOverdueTab: true,
+                  }}
+                  onPress={() => handleOpenCardDetail({ ...t, isPendingTicket: true, isOverdue: true, _isOverdueTab: true })}
                 />
               ))
           ) : cdpoActiveTab === 'Appeal Pending' ? (
@@ -1969,7 +2071,7 @@ export default function DPODashboardScreen({ onBack }: { onBack?: () => void } =
                   beneficiaryType: beneficiaryType,
                   topic: t.title,
                   description: t.appealReason || t.originalDescription,
-                  submittedDate: t.submittedDate?.replace('Submitted: ', '') ?? '',
+                  submittedDate: '',
                   daysLabel: t.appealDate?.replace('Appeal Filed: ', '') ?? '',
                   daysType: 'overdue',
                   isOverdue: false,
@@ -2029,7 +2131,7 @@ export default function DPODashboardScreen({ onBack }: { onBack?: () => void } =
                     complaintType: t.complaintType,
                     documents: t.documents,
                     documentsCount: t.documents ? 1 : 0,
-                    assignedTo: t.roleLabel,
+                    assignedTo: t.roleLabel as AssignedFilter,
                     status: 'APPEAL_RESOLVED' as const,
                     actionTaken: t.resolutionNotes || 'Appeal resolved successfully by DPO.',
                   };
@@ -2037,7 +2139,7 @@ export default function DPODashboardScreen({ onBack }: { onBack?: () => void } =
 
               // Merge lists and filter
               const listToRender = [
-                ...resolvedCards.filter(filterByAgeAndRole),
+                ...myResolvedCards.filter(filterByAgeAndRole),
                 ...resolvedAppeals,
               ];
 
@@ -2137,16 +2239,69 @@ export default function DPODashboardScreen({ onBack }: { onBack?: () => void } =
               setSelectedCardForDetails(null);
             }}
             onResolveTicket={(ticketId, closureNote) => {
+              // Remove from pending list
+              setMyPendingCards(prev => prev.filter(t => t.id !== ticketId));
+              
+              // Find the ticket to move to resolved
+              const ticketToResolve = myPendingCards.find(t => t.id === ticketId);
+              if (ticketToResolve) {
+                const originalAssigned = ticketToResolve.assignedTo;
+                const wasEscalated = originalAssigned !== 'DPO';
+                const resolvedCard: ResolvedTicketCard = {
+                  ...ticketToResolve,
+                  resolvedDate: 'Resolved: 30/06/2025',
+                  daysLabel: 'Resolved',
+                  daysType: 'resolved',
+                  status: 'CLOSED',
+                  assignedTo: originalAssigned, // Keep original role assignment
+                  resolvedByDPO: wasEscalated || ticketToResolve.resolvedByDPO,
+                  actionTaken: closureNote || (wasEscalated ? 'Resolved & closed by DPO due to overdue escalation.' : 'Resolved & closed by DPO.'),
+                };
+                setMyResolvedCards(prev => [resolvedCard, ...prev]);
+              }
+              
               setDetailsVisible(false);
               setSelectedCardForDetails(null);
             }}
             isCdpoView={false}
             isAppealTicket={!!selectedCardForDetails._isAppeal}
             onResolveAppeal={(ticketId, notes) => {
-              handleResolveSubmit(ticketId, notes);
+              handleResolveSubmit(ticketId, 'uphold', notes);
               setDetailsVisible(false);
               setSelectedCardForDetails(null);
             }}
+            onSimulateAppeal={(ticketId) => {
+              // Remove from resolved list
+              setMyResolvedCards(prev => prev.filter(t => t.id !== ticketId));
+
+              // Find the resolved ticket details to map it into an appeal ticket
+              const resolvedTicket = myResolvedCards.find(t => t.id === ticketId);
+              if (resolvedTicket) {
+                const newAppeal: AppealTicket = {
+                  id: resolvedTicket.id,
+                  ticketNumber: resolvedTicket.ticketNumber,
+                  roleLabel: resolvedTicket.assignedTo || 'AWW',
+                  title: resolvedTicket.topic || resolvedTicket.title || 'Escalated Grievance',
+                  originalDescription: resolvedTicket.description,
+                  appealReason: 'Beneficiary is unsatisfied with resolution of ' + resolvedTicket.ticketNumber + '. The issue has not been fully solved on the ground.',
+                  submittedDate: resolvedTicket.submittedDate || 'Submitted: 25/06/2025',
+                  appealDate: 'Appeal Filed: 06/07/2025',
+                  documents: resolvedTicket.documents,
+                  byName: resolvedTicket.beneficiaryName || 'Sita Devi',
+                  status: 'raised',
+                  complaintType: resolvedTicket.complaintType,
+                  originalActionTaken: resolvedTicket.actionTaken || 'Resolved by CDPO/Supervisor.',
+                };
+                setAppealList(prev => [newAppeal, ...prev]);
+              }
+              setDetailsVisible(false);
+              setSelectedCardForDetails(null);
+            }}
+            hideResolveCTA={
+              !selectedCardForDetails._isAppeal &&
+              selectedCardForDetails.assignedTo !== 'DPO' &&
+              getTicketAge(selectedCardForDetails.submittedDate) < 21
+            }
           />
         </View>
       )}

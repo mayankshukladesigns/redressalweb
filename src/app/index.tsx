@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Platform, TouchableOpacity, useWindowDimensions } from 'react-native';
-import BeneficiaryRedressalScreen from '../screens/BeneficiaryRedressalScreen';
+import BeneficiaryRedressalScreen, { pendingCards, resolvedCards, TicketCard, ResolvedTicketCard } from '../screens/BeneficiaryRedressalScreen';
 import DPODashboardScreen from '../screens/DPODashboardScreen';
 import SupervisorScreen from '../screens/SupervisorScreen';
 
@@ -94,6 +94,8 @@ const RoleSelectionScreen = ({ onSelectRole }: { onSelectRole: (role: Role) => v
 
 export default function HomeScreen() {
   const [activeRole, setActiveRole] = useState<Role | null>(null);
+  const [sharedPendingCards, setSharedPendingCards] = useState<TicketCard[]>(() => pendingCards);
+  const [sharedResolvedCards, setSharedResolvedCards] = useState<ResolvedTicketCard[]>(() => resolvedCards);
   const { width: windowWidth } = useWindowDimensions();
 
   const isMobileWeb = Platform.OS === 'web' && windowWidth < 600;
@@ -125,11 +127,29 @@ export default function HomeScreen() {
           {activeRole === null ? (
             <RoleSelectionScreen onSelectRole={setActiveRole} />
           ) : activeRole === 'CDPO' ? (
-            <BeneficiaryRedressalScreen onBack={() => setActiveRole(null)} />
+            <BeneficiaryRedressalScreen
+              onBack={() => setActiveRole(null)}
+              sharedPendingCards={sharedPendingCards}
+              setSharedPendingCards={setSharedPendingCards}
+              sharedResolvedCards={sharedResolvedCards}
+              setSharedResolvedCards={setSharedResolvedCards}
+            />
           ) : activeRole === 'Supervisor' ? (
-            <SupervisorScreen onBack={() => setActiveRole(null)} />
+            <SupervisorScreen
+              onBack={() => setActiveRole(null)}
+              sharedPendingCards={sharedPendingCards}
+              setSharedPendingCards={setSharedPendingCards}
+              sharedResolvedCards={sharedResolvedCards}
+              setSharedResolvedCards={setSharedResolvedCards}
+            />
           ) : (
-            <DPODashboardScreen onBack={() => setActiveRole(null)} />
+            <DPODashboardScreen
+              onBack={() => setActiveRole(null)}
+              sharedPendingCards={sharedPendingCards}
+              setSharedPendingCards={setSharedPendingCards}
+              sharedResolvedCards={sharedResolvedCards}
+              setSharedResolvedCards={setSharedResolvedCards}
+            />
           )}
         </View>
 
@@ -153,11 +173,29 @@ export default function HomeScreen() {
       {activeRole === null ? (
         <RoleSelectionScreen onSelectRole={setActiveRole} />
       ) : activeRole === 'CDPO' ? (
-        <BeneficiaryRedressalScreen onBack={() => setActiveRole(null)} />
+        <BeneficiaryRedressalScreen
+          onBack={() => setActiveRole(null)}
+          sharedPendingCards={sharedPendingCards}
+          setSharedPendingCards={setSharedPendingCards}
+          sharedResolvedCards={sharedResolvedCards}
+          setSharedResolvedCards={setSharedResolvedCards}
+        />
       ) : activeRole === 'Supervisor' ? (
-        <SupervisorScreen onBack={() => setActiveRole(null)} />
+        <SupervisorScreen
+          onBack={() => setActiveRole(null)}
+          sharedPendingCards={sharedPendingCards}
+          setSharedPendingCards={setSharedPendingCards}
+          sharedResolvedCards={sharedResolvedCards}
+          setSharedResolvedCards={setSharedResolvedCards}
+        />
       ) : (
-        <DPODashboardScreen onBack={() => setActiveRole(null)} />
+        <DPODashboardScreen
+          onBack={() => setActiveRole(null)}
+          sharedPendingCards={sharedPendingCards}
+          setSharedPendingCards={setSharedPendingCards}
+          sharedResolvedCards={sharedResolvedCards}
+          setSharedResolvedCards={setSharedResolvedCards}
+        />
       )}
     </View>
   );

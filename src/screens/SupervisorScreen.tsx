@@ -882,12 +882,25 @@ const TicketDetailsOverlay = ({
 
 // ─── Main Supervisor Screen ───────────────────────────────────────────────────
 
-export default function SupervisorScreen({ onBack }: { onBack?: () => void }) {
+export default function SupervisorScreen({
+  onBack,
+  sharedPendingCards,
+  setSharedPendingCards,
+  sharedResolvedCards,
+  setSharedResolvedCards,
+}: {
+  onBack?: () => void;
+  sharedPendingCards?: TicketCard[];
+  setSharedPendingCards?: React.Dispatch<React.SetStateAction<TicketCard[]>>;
+  sharedResolvedCards?: ResolvedTicketCard[];
+  setSharedResolvedCards?: React.Dispatch<React.SetStateAction<ResolvedTicketCard[]>>;
+}) {
   const [activeTab, setActiveTab] = useState<TabType>('Pending');
   const [supervisorFilter, setSupervisorFilter] = useState<SupervisorFilter>('Me');
   const [pendingModalVisible, setPendingModalVisible] = useState(false);
   const [resolvedModalVisible, setResolvedModalVisible] = useState(false);
 
+  const [selectedSector, setSelectedSector] = useState('All Sectors');
   const [selectedAWC, setSelectedAWC] = useState('All Centres');
   const [awcPickVisible, setAwcPickVisible] = useState(false);
 
@@ -901,8 +914,13 @@ export default function SupervisorScreen({ onBack }: { onBack?: () => void }) {
   const [appliedCategories, setAppliedCategories] = useState<string[]>([]);
   const [appliedStatuses, setAppliedStatuses] = useState<ResolvedStatus[]>([]);
 
-  const [myPendingCards, setMyPendingCards] = useState<TicketCard[]>(supervisorPendingCards);
-  const [myResolvedCards, setMyResolvedCards] = useState<ResolvedTicketCard[]>(supervisorResolvedCards);
+  const [localPending, setLocalPending] = useState<TicketCard[]>(() => supervisorPendingCards);
+  const [localResolved, setLocalResolved] = useState<ResolvedTicketCard[]>(() => supervisorResolvedCards);
+
+  const myPendingCards = sharedPendingCards ?? localPending;
+  const setMyPendingCards = setSharedPendingCards ?? setLocalPending;
+  const myResolvedCards = sharedResolvedCards ?? localResolved;
+  const setMyResolvedCards = setSharedResolvedCards ?? setLocalResolved;
   const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
 
   const mockCurrentDate = new Date(2025, 5, 30);

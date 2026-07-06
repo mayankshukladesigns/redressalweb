@@ -140,6 +140,7 @@ export default function TicketDetailsScreen({
   isCdpoView = false,
   isAppealTicket = false,
   onResolveAppeal,
+  onSimulateAppeal,
 }: {
   card: any;
   assignedFilter: AssignedFilter;
@@ -149,7 +150,8 @@ export default function TicketDetailsScreen({
   hideResolveCTA?: boolean;
   isCdpoView?: boolean;
   isAppealTicket?: boolean;
-  onResolveAppeal?: (ticketId: string, decision: 'uphold' | 'dismiss', notes: string) => void;
+  onResolveAppeal?: (ticketId: string, notes: string) => void;
+  onSimulateAppeal?: (ticketId: string) => void;
 }) {
   const [currentCard, setCurrentCard] = useState(card);
   const [actionModalVisible, setActionModalVisible] = useState(false);
@@ -162,6 +164,7 @@ export default function TicketDetailsScreen({
   const [appealNotes, setAppealNotes] = useState('');
   const [appealConfirmed, setAppealConfirmed] = useState(false);
   const [showAppealSuccess, setShowAppealSuccess] = useState(false);
+  const [showAppealFiledSuccess, setShowAppealFiledSuccess] = useState(false);
 
   useEffect(() => {
     setCurrentCard(card);
@@ -175,8 +178,8 @@ export default function TicketDetailsScreen({
   // Construct timeline items dynamically for ALL tickets
   let timelineItems: TimelineItem[] = [];
   const assignedRole = currentCard.assignedTo || 'AWW';
-  const dateSubmitted = currentCard.submittedDate 
-    ? currentCard.submittedDate.replace('Submitted: ', '') 
+  const dateSubmitted = (currentCard.submittedDate || currentCard._appealTicket?.submittedDate)
+    ? (currentCard.submittedDate || currentCard._appealTicket.submittedDate).replace('Submitted: ', '') 
     : '25/06/2025';
   
   // Parse date parts
@@ -240,6 +243,15 @@ export default function TicketDetailsScreen({
       date: `${overdueDay < 10 ? '0' + overdueDay : overdueDay} ${overdueMonth} ${overdueYear}, 05:00 PM`,
       dotColor: '#d32f2f'
     });
+
+    const isEscalatedFromOther = currentCard.ticketNumber.includes('CDPO') || currentCard.ticketNumber.includes('SUP') || currentCard.ticketNumber.includes('AWW') || (assignedRole !== 'DPO');
+    if (isEscalatedFromOther) {
+      timelineItems.push({
+        label: 'Reassigned to DPO (Overdue Escalation)',
+        date: `${overdueDay < 10 ? '0' + overdueDay : overdueDay} ${overdueMonth} ${overdueYear}, 05:01 PM`,
+        dotColor: '#1a237e'
+      });
+    }
   }
 
   // Add resolution & closure steps if not pending
@@ -266,7 +278,22 @@ export default function TicketDetailsScreen({
         dotColor: '#2e7d32'
       });
     } else if (currentCard.status === 'CLOSED') {
-      if (assignedRole === 'CDPO') {
+      if (assignedRole === 'DPO') {
+        const isOverdueEscalation = currentCard.ticketNumber.includes('CDPO') || currentCard.ticketNumber.includes('SUP') || currentCard.ticketNumber.includes('AWW');
+        if (isOverdueEscalation) {
+          timelineItems.push({
+            label: 'Ticket Resolved & Closed by DPO (Overdue Escalation)',
+            date: `${clsDay < 10 ? '0' + clsDay : clsDay} ${clsMonth} ${clsYear}, 10:00 AM`,
+            dotColor: '#2e7d32'
+          });
+        } else {
+          timelineItems.push({
+            label: 'Ticket Resolved & Closed by DPO',
+            date: `${clsDay < 10 ? '0' + clsDay : clsDay} ${clsMonth} ${clsYear}, 10:00 AM`,
+            dotColor: '#2e7d32'
+          });
+        }
+      } else if (assignedRole === 'CDPO') {
         timelineItems.push({
           label: 'Ticket Resolved & Closed by CDPO',
           date: `${clsDay < 10 ? '0' + clsDay : clsDay} ${clsMonth} ${clsYear}, 10:00 AM`,
@@ -362,7 +389,9 @@ export default function TicketDetailsScreen({
     { label: 'Sector',   value: currentCard.sector ?? 'Sector 1' },
   ];
 
-  const hasBottomCTA = (isPending && !hideResolveCTA) || showCloseButton || isAppealTicket;
+  const isResolved = !isPending && (currentCard.status === 'CLOSED' || currentCard.status === 'APPEAL_RESOLVED');
+  const showSimulateAppealBtn = isResolved && !isAppealTicket && !!onSimulateAppeal && currentCard.status === 'CLOSED';
+  const hasBottomCTA = (isPending && !hideResolveCTA) || showCloseButton || isAppealTicket || showSimulateAppealBtn;
 
   return (
     <View style={dtStyles.root}>
@@ -500,11 +529,17 @@ export default function TicketDetailsScreen({
       {hasBottomCTA && (
         <View style={dtStyles.stickyFooter}>
           <TouchableOpacity
-            style={[dtStyles.closeBtn, isAppealTicket && { backgroundColor: '#e65100' }]}
+            style={[
+              dtStyles.closeBtn,
+              isAppealTicket && { backgroundColor: '#e65100' },
+              showSimulateAppealBtn && { backgroundColor: '#3f51b5' }
+            ]}
             activeOpacity={0.85}
             onPress={() => {
               if (isAppealTicket) {
                 setAppealModalVisible(true);
+              } else if (showSimulateAppealBtn) {
+                setShowAppealFiledSuccess(true);
               } else {
                 setActionModalVisible(true);
               }
@@ -513,9 +548,11 @@ export default function TicketDetailsScreen({
             <Text style={dtStyles.closeBtnText}>
               {isAppealTicket
                 ? 'Resolve Appeal'
-                : isPending
-                  ? (resolveLabel || 'Resolve and Close')
-                  : 'Close Ticket'}
+                : showSimulateAppealBtn
+                  ? 'Simulate Beneficiary Appeal'
+                  : isPending
+                    ? (resolveLabel || 'Resolve and Close')
+                    : 'Close Ticket'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -576,6 +613,20 @@ export default function TicketDetailsScreen({
           onBack={() => {
             if (onResolveAppeal) {
               onResolveAppeal(currentCard.id, appealNotes);
+            }
+            onBack();
+          }}
+        />
+      )}
+
+      {/* Appeal Filed Success Screen */}
+      {showAppealFiledSuccess && (
+        <AppealFiledSuccessScreen
+          ticketNumber={currentCard.ticketNumber}
+          onBack={() => {
+            setShowAppealFiledSuccess(false);
+            if (onSimulateAppeal) {
+              onSimulateAppeal(currentCard.id);
             }
             onBack();
           }}
@@ -1168,6 +1219,39 @@ const AppealSuccessScreen = ({
         <View style={successStyles.buttonGroup}>
           <TouchableOpacity style={successStyles.primaryBtn} onPress={onBack} activeOpacity={0.8}>
             <Text style={successStyles.primaryBtnText}>Back to Ticket List</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+};
+
+const AppealFiledSuccessScreen = ({
+  ticketNumber,
+  onBack,
+}: {
+  ticketNumber: string;
+  onBack: () => void;
+}) => {
+  return (
+    <View style={successStyles.container}>
+      <View style={successStyles.content}>
+        <View style={[successStyles.checkCircle, { backgroundColor: '#e8eaf6' }]}>
+          <Image
+            source={{ uri: 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/check-circle-fill.svg' }}
+            style={[successStyles.checkIcon, { tintColor: '#3f51b5' }]}
+          />
+        </View>
+
+        <Text style={successStyles.title}>Appeal Filed!</Text>
+
+        <Text style={successStyles.description}>
+          An appeal has been filed by the beneficiary for ticket {ticketNumber}. The ticket has been moved to the Appeals tab for review.
+        </Text>
+
+        <View style={successStyles.buttonGroup}>
+          <TouchableOpacity style={[successStyles.primaryBtn, { backgroundColor: '#3f51b5' }]} onPress={onBack} activeOpacity={0.8}>
+            <Text style={successStyles.primaryBtnText}>Back to Dashboard</Text>
           </TouchableOpacity>
         </View>
       </View>

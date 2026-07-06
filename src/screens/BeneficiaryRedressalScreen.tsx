@@ -28,7 +28,7 @@ const imgCalendarIcon2 = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/ic
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type TabType = 'Pending' | 'Resolved';
-export type AssignedFilter = 'CDPO' | 'Supervisor' | 'AWW';
+export type AssignedFilter = 'DPO' | 'CDPO' | 'Supervisor' | 'AWW';
 export type ResolvedStatus = 'CLOSED' | 'CLOSURE_PENDING' | 'APPEAL_RAISED' | 'APPEAL_RESOLVED';
 
 export interface ResolvedTicketCard {
@@ -43,19 +43,27 @@ export interface ResolvedTicketCard {
   actionTaken: string;
   awcName: string;
   awaitingCdpoClosure?: boolean;
-  // Fields for Ticket Details screen
-  helpTopic: string;
-  subTopic: string;
-  beneficiaryMobile: string;
-  beneficiaryEmail?: string;
-  awcCode: string;
-  district: string;
-  project: string;
-  sector: string;
-  dpoActionTaken?: string;
-  assignedTo?: AssignedFilter;
+  documentsCount?: number;
+  isOverdue?: boolean;
+  borderColor?: string;
   complaintType?: 'Corruption' | 'Urgent' | 'Others';
+  helpTopic?: string;
+  subTopic?: string;
+  beneficiaryMobile?: string;
+  beneficiaryEmail?: string;
+  awcCode?: string;
+  district?: string;
+  project?: string;
+  sector?: string;
+  assignedTo?: AssignedFilter;
+  title?: string;
+  byName?: string;
+  documents?: string;
+  dpoActionTaken?: string;
   submittedDate?: string;
+  daysLabel?: string;
+  daysType?: string;
+  resolvedByDPO?: boolean;
 }
 
 export interface TicketCard {
@@ -82,6 +90,11 @@ export interface TicketCard {
   project?: string;
   sector?: string;
   assignedTo?: AssignedFilter;
+  status?: string;
+  _isAppeal?: boolean;
+  isPendingTicket?: boolean;
+  _isOverdueTab?: boolean;
+  resolvedByDPO?: boolean;
   // Keep optional old properties to avoid breaking other components
   title?: string;
   byName?: string;
@@ -91,6 +104,126 @@ export interface TicketCard {
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
 export const pendingCards: TicketCard[] = [
+  {
+    id: 'aww-pending-1',
+    ticketNumber: 'Ticket# AWW 000101',
+    beneficiaryName: 'Radha Devi',
+    beneficiaryType: 'Pregnant Woman',
+    topic: 'Supplementary Nutrition',
+    description: 'THR rations not distributed for child for previous month check',
+    submittedDate: 'Submitted: 12/06/2025',
+    daysLabel: 'Overdue by 1 Day',
+    daysType: 'overdue',
+    awcName: 'Anganwadi Centre 1',
+    documentsCount: 0,
+    isOverdue: true,
+    borderColor: '#e0e0e0',
+    complaintType: 'Others',
+    helpTopic: 'Supplementary Nutrition',
+    subTopic: 'Take Home Ration',
+    beneficiaryMobile: '98765 00201',
+    awcCode: 'AWC-101',
+    district: 'Jaipur',
+    project: 'Sanganer',
+    sector: 'Sector 1',
+    assignedTo: 'AWW',
+  },
+  {
+    id: 'aww-pending-2',
+    ticketNumber: 'Ticket# AWW 000102',
+    beneficiaryName: 'Komal Yadav',
+    beneficiaryType: 'Lactating Mother',
+    topic: 'Growth Monitoring',
+    description: 'Growth chart records not updated in the Poshan Tracker app',
+    submittedDate: 'Submitted: 13/06/2025',
+    daysLabel: 'Remaining 3 Days',
+    daysType: 'remaining',
+    awcName: 'Anganwadi Centre 2',
+    documentsCount: 1,
+    isOverdue: false,
+    borderColor: '#e0e0e0',
+    complaintType: 'Others',
+    helpTopic: 'Growth Monitoring',
+    subTopic: 'Poshan Tracker Update',
+    beneficiaryMobile: '98765 00202',
+    awcCode: 'AWC-102',
+    district: 'Jaipur',
+    project: 'Sanganer',
+    sector: 'Sector 2',
+    assignedTo: 'AWW',
+  },
+  {
+    id: 'aww-pending-3',
+    ticketNumber: 'Ticket# AWW 000103',
+    beneficiaryName: 'Suman Bai',
+    beneficiaryType: 'Children (6m-3y)',
+    topic: 'Immunization Referral',
+    description: 'Referral slip not issued for immunisation camp scheduled last week',
+    submittedDate: 'Submitted: 14/06/2025',
+    daysLabel: 'Remaining 4 Days',
+    daysType: 'remaining',
+    awcName: 'Anganwadi Centre 3',
+    documentsCount: 0,
+    isOverdue: false,
+    borderColor: '#e0e0e0',
+    complaintType: 'Others',
+    helpTopic: 'Immunization Services',
+    subTopic: 'Referral Services',
+    beneficiaryMobile: '98765 00203',
+    awcCode: 'AWC-103',
+    district: 'Jaipur',
+    project: 'Sanganer',
+    sector: 'Sector 3',
+    assignedTo: 'AWW',
+  },
+  {
+    id: 'aww-pending-4',
+    ticketNumber: 'Ticket# AWW 000104',
+    beneficiaryName: 'Rina Choudhary',
+    beneficiaryType: 'Adolescent Girl',
+    topic: 'WIFS Tablets',
+    description: 'Weekly Iron Folic Acid tablets not received at Anganwadi center',
+    submittedDate: 'Submitted: 15/06/2025',
+    daysLabel: 'Remaining 5 Days',
+    daysType: 'remaining',
+    awcName: 'Anganwadi Centre 4',
+    documentsCount: 1,
+    isOverdue: false,
+    borderColor: '#e0e0e0',
+    complaintType: 'Others',
+    helpTopic: 'Health Services',
+    subTopic: 'WIFS Distribution',
+    beneficiaryMobile: '98765 00204',
+    awcCode: 'AWC-104',
+    district: 'Jaipur',
+    project: 'Sanganer',
+    sector: 'Sector 4',
+    assignedTo: 'AWW',
+  },
+  {
+    id: 'aww-pending-5',
+    ticketNumber: 'Ticket# AWW 000105',
+    beneficiaryName: 'Priya Sen',
+    beneficiaryType: 'Pregnant Woman',
+    topic: 'PMMVY Installment',
+    description: 'Poshan tracker verification status showing pending for PMMVY form',
+    submittedDate: 'Submitted: 16/06/2025',
+    daysLabel: 'Remaining 6 Days',
+    daysType: 'remaining',
+    awcName: 'Anganwadi Centre 5',
+    documentsCount: 0,
+    isOverdue: false,
+    borderColor: '#e0e0e0',
+    complaintType: 'Others',
+    helpTopic: 'Maternity Benefit',
+    subTopic: 'Tracker Verification',
+    beneficiaryMobile: '98765 00205',
+    awcCode: 'AWC-105',
+    district: 'Jaipur',
+    project: 'Sanganer',
+    sector: 'Sector 2',
+    assignedTo: 'AWW',
+  },
   {
     id: '1',
     ticketNumber: 'Ticket# 787868 898938',
@@ -1727,7 +1860,9 @@ export const TicketCardComponent = ({
           )}
           {card.isOverdue && (
             <View style={styles.overdueBadge}>
-              <Text style={styles.overdueBadgeText}>OVERDUE</Text>
+              <Text style={styles.overdueBadgeText}>
+                {card._isOverdueTab ? card.assignedTo?.toUpperCase() : 'OVERDUE'}
+              </Text>
             </View>
           )}
         </View>
@@ -2915,9 +3050,17 @@ const StatusFilterSheet = ({
 export default function BeneficiaryRedressalScreen({
   initialAssignedFilter = 'CDPO',
   onBack,
+  sharedPendingCards,
+  setSharedPendingCards,
+  sharedResolvedCards,
+  setSharedResolvedCards,
 }: {
   initialAssignedFilter?: AssignedFilter;
   onBack?: () => void;
+  sharedPendingCards?: TicketCard[];
+  setSharedPendingCards?: React.Dispatch<React.SetStateAction<TicketCard[]>>;
+  sharedResolvedCards?: ResolvedTicketCard[];
+  setSharedResolvedCards?: React.Dispatch<React.SetStateAction<ResolvedTicketCard[]>>;
 }) {
   const [activeTab, setActiveTab] = useState<TabType>('Pending');
   const [assignedFilter, setAssignedFilter] = useState<AssignedFilter>(initialAssignedFilter);
@@ -2938,8 +3081,13 @@ export default function BeneficiaryRedressalScreen({
   const [appliedCategories, setAppliedCategories] = useState<string[]>([]);
   const [appliedStatuses, setAppliedStatuses] = useState<ResolvedStatus[]>([]);
 
-  const [myPendingCards, setMyPendingCards] = useState<TicketCard[]>(pendingCards);
-  const [myResolvedCards, setMyResolvedCards] = useState<ResolvedTicketCard[]>(resolvedCards);
+  const [localPending, setLocalPending] = useState<TicketCard[]>(() => pendingCards);
+  const [localResolved, setLocalResolved] = useState<ResolvedTicketCard[]>(() => resolvedCards);
+
+  const myPendingCards = sharedPendingCards ?? localPending;
+  const setMyPendingCards = setSharedPendingCards ?? setLocalPending;
+  const myResolvedCards = sharedResolvedCards ?? localResolved;
+  const setMyResolvedCards = setSharedResolvedCards ?? setLocalResolved;
 
   // Sector / AWC dropdowns
   const [selectedSector, setSelectedSector] = useState('All Sectors');
