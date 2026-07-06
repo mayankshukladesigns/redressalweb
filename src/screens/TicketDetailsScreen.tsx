@@ -561,8 +561,13 @@ export default function TicketDetailsScreen({
       {/* Action Taken Modal */}
       <ActionTakenModal
         visible={actionModalVisible}
-        title={isPending ? "Resolve & Close Ticket" : "Close Ticket"}
-        buttonText={isPending ? "Resolve & Close Ticket" : "Close Ticket"}
+        title={isPending ? (resolveLabel === 'Resolve' ? "Resolve Ticket" : (resolveLabel || "Resolve & Close Ticket")) : "Close Ticket"}
+        buttonText={isPending ? (resolveLabel === 'Resolve' ? "Submit Resolution" : (resolveLabel || "Resolve & Close Ticket")) : "Close Ticket"}
+        placeholder={
+          isPending
+            ? (resolveLabel === 'Resolve' ? "Describe the action taken to resolve this ticket..." : "Describe the action taken and reason for closure...")
+            : "Describe the action taken and reason for closure..."
+        }
         onClose={() => setActionModalVisible(false)}
         onSubmit={(note) => {
           if (onResolveTicket) {
@@ -593,13 +598,20 @@ export default function TicketDetailsScreen({
       {showSuccess && (
         <SuccessScreen
           ticketNumber={currentCard.ticketNumber}
+          title={resolveLabel === 'Resolve' ? "Ticket Resolved!" : "Ticket Closed!"}
+          description={
+            resolveLabel === 'Resolve'
+              ? `The ticket has been marked as resolved and is now waiting for CDPO closure.`
+              : `Ticket ${currentCard.ticketNumber} has been marked as closed.`
+          }
+          viewDetailsLabel={resolveLabel === 'Resolve' ? "View Resolved Ticket" : "View Closed Ticket"}
           onBack={onBack}
           onViewDetails={() => {
             setShowSuccess(false);
             setCurrentCard((prev: any) => ({
               ...prev,
               isPendingTicket: false,
-              status: 'CLOSED',
+              status: resolveLabel === 'Resolve' ? 'CLOSURE_PENDING' : 'CLOSED',
               actionTaken: closureNote,
             }));
           }}
@@ -974,12 +986,14 @@ const ActionTakenModal = ({
   visible,
   title = "Resolve & Close Ticket",
   buttonText = "Resolve & Close Ticket",
+  placeholder,
   onClose,
   onSubmit,
 }: {
   visible: boolean;
   title?: string;
   buttonText?: string;
+  placeholder?: string;
   onClose: () => void;
   onSubmit: (note: string) => void;
 }) => {
@@ -1031,7 +1045,7 @@ const ActionTakenModal = ({
           <View style={sheetStyles.textareaWrapper}>
             <TextInput
               style={sheetStyles.textarea}
-              placeholder="Describe the action taken and reason for closure..."
+              placeholder={placeholder || "Describe the action taken and reason for closure..."}
               placeholderTextColor="#9e9e9e"
               multiline
               numberOfLines={4}
@@ -1070,10 +1084,16 @@ const SuccessScreen = ({
   ticketNumber,
   onBack,
   onViewDetails,
+  title,
+  description,
+  viewDetailsLabel,
 }: {
   ticketNumber: string;
   onBack: () => void;
   onViewDetails: () => void;
+  title?: string;
+  description?: string;
+  viewDetailsLabel?: string;
 }) => {
   return (
     <View style={successStyles.container}>
@@ -1087,11 +1107,11 @@ const SuccessScreen = ({
         </View>
 
         {/* Title */}
-        <Text style={successStyles.title}>Ticket Closed!</Text>
+        <Text style={successStyles.title}>{title || "Ticket Closed!"}</Text>
 
         {/* Description */}
         <Text style={successStyles.description}>
-          Ticket {ticketNumber} has been marked as closed by CDPO.
+          {description || `Ticket ${ticketNumber} has been marked as closed by CDPO.`}
         </Text>
 
         {/* Buttons */}
@@ -1101,7 +1121,7 @@ const SuccessScreen = ({
           </TouchableOpacity>
 
           <TouchableOpacity style={successStyles.secondaryBtn} onPress={onViewDetails} activeOpacity={0.8}>
-            <Text style={successStyles.secondaryBtnText}>View Closed Ticket</Text>
+            <Text style={successStyles.secondaryBtnText}>{viewDetailsLabel || "View Closed Ticket"}</Text>
           </TouchableOpacity>
         </View>
       </View>

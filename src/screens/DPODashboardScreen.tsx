@@ -774,12 +774,11 @@ const AppealCard = ({
 
       {/* Dates */}
       <View style={s.cardDateRow}>
-        <Text style={s.cardDate}>{ticket.submittedDate}</Text>
-        <View style={[s.daysBadge, isResolved ? { backgroundColor: '#e8f5e9' } : { backgroundColor: '#fff3e0' }]}>
-          <Text style={[s.daysBadgeTxt, isResolved ? { color: '#2e7d32' } : { color: '#e65100' }]}>
-            {isResolved ? 'Resolved' : ticket.appealDate.replace('Appeal Filed: ', '')}
-          </Text>
-        </View>
+        <Text style={s.cardDate}>
+          {isResolved
+            ? `Closure: ${ticket.appealDate.replace('Appeal Filed: ', '')}`
+            : `Closure: ${ticket.appealDate.replace('Appeal Filed: ', '')}`}
+        </Text>
       </View>
 
       {/* Documents */}
@@ -1952,10 +1951,14 @@ export default function DPODashboardScreen({
           <ProjectDropdown value={selectedProject} onPress={() => setProjectPickVisible(true)} />
         )}
         {assignFilter === 'Supervisor' && (
-          <SectorDropdown value={selectedSector} onPress={() => setSectorPickVisible(true)} />
+          <>
+            <ProjectDropdown value={selectedProject} onPress={() => setProjectPickVisible(true)} />
+            <SectorDropdown value={selectedSector} onPress={() => setSectorPickVisible(true)} />
+          </>
         )}
         {assignFilter === 'AWW' && (
           <>
+            <ProjectDropdown value={selectedProject} onPress={() => setProjectPickVisible(true)} />
             <SectorDropdown value={selectedSector} onPress={() => setSectorPickVisible(true)} />
             <AnganwadiCentreDropdown value={selectedAWC} onPress={() => setAwcPickVisible(true)} />
           </>
@@ -2071,9 +2074,9 @@ export default function DPODashboardScreen({
                   beneficiaryType: beneficiaryType,
                   topic: t.title,
                   description: t.appealReason || t.originalDescription,
-                  submittedDate: '',
-                  daysLabel: t.appealDate?.replace('Appeal Filed: ', '') ?? '',
-                  daysType: 'overdue',
+                  submittedDate: `Closure: ${t.appealDate?.replace('Appeal Filed: ', '') ?? ''}`,
+                  daysLabel: '',
+                  daysType: 'remaining',
                   isOverdue: false,
                   isPendingTicket: false,
                   awcName: 'Anganwadi Centre 1',
