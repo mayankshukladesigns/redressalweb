@@ -1,4509 +1,811 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useRef, useState } from 'react';
+import { TicketCard, ResolvedTicketCard } from '../web/types';
 import TicketDetailsScreen from './TicketDetailsScreen';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Image,
-  StatusBar,
-  Animated,
-  TextInput,
-} from 'react-native';
+  Eye, X, Info, Clock, CheckCircle2, AlertTriangle, ShieldCheck,
+  Calendar, ChevronDown, Inbox, Search,
+} from 'lucide-react';
 
-// Asset URLs from Figma MCP localhost server
-const imgIcon = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/reception-4.svg';
-const imgIcon1 = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/wifi.svg';
-const imgIcon2 = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/battery-full.svg';
-const imgBackIconWhite = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/arrow-left.svg';
-const imgChevronDown = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/chevron-down.svg';
-const imgChevronDown1 = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/chevron-down.svg';
-const imgIcon3 = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/check.svg';
-const imgCloseIcon = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/x.svg';
-const imgCalendarIcon = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/calendar3.svg';
-const imgCalendarIcon1 = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/calendar3.svg';
-const imgCalendarIcon2 = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/calendar3.svg';
+// ─── Types ─────────────────────────────────────────────────────────────────────
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+type AssignedFilter = 'CDPO' | 'Supervisor' | 'AWW';
+type DateRangeOption = '7' | '14' | '21' | 'custom';
 
-export type TabType = 'Pending' | 'Resolved';
-export type AssignedFilter = 'DPO' | 'CDPO' | 'Supervisor' | 'AWW';
-export type ResolvedStatus = 'CLOSED' | 'CLOSURE_PENDING' | 'APPEAL_RAISED' | 'APPEAL_RESOLVED';
-
-export interface ResolvedTicketCard {
-  id: string;
-  ticketNumber: string;
-  beneficiaryName: string;
-  beneficiaryType: string;
-  topic: string;
-  description: string;
-  resolvedDate: string;
-  status: ResolvedStatus;
-  actionTaken: string;
-  awcName: string;
-  awaitingCdpoClosure?: boolean;
-  documentsCount?: number;
-  isOverdue?: boolean;
-  borderColor?: string;
-  complaintType?: 'Corruption' | 'Urgent' | 'Others';
-  helpTopic?: string;
-  subTopic?: string;
-  beneficiaryMobile?: string;
-  beneficiaryEmail?: string;
-  awcCode?: string;
-  district?: string;
-  project?: string;
-  sector?: string;
-  assignedTo?: AssignedFilter;
-  title?: string;
-  byName?: string;
-  documents?: string;
-  dpoActionTaken?: string;
-  submittedDate?: string;
-  daysLabel?: string;
-  daysType?: string;
-  resolvedByDPO?: boolean;
+interface CDPOViewProps {
+  sharedPendingCards: TicketCard[];
+  setSharedPendingCards: React.Dispatch<React.SetStateAction<TicketCard[]>>;
+  sharedResolvedCards: ResolvedTicketCard[];
+  setSharedResolvedCards: React.Dispatch<React.SetStateAction<ResolvedTicketCard[]>>;
 }
 
-export interface TicketCard {
-  id: string;
-  ticketNumber: string;
-  beneficiaryName: string;
-  beneficiaryType: string;
-  topic: string;
-  description: string;
-  submittedDate: string;
-  daysLabel: string;
-  daysType: 'remaining' | 'overdue';
-  awcName: string;
-  documentsCount?: number;
-  isOverdue?: boolean;
-  borderColor?: string;
-  complaintType?: 'Corruption' | 'Urgent' | 'Others';
-  helpTopic?: string;
-  subTopic?: string;
-  beneficiaryMobile?: string;
-  beneficiaryEmail?: string;
-  awcCode?: string;
-  district?: string;
-  project?: string;
-  sector?: string;
-  assignedTo?: AssignedFilter;
-  status?: string;
-  _isAppeal?: boolean;
-  isPendingTicket?: boolean;
-  _isOverdueTab?: boolean;
-  resolvedByDPO?: boolean;
-  // Keep optional old properties to avoid breaking other components
-  title?: string;
-  byName?: string;
-  documents?: string;
-}
-
-// ─── Data ─────────────────────────────────────────────────────────────────────
-
-export const pendingCards: TicketCard[] = [
-  {
-    id: 'aww-pending-1',
-    ticketNumber: 'Ticket# AWW 000101',
-    beneficiaryName: 'Radha Devi',
-    beneficiaryType: 'Pregnant Woman',
-    topic: 'Supplementary Nutrition',
-    description: 'THR rations not distributed for child for previous month check',
-    submittedDate: 'Submitted: 12/06/2025',
-    daysLabel: 'Overdue by 1 Day',
-    daysType: 'overdue',
-    awcName: 'Anganwadi Centre 1',
-    documentsCount: 0,
-    isOverdue: true,
-    borderColor: '#e0e0e0',
-    complaintType: 'Others',
-    helpTopic: 'Supplementary Nutrition',
-    subTopic: 'Take Home Ration',
-    beneficiaryMobile: '98765 00201',
-    awcCode: 'AWC-101',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 1',
-    assignedTo: 'AWW',
-  },
-  {
-    id: 'aww-pending-2',
-    ticketNumber: 'Ticket# AWW 000102',
-    beneficiaryName: 'Komal Yadav',
-    beneficiaryType: 'Lactating Mother',
-    topic: 'Growth Monitoring',
-    description: 'Growth chart records not updated in the Poshan Tracker app',
-    submittedDate: 'Submitted: 13/06/2025',
-    daysLabel: 'Remaining 3 Days',
-    daysType: 'remaining',
-    awcName: 'Anganwadi Centre 2',
-    documentsCount: 1,
-    isOverdue: false,
-    borderColor: '#e0e0e0',
-    complaintType: 'Others',
-    helpTopic: 'Growth Monitoring',
-    subTopic: 'Poshan Tracker Update',
-    beneficiaryMobile: '98765 00202',
-    awcCode: 'AWC-102',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 2',
-    assignedTo: 'AWW',
-  },
-  {
-    id: 'aww-pending-3',
-    ticketNumber: 'Ticket# AWW 000103',
-    beneficiaryName: 'Suman Bai',
-    beneficiaryType: 'Children (6m-3y)',
-    topic: 'Immunization Referral',
-    description: 'Referral slip not issued for immunisation camp scheduled last week',
-    submittedDate: 'Submitted: 14/06/2025',
-    daysLabel: 'Remaining 4 Days',
-    daysType: 'remaining',
-    awcName: 'Anganwadi Centre 3',
-    documentsCount: 0,
-    isOverdue: false,
-    borderColor: '#e0e0e0',
-    complaintType: 'Others',
-    helpTopic: 'Immunization Services',
-    subTopic: 'Referral Services',
-    beneficiaryMobile: '98765 00203',
-    awcCode: 'AWC-103',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 3',
-    assignedTo: 'AWW',
-  },
-  {
-    id: 'aww-pending-4',
-    ticketNumber: 'Ticket# AWW 000104',
-    beneficiaryName: 'Rina Choudhary',
-    beneficiaryType: 'Adolescent Girl',
-    topic: 'WIFS Tablets',
-    description: 'Weekly Iron Folic Acid tablets not received at Anganwadi center',
-    submittedDate: 'Submitted: 15/06/2025',
-    daysLabel: 'Remaining 5 Days',
-    daysType: 'remaining',
-    awcName: 'Anganwadi Centre 4',
-    documentsCount: 1,
-    isOverdue: false,
-    borderColor: '#e0e0e0',
-    complaintType: 'Others',
-    helpTopic: 'Health Services',
-    subTopic: 'WIFS Distribution',
-    beneficiaryMobile: '98765 00204',
-    awcCode: 'AWC-104',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 4',
-    assignedTo: 'AWW',
-  },
-  {
-    id: 'aww-pending-5',
-    ticketNumber: 'Ticket# AWW 000105',
-    beneficiaryName: 'Priya Sen',
-    beneficiaryType: 'Pregnant Woman',
-    topic: 'PMMVY Installment',
-    description: 'Poshan tracker verification status showing pending for PMMVY form',
-    submittedDate: 'Submitted: 16/06/2025',
-    daysLabel: 'Remaining 6 Days',
-    daysType: 'remaining',
-    awcName: 'Anganwadi Centre 5',
-    documentsCount: 0,
-    isOverdue: false,
-    borderColor: '#e0e0e0',
-    complaintType: 'Others',
-    helpTopic: 'Maternity Benefit',
-    subTopic: 'Tracker Verification',
-    beneficiaryMobile: '98765 00205',
-    awcCode: 'AWC-105',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 2',
-    assignedTo: 'AWW',
-  },
-  {
-    id: '1',
-    ticketNumber: 'Ticket# 787868 898938',
-    beneficiaryName: 'Sanju Devi',
-    beneficiaryType: 'Pregnant Woman',
-    topic: 'Registration',
-    description: 'New Registration Request for ANC enrollment under PMMVY scheme',
-    submittedDate: 'Submitted: 27/06/2025',
-    daysLabel: '5 Days Remaining',
-    daysType: 'remaining',
-    awcName: 'Anganwadi Centre 1',
-    documentsCount: 0,
-    isOverdue: false,
-    borderColor: '#e0e0e0',
-    complaintType: 'Others',
-    helpTopic: 'Maternity Benefit',
-    subTopic: 'PMMVY Enrollment',
-    beneficiaryMobile: '98765 00123',
-    beneficiaryEmail: 'sanju.devi@example.com',
-    awcCode: 'AWC-101',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 1',
-    assignedTo: 'CDPO',
-  },
-  {
-    id: '2',
-    ticketNumber: 'Ticket# 787868 898939',
-    beneficiaryName: 'Pooja Sharma',
-    beneficiaryType: 'Lactating Mother',
-    topic: 'Corruption',
-    description: 'Supplementary Nutrition not received for consecutive months despite eligibility',
-    submittedDate: 'Submitted: 26/06/2025',
-    daysLabel: '1 Day Remaining',
-    daysType: 'remaining',
-    awcName: 'Anganwadi Centre 3',
-    documentsCount: 1,
-    isOverdue: false,
-    borderColor: '#e0e0e0',
-    complaintType: 'Corruption',
-    helpTopic: 'Corruption',
-    subTopic: 'Take Home Ration',
-    beneficiaryMobile: '98765 00124',
-    awcCode: 'AWC-103',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 3',
-    assignedTo: 'CDPO',
-  },
-  {
-    id: '3',
-    ticketNumber: 'Ticket# 787868 898940',
-    beneficiaryName: 'Anita Yadav',
-    beneficiaryType: 'Children (6m-3y)',
-    topic: 'Urgent',
-    description: 'Aadhar Verification pending for child enrollment and benefit linkage',
-    submittedDate: 'Submitted: 15/06/2025',
-    daysLabel: 'Overdue by 3 Days',
-    daysType: 'overdue',
-    awcName: 'Anganwadi Centre 6',
-    documentsCount: 1,
-    isOverdue: true,
-    borderColor: '#ffcdd2',
-    complaintType: 'Urgent',
-    helpTopic: 'Urgent',
-    subTopic: 'Aadhar Verification',
-    beneficiaryMobile: '98765 00125',
-    awcCode: 'AWC-106',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 2',
-    assignedTo: 'CDPO',
-  },
-  {
-    id: '4',
-    ticketNumber: 'Ticket# 787868 898941',
-    beneficiaryName: 'Meena Kumari',
-    beneficiaryType: 'Adolescent Girl',
-    topic: 'Urgent',
-    description: 'Unable to access KSY vocational training benefits despite completing registration last quarter',
-    submittedDate: 'Submitted: 05/06/2025',
-    daysLabel: 'Overdue by 8 Days',
-    daysType: 'overdue',
-    awcName: 'Anganwadi Centre 2',
-    documentsCount: 1,
-    isOverdue: true,
-    borderColor: '#ffcdd2',
-    complaintType: 'Urgent',
-    helpTopic: 'Urgent',
-    subTopic: 'Vocational Training Access',
-    beneficiaryMobile: '98765 00126',
-    awcCode: 'AWC-102',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 4',
-    assignedTo: 'CDPO',
-  },
-  {
-    id: '5',
-    ticketNumber: 'Ticket# 787868 898942',
-    beneficiaryName: 'Sunita Devi',
-    beneficiaryType: 'Children 0-6 months',
-    topic: 'Growth Monitoring',
-    description: 'Weight not recorded in monthly check-up session',
-    submittedDate: 'Submitted: 28/06/2025',
-    daysLabel: '10 Days Remaining',
-    daysType: 'remaining',
-    awcName: 'Anganwadi Centre 4',
-    documentsCount: 0,
-    isOverdue: false,
-    borderColor: '#e0e0e0',
-    complaintType: 'Others',
-    helpTopic: 'Growth Monitoring',
-    subTopic: 'Weight Recording',
-    beneficiaryMobile: '98765 00127',
-    awcCode: 'AWC-104',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 1',
-    assignedTo: 'Supervisor',
-  },
-  {
-    id: '6',
-    ticketNumber: 'Ticket# 787868 898943',
-    beneficiaryName: 'Manju Sharma',
-    beneficiaryType: 'Pregnant Woman',
-    topic: 'Supplementary Nutrition',
-    description: 'THR rations not distributed for child for current month',
-    submittedDate: 'Submitted: 29/06/2025',
-    daysLabel: '12 Days Remaining',
-    daysType: 'remaining',
-    awcName: 'Anganwadi Centre 1',
-    documentsCount: 0,
-    isOverdue: false,
-    borderColor: '#e0e0e0',
-    complaintType: 'Others',
-    helpTopic: 'Supplementary Nutrition',
-    subTopic: 'Take Home Ration',
-    beneficiaryMobile: '98765 00128',
-    awcCode: 'AWC-101',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 1',
-    assignedTo: 'AWW',
-  },
-  {
-    id: '7',
-    ticketNumber: 'Ticket# 787868 898944',
-    beneficiaryName: 'Rekha Vyas',
-    beneficiaryType: 'Lactating Mother',
-    topic: 'Urgent',
-    description: 'PMMVY second installment delayed due to verification issue',
-    submittedDate: 'Submitted: 18/06/2025',
-    daysLabel: 'Overdue by 2 Days',
-    daysType: 'overdue',
-    awcName: 'Anganwadi Centre 4',
-    documentsCount: 1,
-    isOverdue: true,
-    borderColor: '#ffcdd2',
-    complaintType: 'Urgent',
-    helpTopic: 'Urgent',
-    subTopic: 'PMMVY Delayed Payment',
-    beneficiaryMobile: '98765 00129',
-    awcCode: 'AWC-104',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 1',
-    assignedTo: 'CDPO',
-  },
-  {
-    id: '8',
-    ticketNumber: 'Ticket# 787868 898945',
-    beneficiaryName: 'Priyanka Sen',
-    beneficiaryType: 'Pregnant Woman',
-    topic: 'Corruption',
-    description: 'Anganwadi supervisor demanding bribes to release Supplementary Nutrition',
-    submittedDate: 'Submitted: 28/06/2025',
-    daysLabel: '7 Days Remaining',
-    daysType: 'remaining',
-    awcName: 'Anganwadi Centre 2',
-    documentsCount: 1,
-    isOverdue: false,
-    borderColor: '#e0e0e0',
-    complaintType: 'Corruption',
-    helpTopic: 'Corruption',
-    subTopic: 'Corruption / Bribe',
-    beneficiaryMobile: '98765 00130',
-    awcCode: 'AWC-102',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 4',
-    assignedTo: 'CDPO',
-  },
-  {
-    id: '9',
-    ticketNumber: 'Ticket# 787868 898946',
-    beneficiaryName: 'Kavita Sharma',
-    beneficiaryType: 'Lactating Mother',
-    topic: 'Urgent',
-    description: 'Critical referral services unavailable at sector health center',
-    submittedDate: 'Submitted: 14/06/2025',
-    daysLabel: 'Overdue by 2 Days',
-    daysType: 'overdue',
-    awcName: 'Anganwadi Centre 5',
-    documentsCount: 1,
-    isOverdue: true,
-    borderColor: '#ffcdd2',
-    complaintType: 'Urgent',
-    helpTopic: 'Urgent',
-    subTopic: 'Emergency Service',
-    beneficiaryMobile: '98765 00131',
-    awcCode: 'AWC-105',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 2',
-    assignedTo: 'CDPO',
-  },
-  {
-    id: 'p10',
-    ticketNumber: 'Ticket# 787868 898950',
-    beneficiaryName: 'Sunita Bai',
-    beneficiaryType: 'Lactating Mother',
-    topic: 'Growth Monitoring',
-    description: 'Growth monitoring register entries not shared with mother',
-    submittedDate: 'Submitted: 29/06/2025',
-    daysLabel: '13 Days Remaining',
-    daysType: 'remaining',
-    awcName: 'Anganwadi Centre 1',
-    documentsCount: 0,
-    isOverdue: false,
-    borderColor: '#e0e0e0',
-    complaintType: 'Others',
-    helpTopic: 'Growth Monitoring',
-    subTopic: 'Weight Recording',
-    beneficiaryMobile: '98765 00210',
-    awcCode: 'AWC-101',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 1',
-    assignedTo: 'CDPO',
-  },
-  {
-    id: 'p11',
-    ticketNumber: 'Ticket# 787868 898951',
-    beneficiaryName: 'Rajni Devi',
-    beneficiaryType: 'Pregnant Woman',
-    topic: 'Supplementary Nutrition',
-    description: 'Quality issues in Supplementary Nutrition packet delivered this month',
-    submittedDate: 'Submitted: 27/06/2025',
-    daysLabel: '11 Days Remaining',
-    daysType: 'remaining',
-    awcName: 'Anganwadi Centre 2',
-    documentsCount: 0,
-    isOverdue: false,
-    borderColor: '#e0e0e0',
-    complaintType: 'Others',
-    helpTopic: 'Supplementary Nutrition',
-    subTopic: 'Take Home Ration',
-    beneficiaryMobile: '98765 00211',
-    awcCode: 'AWC-102',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 4',
-    assignedTo: 'CDPO',
-  },
-  {
-    id: 'p12',
-    ticketNumber: 'Ticket# 787868 898952',
-    beneficiaryName: 'Preeti Sharma',
-    beneficiaryType: 'Children (6m-3y)',
-    topic: 'Urgent',
-    description: 'Immediate replacement of spoiled THR packets required for the sector',
-    submittedDate: 'Submitted: 23/06/2025',
-    daysLabel: '7 Days Remaining',
-    daysType: 'remaining',
-    awcName: 'Anganwadi Centre 3',
-    documentsCount: 1,
-    isOverdue: false,
-    borderColor: '#e0e0e0',
-    complaintType: 'Urgent',
-    helpTopic: 'Urgent',
-    subTopic: 'Emergency Service',
-    beneficiaryMobile: '98765 00212',
-    awcCode: 'AWC-103',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 3',
-    assignedTo: 'CDPO',
-  },
-  {
-    id: 'p13',
-    ticketNumber: 'Ticket# 787868 898953',
-    beneficiaryName: 'Kajal Gupta',
-    beneficiaryType: 'Children (3-6y)',
-    topic: 'Corruption',
-    description: 'THR supplies being sold in local market by local operator',
-    submittedDate: 'Submitted: 21/06/2025',
-    daysLabel: '5 Days Remaining',
-    daysType: 'remaining',
-    awcName: 'Anganwadi Centre 4',
-    documentsCount: 1,
-    isOverdue: false,
-    borderColor: '#e0e0e0',
-    complaintType: 'Corruption',
-    helpTopic: 'Corruption',
-    subTopic: 'THR Misappropriation',
-    beneficiaryMobile: '98765 00213',
-    awcCode: 'AWC-104',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 1',
-    assignedTo: 'CDPO',
-  },
-  {
-    id: 'p14',
-    ticketNumber: 'Ticket# 787868 898954',
-    beneficiaryName: 'Anjali Verma',
-    beneficiaryType: 'Lactating Mother',
-    topic: 'Immunization',
-    description: 'Pending vaccination schedule updates in the Poshan Tracker system',
-    submittedDate: 'Submitted: 16/06/2025',
-    daysLabel: '0 Days Remaining',
-    daysType: 'remaining',
-    awcName: 'Anganwadi Centre 5',
-    documentsCount: 0,
-    isOverdue: false,
-    borderColor: '#e0e0e0',
-    complaintType: 'Others',
-    helpTopic: 'Immunisation Pending',
-    subTopic: 'System Update',
-    beneficiaryMobile: '98765 00214',
-    awcCode: 'AWC-105',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 2',
-    assignedTo: 'CDPO',
-  },
-  {
-    id: 'p15',
-    ticketNumber: 'Ticket# 787868 898955',
-    beneficiaryName: 'Kusum Lata',
-    beneficiaryType: 'Pregnant Woman',
-    topic: 'Urgent',
-    description: 'Critical beneficiary requires immediate health referral documents from AWC',
-    submittedDate: 'Submitted: 14/06/2025',
-    daysLabel: 'Overdue by 2 Days',
-    daysType: 'overdue',
-    awcName: 'Anganwadi Centre 6',
-    documentsCount: 1,
-    isOverdue: true,
-    borderColor: '#ffcdd2',
-    complaintType: 'Urgent',
-    helpTopic: 'Urgent',
-    subTopic: 'Emergency Service',
-    beneficiaryMobile: '98765 00215',
-    awcCode: 'AWC-106',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 2',
-    assignedTo: 'CDPO',
-  },
-  {
-    id: 'p16',
-    ticketNumber: 'Ticket# 787868 898956',
-    beneficiaryName: 'Nisha Soni',
-    beneficiaryType: 'Lactating Mother',
-    topic: 'Maternity Benefit',
-    description: 'Maternity benefits installment delayed at treasury level',
-    submittedDate: 'Submitted: 09/06/2025',
-    daysLabel: 'Overdue by 7 Days',
-    daysType: 'overdue',
-    awcName: 'Anganwadi Centre 1',
-    documentsCount: 0,
-    isOverdue: true,
-    borderColor: '#ffcdd2',
-    complaintType: 'Others',
-    helpTopic: 'Maternity Benefit',
-    subTopic: 'Treasury Delay',
-    beneficiaryMobile: '98765 00216',
-    awcCode: 'AWC-101',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 1',
-    assignedTo: 'CDPO',
-  },
-  {
-    id: 'p17',
-    ticketNumber: 'Ticket# 787868 898957',
-    beneficiaryName: 'Suman Choudhary',
-    beneficiaryType: 'Pregnant Woman',
-    topic: 'Corruption',
-    description: 'Officer demanding commission for approving registration form',
-    submittedDate: 'Submitted: 05/06/2025',
-    daysLabel: 'Overdue by 11 Days',
-    daysType: 'overdue',
-    awcName: 'Anganwadi Centre 2',
-    documentsCount: 1,
-    isOverdue: true,
-    borderColor: '#ffcdd2',
-    complaintType: 'Corruption',
-    helpTopic: 'Corruption',
-    subTopic: 'Bribe Allegation',
-    beneficiaryMobile: '98765 00217',
-    awcCode: 'AWC-102',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 4',
-    assignedTo: 'CDPO',
-  },
-  {
-    id: 'p18',
-    ticketNumber: 'Ticket# 787868 898958',
-    beneficiaryName: 'Renu Bala',
-    beneficiaryType: 'Children (3-6y)',
-    topic: 'Growth Monitoring',
-    description: 'poshan tracking device is faulty and weights cannot be logged',
-    submittedDate: 'Submitted: 02/06/2025',
-    daysLabel: 'Overdue by 14 Days',
-    daysType: 'overdue',
-    awcName: 'Anganwadi Centre 3',
-    documentsCount: 0,
-    isOverdue: true,
-    borderColor: '#ffcdd2',
-    complaintType: 'Others',
-    helpTopic: 'Growth Monitoring',
-    subTopic: 'Device Failure',
-    beneficiaryMobile: '98765 00218',
-    awcCode: 'AWC-103',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 3',
-    assignedTo: 'CDPO',
-  },
-  {
-    id: 'p19',
-    ticketNumber: 'Ticket# 787868 898959',
-    beneficiaryName: 'Guddi Devi',
-    beneficiaryType: 'Pregnant Woman',
-    topic: 'Urgent',
-    description: 'Medical referral records misplaced by Anganwadi helper',
-    submittedDate: 'Submitted: 28/05/2025',
-    daysLabel: 'Overdue by 19 Days',
-    daysType: 'overdue',
-    awcName: 'Anganwadi Centre 4',
-    documentsCount: 1,
-    isOverdue: true,
-    borderColor: '#ffcdd2',
-    complaintType: 'Urgent',
-    helpTopic: 'Urgent',
-    subTopic: 'Emergency Service',
-    beneficiaryMobile: '98765 00219',
-    awcCode: 'AWC-104',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 1',
-    assignedTo: 'CDPO',
-  },
-  {
-    id: 'p20',
-    ticketNumber: 'Ticket# 787868 898970',
-    beneficiaryName: 'Raveena Tandon',
-    beneficiaryType: 'Pregnant Woman',
-    topic: 'Growth Monitoring',
-    description: 'Growth records are not being updated regularly.',
-    submittedDate: 'Submitted: 28/06/2025',
-    daysLabel: '12 Days Remaining',
-    daysType: 'remaining',
-    awcName: 'Anganwadi Centre 1',
-    documentsCount: 0,
-    isOverdue: false,
-    borderColor: '#e0e0e0',
-    complaintType: 'Others',
-    helpTopic: 'Growth Monitoring',
-    subTopic: 'Growth Recording',
-    beneficiaryMobile: '98765 00410',
-    awcCode: 'AWC-101',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 1',
-    assignedTo: 'Supervisor',
-  },
-  {
-    id: 'p21',
-    ticketNumber: 'Ticket# 787868 898971',
-    beneficiaryName: 'Madhuri Dixit',
-    beneficiaryType: 'Lactating Mother',
-    topic: 'Supplementary Nutrition',
-    description: 'Take-home ration packets were short by 1kg.',
-    submittedDate: 'Submitted: 20/06/2025',
-    daysLabel: '4 Days Remaining',
-    daysType: 'remaining',
-    awcName: 'Anganwadi Centre 2',
-    documentsCount: 0,
-    isOverdue: false,
-    borderColor: '#e0e0e0',
-    complaintType: 'Others',
-    helpTopic: 'Supplementary Nutrition',
-    subTopic: 'Take Home Ration',
-    beneficiaryMobile: '98765 00411',
-    awcCode: 'AWC-102',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 4',
-    assignedTo: 'AWW',
-  },
-  {
-    id: 'p22',
-    ticketNumber: 'Ticket# 787868 898972',
-    beneficiaryName: 'Juhi Chawla',
-    beneficiaryType: 'Children (3-6y)',
-    topic: 'Immunization',
-    description: 'AWC closed early on scheduled vaccination day.',
-    submittedDate: 'Submitted: 15/06/2025',
-    daysLabel: 'Overdue by 1 Day',
-    daysType: 'overdue',
-    awcName: 'Anganwadi Centre 3',
-    documentsCount: 0,
-    isOverdue: true,
-    borderColor: '#ffcdd2',
-    complaintType: 'Others',
-    helpTopic: 'Immunisation Pending',
-    subTopic: 'AWC Timing',
-    beneficiaryMobile: '98765 00412',
-    awcCode: 'AWC-103',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 3',
-    assignedTo: 'Supervisor',
-  },
-  {
-    id: 'p23',
-    ticketNumber: 'Ticket# 787868 898973',
-    beneficiaryName: 'Karisma Kapoor',
-    beneficiaryType: 'Pregnant Woman',
-    topic: 'Supplementary Nutrition',
-    description: 'Dry ration kit not delivered to home due to logistics issue.',
-    submittedDate: 'Submitted: 04/06/2025',
-    daysLabel: 'Overdue by 12 Days',
-    daysType: 'overdue',
-    awcName: 'Anganwadi Centre 4',
-    documentsCount: 0,
-    isOverdue: true,
-    borderColor: '#ffcdd2',
-    complaintType: 'Others',
-    helpTopic: 'Supplementary Nutrition',
-    subTopic: 'Dry Ration',
-    beneficiaryMobile: '98765 00413',
-    awcCode: 'AWC-104',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 1',
-    assignedTo: 'AWW',
-  },
-  {
-    id: 'p30',
-    ticketNumber: 'Ticket# 787868 898990',
-    beneficiaryName: 'Hema Malini',
-    beneficiaryType: 'Pregnant Woman',
-    topic: 'Corruption',
-    description: 'THR supplies being sold in local market by supervisor operator.',
-    submittedDate: 'Submitted: 28/06/2025',
-    daysLabel: '12 Days Remaining',
-    daysType: 'remaining',
-    awcName: 'Anganwadi Centre 1',
-    documentsCount: 1,
-    isOverdue: false,
-    borderColor: '#e0e0e0',
-    complaintType: 'Corruption',
-    helpTopic: 'Corruption',
-    subTopic: 'THR Misappropriation',
-    beneficiaryMobile: '98765 00610',
-    awcCode: 'AWC-101',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 1',
-    assignedTo: 'DPO',
-  },
-  {
-    id: 'p31',
-    ticketNumber: 'Ticket# 787868 898991',
-    beneficiaryName: 'Rekha Ganesan',
-    beneficiaryType: 'Lactating Mother',
-    topic: 'Urgent',
-    description: 'Emergency medicine kits missing from the AWC store.',
-    submittedDate: 'Submitted: 22/06/2025',
-    daysLabel: '6 Days Remaining',
-    daysType: 'remaining',
-    awcName: 'Anganwadi Centre 2',
-    documentsCount: 1,
-    isOverdue: false,
-    borderColor: '#e0e0e0',
-    complaintType: 'Urgent',
-    helpTopic: 'Urgent',
-    subTopic: 'Emergency Service',
-    beneficiaryMobile: '98765 00611',
-    awcCode: 'AWC-102',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 4',
-    assignedTo: 'DPO',
-  },
-  {
-    id: 'p32',
-    ticketNumber: 'Ticket# 787868 898992',
-    beneficiaryName: 'Jaya Bachchan',
-    beneficiaryType: 'Children (3-6y)',
-    topic: 'Corruption',
-    description: 'Anganwadi worker requesting bribe for ECCE kit issuance.',
-    submittedDate: 'Submitted: 15/06/2025',
-    daysLabel: 'Overdue by 1 Day',
-    daysType: 'overdue',
-    awcName: 'Anganwadi Centre 3',
-    documentsCount: 1,
-    isOverdue: true,
-    borderColor: '#ffcdd2',
-    complaintType: 'Corruption',
-    helpTopic: 'Corruption',
-    subTopic: 'Bribe Allegation',
-    beneficiaryMobile: '98765 00612',
-    awcCode: 'AWC-103',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 3',
-    assignedTo: 'DPO',
-  },
-  {
-    id: 'p33',
-    ticketNumber: 'Ticket# 787868 898993',
-    beneficiaryName: 'Sridevi Kapoor',
-    beneficiaryType: 'Pregnant Woman',
-    topic: 'Urgent',
-    description: 'AWC building wall damaged and structurally unsafe for kids.',
-    submittedDate: 'Submitted: 05/06/2025',
-    daysLabel: 'Overdue by 11 Days',
-    daysType: 'overdue',
-    awcName: 'Anganwadi Centre 4',
-    documentsCount: 1,
-    isOverdue: true,
-    borderColor: '#ffcdd2',
-    complaintType: 'Urgent',
-    helpTopic: 'Urgent',
-    subTopic: 'Emergency Service',
-    beneficiaryMobile: '98765 00613',
-    awcCode: 'AWC-104',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 1',
-    assignedTo: 'DPO',
-  },
-];
-
-export const resolvedCards: ResolvedTicketCard[] = [
-  {
-    id: 'r1',
-    ticketNumber: 'Ticket# 787868 898901',
-    beneficiaryName: 'Kamla Devi',
-    beneficiaryType: 'Pregnant Woman',
-    topic: 'Maternity Benefit',
-    description: 'PM Maternity Benefit Scheme enrollment pending despite eligibility confirmation',
-    resolvedDate: 'Resolved: 20/06/2025',
-    status: 'CLOSED',
-    actionTaken: 'Coordinated with CDPO and ensured enrollment was processed. Beneficiary confirmed receipt of first installment.',
-    awcName: 'Anganwadi Centre 1',
-    helpTopic: 'Maternity Benefit',
-    subTopic: 'PMMVY Enrollment',
-    beneficiaryMobile: '98765 11001',
-    beneficiaryEmail: 'kamla.devi@example.com',
-    awcCode: 'AWC-101',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 1',
-    assignedTo: 'AWW',
-  },
-  {
-    id: 'r2',
-    ticketNumber: 'Ticket# 787868 898902',
-    beneficiaryName: 'Rekha Singh',
-    beneficiaryType: 'Lactating Mother',
-    topic: 'THR Distribution',
-    description: 'Hot Cooked Meal not being served at the centre for past 2 weeks',
-    resolvedDate: 'Resolved: 18/06/2025',
-    status: 'CLOSURE_PENDING',
-    awaitingCdpoClosure: true,
-    actionTaken: 'AWW instructed to resume HCM distribution immediately. Follow-up visit scheduled for next week.',
-    awcName: 'Anganwadi Centre 5',
-    helpTopic: 'Supplementary Nutrition',
-    subTopic: 'Hot Cooked Meal',
-    beneficiaryMobile: '98765 22002',
-    awcCode: 'AWC-105',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 2',
-    assignedTo: 'Supervisor',
-  },
-  {
-    id: 'r3',
-    ticketNumber: 'Ticket# 787868 898903',
-    beneficiaryName: 'Priya Yadav',
-    beneficiaryType: 'Adolescent Girl',
-    topic: 'SABLA Scheme',
-    description: 'Vocational training access denied despite meeting all eligibility criteria',
-    resolvedDate: 'Resolved: 15/06/2025',
-    status: 'APPEAL_RAISED',
-    actionTaken: 'Issue escalated to district level officer. Formal response expected within 7 working days.',
-    awcName: 'Anganwadi Centre 3',
-    helpTopic: 'SABLA Scheme',
-    subTopic: 'Vocational Training',
-    beneficiaryMobile: '98765 33003',
-    awcCode: 'AWC-103',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 1',
-    assignedTo: 'AWW',
-  },
-  {
-    id: 'r4',
-    ticketNumber: 'Ticket# 787868 898904',
-    beneficiaryName: 'Geeta Sharma',
-    beneficiaryType: 'Children (6m-3y)',
-    topic: 'Immunization',
-    description: 'Vaccination not administered on scheduled date at sub-centre',
-    resolvedDate: 'Resolved: 12/06/2025',
-    status: 'APPEAL_RESOLVED',
-    actionTaken: 'Child vaccinated at PHC Ramgarh on 01 Jul 2025. DPT booster and OPV administered. Immunisation card updated with new entries. Parents counselled on next scheduled vaccination date of 15 Sep 2025.',
-    awcName: 'Anganwadi Centre 2',
-    helpTopic: 'Immunisation Pending',
-    subTopic: 'Immunisation Schedule',
-    beneficiaryMobile: '98765 43210',
-    beneficiaryEmail: 'sunita.bai@example.com',
-    awcCode: 'AWC-001',
-    district: 'Raigarh',
-    project: 'Project Alpha',
-    sector: 'Sector 1',
-    assignedTo: 'Supervisor',
-    dpoActionTaken: 'Appeal reviewed on 12 Jul 2025. Vaccination records verified at PHC Ramgarh — DPT booster and OPV confirmed administered on 01 Jul 2025. Immunisation card entries are accurate and complete. Resolution by AWW upheld. Appeal resolved in favour of existing resolution by AWW Priya Mehta.',
-  },
-  {
-    id: 'r5',
-    ticketNumber: 'Ticket# 787868 898905',
-    beneficiaryName: 'Savita Kumari',
-    beneficiaryType: 'Children (3-6y)',
-    topic: 'Pre-school Education',
-    description: 'Child not enrolled in ECCE programme despite being of eligible age',
-    submittedDate: 'Submitted: 15/06/2025',
-    resolvedDate: 'Resolved: 08/06/2025',
-    status: 'CLOSED',
-    actionTaken: 'Enrollment completed by AWW. Child attending ECCE sessions regularly as confirmed during last visit.',
-    awcName: 'Anganwadi Centre 6',
-    helpTopic: 'Pre-school Education',
-    subTopic: 'Pre-school Enrollment',
-    beneficiaryMobile: '98765 55001',
-    awcCode: 'AWC-106',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 2',
-    assignedTo: 'CDPO',
-  },
-  {
-    id: 'r6',
-    ticketNumber: 'Ticket# 787868 898906',
-    beneficiaryName: 'Maya Devi',
-    beneficiaryType: 'Children (3-6y)',
-    topic: 'Growth Monitoring',
-    description: 'Monthly height and weight logs not updated in Poshan Tracker',
-    resolvedDate: 'Resolved: 25/06/2025',
-    status: 'CLOSED',
-    actionTaken: 'Weight and height updated in Poshan Tracker. Mother verified the entries on her mobile app.',
-    awcName: 'Anganwadi Centre 2',
-    helpTopic: 'Growth Monitoring',
-    subTopic: 'Poshan Tracker Update',
-    beneficiaryMobile: '98765 55005',
-    awcCode: 'AWC-102',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 4',
-    assignedTo: 'AWW',
-  },
-  {
-    id: 'r7',
-    ticketNumber: 'Ticket# 787868 898907',
-    beneficiaryName: 'Kiran Bai',
-    beneficiaryType: 'Pregnant Woman',
-    topic: 'Aadhar verification',
-    description: 'Aadhar linkage failing for mother profile',
-    submittedDate: 'Submitted: 10/06/2025',
-    resolvedDate: 'Resolved: 28/06/2025',
-    status: 'CLOSED',
-    actionTaken: 'Biometric details re-submitted at Aadhaar center. Linked successfully.',
-    awcName: 'Anganwadi Centre 1',
-    helpTopic: 'Identity Linkage',
-    subTopic: 'Aadhar Verification',
-    beneficiaryMobile: '98765 66006',
-    awcCode: 'AWC-101',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 1',
-    assignedTo: 'CDPO',
-  },
-  {
-    id: 'r10',
-    ticketNumber: 'Ticket# 787868 898960',
-    beneficiaryName: 'Lata Mangesh',
-    beneficiaryType: 'Lactating Mother',
-    topic: 'Growth Monitoring',
-    description: 'ECCE program enrollment updated on the POSHAN tracker app.',
-    submittedDate: 'Submitted: 29/06/2025',
-    resolvedDate: 'Resolved: 30/06/2025',
-    status: 'CLOSED',
-    actionTaken: 'ECCE program enrollment updated on the POSHAN tracker app.',
-    awcName: 'Anganwadi Centre 1',
-    helpTopic: 'Growth Monitoring',
-    subTopic: 'Poshan Tracker Update',
-    beneficiaryMobile: '98765 00310',
-    awcCode: 'AWC-101',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 1',
-    assignedTo: 'CDPO',
-  },
-  {
-    id: 'r11',
-    ticketNumber: 'Ticket# 787868 898961',
-    beneficiaryName: 'Pushpa Raj',
-    beneficiaryType: 'Pregnant Woman',
-    topic: 'Maternity Benefit',
-    description: 'PMMVY scheme installment processed and confirmed by beneficiary.',
-    submittedDate: 'Submitted: 26/06/2025',
-    resolvedDate: 'Resolved: 29/06/2025',
-    status: 'CLOSED',
-    actionTaken: 'PMMVY scheme installment processed and confirmed by beneficiary.',
-    awcName: 'Anganwadi Centre 2',
-    helpTopic: 'Maternity Benefit',
-    subTopic: 'PMMVY Installment',
-    beneficiaryMobile: '98765 00311',
-    awcCode: 'AWC-102',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 4',
-    assignedTo: 'CDPO',
-  },
-  {
-    id: 'r12',
-    ticketNumber: 'Ticket# 787868 898962',
-    beneficiaryName: 'Seema Mishra',
-    beneficiaryType: 'Children (6m-3y)',
-    topic: 'Urgent',
-    description: 'Emergency medical referral coordinated with PHC.',
-    submittedDate: 'Submitted: 23/06/2025',
-    resolvedDate: 'Resolved: 28/06/2025',
-    status: 'CLOSED',
-    actionTaken: 'Emergency medical referral coordinated with PHC.',
-    awcName: 'Anganwadi Centre 3',
-    helpTopic: 'Urgent',
-    subTopic: 'Emergency Service',
-    beneficiaryMobile: '98765 00312',
-    awcCode: 'AWC-103',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 3',
-    assignedTo: 'CDPO',
-  },
-  {
-    id: 'r13',
-    ticketNumber: 'Ticket# 787868 898963',
-    beneficiaryName: 'Mamta Banerjee',
-    beneficiaryType: 'Children (3-6y)',
-    topic: 'Corruption',
-    description: 'Investigation completed. Strict warning issued to the centre helper.',
-    submittedDate: 'Submitted: 21/06/2025',
-    resolvedDate: 'Resolved: 27/06/2025',
-    status: 'CLOSED',
-    actionTaken: 'Investigation completed. Strict warning issued to the centre helper.',
-    awcName: 'Anganwadi Centre 4',
-    helpTopic: 'Corruption',
-    subTopic: 'THR Misappropriation',
-    beneficiaryMobile: '98765 00313',
-    awcCode: 'AWC-104',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 1',
-    assignedTo: 'CDPO',
-  },
-  {
-    id: 'r14',
-    ticketNumber: 'Ticket# 787868 898964',
-    beneficiaryName: 'Neetu Chandra',
-    beneficiaryType: 'Lactating Mother',
-    topic: 'Growth Monitoring',
-    description: 'CDPO resolved. Appeal under review by DPO.',
-    submittedDate: 'Submitted: 16/06/2025',
-    resolvedDate: 'Resolved: 25/06/2025',
-    status: 'APPEAL_RAISED',
-    actionTaken: 'CDPO resolved. Appeal under review by DPO.',
-    awcName: 'Anganwadi Centre 5',
-    helpTopic: 'Growth Monitoring',
-    subTopic: 'Weight Recording',
-    beneficiaryMobile: '98765 00314',
-    awcCode: 'AWC-105',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 2',
-    assignedTo: 'CDPO',
-  },
-  {
-    id: 'r15',
-    ticketNumber: 'Ticket# 787868 898965',
-    beneficiaryName: 'Chitra Singh',
-    beneficiaryType: 'Pregnant Woman',
-    topic: 'Urgent',
-    description: 'Appeal resolved by DPO. Resolution upheld.',
-    submittedDate: 'Submitted: 14/06/2025',
-    resolvedDate: 'Resolved: 24/06/2025',
-    status: 'APPEAL_RESOLVED',
-    actionTaken: 'Appeal resolved by DPO. Resolution upheld.',
-    awcName: 'Anganwadi Centre 6',
-    helpTopic: 'Urgent',
-    subTopic: 'Emergency Service',
-    beneficiaryMobile: '98765 00315',
-    awcCode: 'AWC-106',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 2',
-    assignedTo: 'CDPO',
-  },
-  {
-    id: 'r16',
-    ticketNumber: 'Ticket# 787868 898966',
-    beneficiaryName: 'Ritu Karidhal',
-    beneficiaryType: 'Lactating Mother',
-    topic: 'Immunization',
-    description: 'Special immunization camp organized for pending children.',
-    submittedDate: 'Submitted: 09/06/2025',
-    resolvedDate: 'Resolved: 22/06/2025',
-    status: 'CLOSED',
-    actionTaken: 'Special immunization camp organized for pending children.',
-    awcName: 'Anganwadi Centre 1',
-    helpTopic: 'Immunisation Pending',
-    subTopic: 'Special Camp',
-    beneficiaryMobile: '98765 00316',
-    awcCode: 'AWC-101',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 1',
-    assignedTo: 'CDPO',
-  },
-  {
-    id: 'r17',
-    ticketNumber: 'Ticket# 787868 898967',
-    beneficiaryName: 'Shalini Sen',
-    beneficiaryType: 'Pregnant Woman',
-    topic: 'Corruption',
-    description: 'Bribe allegations investigated. Officer replaced.',
-    submittedDate: 'Submitted: 05/06/2025',
-    resolvedDate: 'Resolved: 20/06/2025',
-    status: 'CLOSED',
-    actionTaken: 'Bribe allegations investigated. Officer replaced.',
-    awcName: 'Anganwadi Centre 2',
-    helpTopic: 'Corruption',
-    subTopic: 'Bribe Allegation',
-    beneficiaryMobile: '98765 00317',
-    awcCode: 'AWC-102',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 4',
-    assignedTo: 'CDPO',
-  },
-  {
-    id: 'r18',
-    ticketNumber: 'Ticket# 787868 898968',
-    beneficiaryName: 'Babita Phogat',
-    beneficiaryType: 'Children (3-6y)',
-    topic: 'Supplementary Nutrition',
-    description: 'Rations supplied. Beneficiary raised appeal regarding quality.',
-    submittedDate: 'Submitted: 02/06/2025',
-    resolvedDate: 'Resolved: 18/06/2025',
-    status: 'APPEAL_RAISED',
-    actionTaken: 'Rations supplied. Beneficiary raised appeal regarding quality.',
-    awcName: 'Anganwadi Centre 3',
-    helpTopic: 'Supplementary Nutrition',
-    subTopic: 'Take Home Ration',
-    beneficiaryMobile: '98765 00318',
-    awcCode: 'AWC-103',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 3',
-    assignedTo: 'CDPO',
-  },
-  {
-    id: 'r19',
-    ticketNumber: 'Ticket# 787868 898969',
-    beneficiaryName: 'Kangana Ranaut',
-    beneficiaryType: 'Pregnant Woman',
-    topic: 'Urgent',
-    description: 'DPO resolved the appeal and ordered replacement delivery.',
-    submittedDate: 'Submitted: 28/05/2025',
-    resolvedDate: 'Resolved: 15/06/2025',
-    status: 'APPEAL_RESOLVED',
-    actionTaken: 'DPO resolved the appeal and ordered replacement delivery.',
-    awcName: 'Anganwadi Centre 4',
-    helpTopic: 'Urgent',
-    subTopic: 'Emergency Service',
-    beneficiaryMobile: '98765 00319',
-    awcCode: 'AWC-104',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 1',
-    assignedTo: 'CDPO',
-  },
-  {
-    id: 'r20',
-    ticketNumber: 'Ticket# 787868 898980',
-    beneficiaryName: 'Aishwarya Rai',
-    beneficiaryType: 'Pregnant Woman',
-    topic: 'Growth Monitoring',
-    description: 'Resolved: Supervisor visited centre and updated all weights.',
-    submittedDate: 'Submitted: 28/06/2025',
-    resolvedDate: 'Resolved: 29/06/2025',
-    status: 'CLOSED',
-    actionTaken: 'Supervisor visited centre and updated all pending weight entries.',
-    awcName: 'Anganwadi Centre 1',
-    helpTopic: 'Growth Monitoring',
-    subTopic: 'Growth Recording',
-    beneficiaryMobile: '98765 00510',
-    awcCode: 'AWC-101',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 1',
-    assignedTo: 'Supervisor',
-  },
-  {
-    id: 'r21',
-    ticketNumber: 'Ticket# 787868 898981',
-    beneficiaryName: 'Sushmita Sen',
-    beneficiaryType: 'Lactating Mother',
-    topic: 'Supplementary Nutrition',
-    description: 'Resolved: AWW delivered dry ration packet of correct weight.',
-    submittedDate: 'Submitted: 20/06/2025',
-    resolvedDate: 'Resolved: 25/06/2025',
-    status: 'CLOSED',
-    actionTaken: 'AWW delivered correct dry ration kit directly to beneficiary house.',
-    awcName: 'Anganwadi Centre 2',
-    helpTopic: 'Supplementary Nutrition',
-    subTopic: 'Take Home Ration',
-    beneficiaryMobile: '98765 00511',
-    awcCode: 'AWC-102',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 4',
-    assignedTo: 'AWW',
-  },
-  {
-    id: 'r22',
-    ticketNumber: 'Ticket# 787868 898982',
-    beneficiaryName: 'Kajol Devgan',
-    beneficiaryType: 'Children (3-6y)',
-    topic: 'Immunization',
-    description: 'Resolved: Next camp scheduled and parents notified.',
-    submittedDate: 'Submitted: 15/06/2025',
-    resolvedDate: 'Resolved: 22/06/2025',
-    status: 'CLOSED',
-    actionTaken: 'Next immunization session scheduled. Parents informed via SMS.',
-    awcName: 'Anganwadi Centre 3',
-    helpTopic: 'Immunisation Pending',
-    subTopic: 'Camp Scheduling',
-    beneficiaryMobile: '98765 00512',
-    awcCode: 'AWC-103',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 3',
-    assignedTo: 'Supervisor',
-  },
-  {
-    id: 'r23',
-    ticketNumber: 'Ticket# 787868 898983',
-    beneficiaryName: 'Tabu Hashmi',
-    beneficiaryType: 'Pregnant Woman',
-    topic: 'Supplementary Nutrition',
-    description: 'Resolved: Special home delivery route arranged.',
-    submittedDate: 'Submitted: 04/06/2025',
-    resolvedDate: 'Resolved: 18/06/2025',
-    status: 'CLOSED',
-    actionTaken: 'Arranged special home delivery of Take-Home-Ration kits via SHG.',
-    awcName: 'Anganwadi Centre 4',
-    helpTopic: 'Supplementary Nutrition',
-    subTopic: 'Dry Ration',
-    beneficiaryMobile: '98765 00513',
-    awcCode: 'AWC-104',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 1',
-    assignedTo: 'AWW',
-  },
-  {
-    id: 'r30',
-    ticketNumber: 'Ticket# 787868 898990',
-    beneficiaryName: 'Hema Malini',
-    beneficiaryType: 'Pregnant Woman',
-    topic: 'Corruption',
-    description: 'THR supplies being sold in local market by supervisor operator.',
-    submittedDate: 'Submitted: 28/06/2025',
-    resolvedDate: 'Resolved: 29/06/2025',
-    status: 'CLOSED',
-    actionTaken: 'THR supplies issue investigated and supervisor replaced.',
-    awcName: 'Anganwadi Centre 1',
-    helpTopic: 'Corruption',
-    subTopic: 'THR Misappropriation',
-    beneficiaryMobile: '98765 00610',
-    awcCode: 'AWC-101',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 1',
-    assignedTo: 'DPO',
-  },
-  {
-    id: 'r31',
-    ticketNumber: 'Ticket# 787868 898991',
-    beneficiaryName: 'Rekha Ganesan',
-    beneficiaryType: 'Lactating Mother',
-    topic: 'Urgent',
-    description: 'Emergency medicine kits missing from the AWC store.',
-    submittedDate: 'Submitted: 22/06/2025',
-    resolvedDate: 'Resolved: 28/06/2025',
-    status: 'CLOSED',
-    actionTaken: 'Emergency medicine kits delivered and verified by mother.',
-    awcName: 'Anganwadi Centre 2',
-    helpTopic: 'Urgent',
-    subTopic: 'Emergency Service',
-    beneficiaryMobile: '98765 00611',
-    awcCode: 'AWC-102',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 4',
-    assignedTo: 'DPO',
-  },
-  {
-    id: 'r32',
-    ticketNumber: 'Ticket# 787868 898992',
-    beneficiaryName: 'Jaya Bachchan',
-    beneficiaryType: 'Children (3-6y)',
-    topic: 'Corruption',
-    description: 'Anganwadi worker requesting bribe for ECCE kit issuance.',
-    submittedDate: 'Submitted: 15/06/2025',
-    resolvedDate: 'Resolved: 22/06/2025',
-    status: 'CLOSED',
-    actionTaken: 'AWW warned and ECCE kit issued immediately without charge.',
-    awcName: 'Anganwadi Centre 3',
-    helpTopic: 'Corruption',
-    subTopic: 'Bribe Allegation',
-    beneficiaryMobile: '98765 00612',
-    awcCode: 'AWC-103',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 3',
-    assignedTo: 'DPO',
-  },
-  {
-    id: 'r33',
-    ticketNumber: 'Ticket# 787868 898993',
-    beneficiaryName: 'Sridevi Kapoor',
-    beneficiaryType: 'Pregnant Woman',
-    topic: 'Urgent',
-    description: 'AWC building wall damaged and structurally unsafe for kids.',
-    submittedDate: 'Submitted: 05/06/2025',
-    resolvedDate: 'Resolved: 18/06/2025',
-    status: 'CLOSED',
-    actionTaken: 'Repair works initiated. Alternative safe space allocated temporarily.',
-    awcName: 'Anganwadi Centre 4',
-    helpTopic: 'Urgent',
-    subTopic: 'Emergency Service',
-    beneficiaryMobile: '98765 00613',
-    awcCode: 'AWC-104',
-    district: 'Jaipur',
-    project: 'Sanganer',
-    sector: 'Sector 1',
-    assignedTo: 'DPO',
-  },
-];
-
-// ─── Sub-components ────────────────────────────────────────────────────────────
-
-const StatusBar_ = () => (
-  <View style={styles.statusBar}>
-    <Text style={styles.statusTime}>9:41</Text>
-    <View style={styles.statusIcons}>
-      <Image source={{ uri: imgIcon }} style={styles.statusIcon16} />
-      <Image source={{ uri: imgIcon1 }} style={styles.statusIcon14} />
-      <Image source={{ uri: imgIcon2 }} style={styles.statusIcon20} />
-    </View>
-  </View>
-);
-
-const Header = ({ onBack }: { onBack?: () => void }) => (
-  <View style={styles.header}>
-    <TouchableOpacity style={styles.backButton} onPress={onBack} activeOpacity={0.7}>
-      <Image source={{ uri: imgBackIconWhite }} style={styles.backIcon} />
-    </TouchableOpacity>
-    <Text style={styles.headerTitle}>Beneficiary Redressal</Text>
-    <View style={styles.headerSpacer} />
-  </View>
-);
-
-const SubHeader = () => (
-  <View style={styles.subHeader}>
-    <Text style={styles.subHeaderText}>Project: Sanganer</Text>
-    <Text style={styles.subHeaderSeparator}>|</Text>
-    <Text style={styles.subHeaderText}>4 Sectors</Text>
-  </View>
-);
-
-const SummaryTable = ({
-  pendingFilter,
-  resolvedFilter,
-  onPendingFilter,
-  onResolvedFilter,
-}: {
-  pendingFilter: boolean;
-  resolvedFilter: boolean;
-  onPendingFilter: () => void;
-  onResolvedFilter: () => void;
-}) => (
-  <View style={styles.summarySection}>
-    <Text style={styles.summaryLabel}>SUMMARY</Text>
-    <View style={styles.summaryCard}>
-      {/* Header Row */}
-      <View style={[styles.summaryRow, styles.summaryHeaderRow]}>
-        <View style={styles.summaryCol0} />
-        <TouchableOpacity style={styles.summaryColBtn} onPress={onPendingFilter} activeOpacity={0.7}>
-          <Text style={[styles.summaryColBtnText, { color: '#e65100' }]}>PENDING</Text>
-          <Text style={[styles.chevronText, { color: '#e65100' }]}>▾</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.summaryColBtn} onPress={onResolvedFilter} activeOpacity={0.7}>
-          <Text style={[styles.summaryColBtnText, { color: '#2e7d32' }]}>RESOLVED</Text>
-          <Text style={[styles.chevronText, { color: '#2e7d32' }]}>▾</Text>
-        </TouchableOpacity>
-        <View style={styles.summaryColBtn}>
-          <Text style={[styles.summaryColBtnText, { color: '#1a237e' }]}>TOTAL</Text>
-        </View>
-      </View>
-
-      {/* CDPO Row */}
-      <View style={[styles.summaryRow, styles.summaryDataRow, { borderBottomColor: '#f5f5f5' }]}>
-        <View style={styles.summaryCol0}>
-          <Text style={styles.summaryRowLabel}>CDPO</Text>
-        </View>
-        <View style={styles.summaryColData}>
-          <Text style={[styles.summaryDataValue, { color: '#e65100' }]}>7</Text>
-        </View>
-        <View style={styles.summaryColData}>
-          <Text style={[styles.summaryDataValue, { color: '#2e7d32' }]}>5</Text>
-        </View>
-        <View style={styles.summaryColData}>
-          <Text style={[styles.summaryDataValue, { color: '#1a237e' }]}>12</Text>
-        </View>
-      </View>
-
-      {/* Supervisor Row */}
-      <View style={[styles.summaryRow, styles.summaryDataRow, { borderBottomColor: '#f5f5f5' }]}>
-        <View style={styles.summaryCol0}>
-          <Text style={styles.summaryRowLabel}>Supervisor</Text>
-        </View>
-        <View style={styles.summaryColData}>
-          <Text style={[styles.summaryDataValue, { color: '#e65100' }]}>50</Text>
-        </View>
-        <View style={styles.summaryColData}>
-          <Text style={[styles.summaryDataValue, { color: '#2e7d32' }]}>150</Text>
-        </View>
-        <View style={styles.summaryColData}>
-          <Text style={[styles.summaryDataValue, { color: '#1a237e' }]}>200</Text>
-        </View>
-      </View>
-
-      {/* AWW Row */}
-      <View style={[styles.summaryRow, styles.summaryDataRow, { borderBottomColor: '#e0e0e0' }]}>
-        <View style={styles.summaryCol0}>
-          <Text style={styles.summaryRowLabel}>AWW</Text>
-        </View>
-        <View style={styles.summaryColData}>
-          <Text style={[styles.summaryDataValue, { color: '#e65100' }]}>2,000</Text>
-        </View>
-        <View style={styles.summaryColData}>
-          <Text style={[styles.summaryDataValue, { color: '#2e7d32' }]}>1,000</Text>
-        </View>
-        <View style={styles.summaryColData}>
-          <Text style={[styles.summaryDataValue, { color: '#1a237e' }]}>3,000</Text>
-        </View>
-      </View>
-
-      {/* Total Row */}
-      <View style={[styles.summaryRow, styles.summaryDataRow, { borderBottomWidth: 0 }]}>
-        <View style={styles.summaryCol0}>
-          <Text style={[styles.summaryRowLabel, { fontWeight: '600', color: '#1a237e' }]}>Total</Text>
-        </View>
-        <View style={styles.summaryColData}>
-          <Text style={[styles.summaryDataValue, { color: '#e65100' }]}>2,057</Text>
-        </View>
-        <View style={styles.summaryColData}>
-          <Text style={[styles.summaryDataValue, { color: '#2e7d32' }]}>1,155</Text>
-        </View>
-        <View style={styles.summaryColData}>
-          <Text style={[styles.summaryDataValue, { color: '#1a237e' }]}>3,212</Text>
-        </View>
-      </View>
-    </View>
-  </View>
-);
-
-const AssignedToFilter = ({
-  selected,
-  onSelect,
-}: {
-  selected: AssignedFilter;
-  onSelect: (val: AssignedFilter) => void;
-}) => (
-  <View style={styles.assignedToRow}>
-    <Text style={styles.assignedToLabel}>Assigned To</Text>
-    <View style={styles.assignedChips}>
-      {(['CDPO', 'Supervisor', 'AWW'] as AssignedFilter[]).map((item) => (
-        <TouchableOpacity
-          key={item}
-          style={[
-            styles.assignedChip,
-            selected === item ? styles.assignedChipActive : styles.assignedChipInactive,
-          ]}
-          onPress={() => onSelect(item)}
-          activeOpacity={0.7}
-        >
-          <Text
-            style={[
-              styles.assignedChipText,
-              selected === item ? styles.assignedChipTextActive : styles.assignedChipTextInactive,
-            ]}
-          >
-            {item === 'CDPO' ? 'me' : item}
-          </Text>
-        </TouchableOpacity>
-      ))}
-    </View>
-  </View>
-);
-
-const TabBar = ({
-  activeTab,
-  onTabChange,
-  pendingCount,
-  resolvedCount,
-}: {
-  activeTab: TabType;
-  onTabChange: (tab: TabType) => void;
-  pendingCount: number;
-  resolvedCount: number;
-}) => (
-  <View style={styles.tabBar}>
-    {(['Pending', 'Resolved'] as TabType[]).map((tab) => (
-      <TouchableOpacity
-        key={tab}
-        style={styles.tabItem}
-        onPress={() => onTabChange(tab)}
-        activeOpacity={0.8}
-      >
-        <View style={styles.tabContent}>
-          <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>{tab}</Text>
-          <View
-            style={[
-              styles.tabBadge,
-              activeTab === tab ? styles.tabBadgeActive : styles.tabBadgeInactive,
-            ]}
-          >
-            <Text
-              style={[
-                styles.tabBadgeText,
-                activeTab === tab ? styles.tabBadgeTextActive : styles.tabBadgeTextInactive,
-              ]}
-            >
-              {tab === 'Pending' ? pendingCount : resolvedCount}
-            </Text>
-          </View>
-        </View>
-        <View style={[styles.tabUnderline, activeTab === tab && styles.tabUnderlineActive]} />
-      </TouchableOpacity>
-    ))}
-  </View>
-);
-
-const FilterChips = ({
-  activeTab,
-  assignedFilter,
-  isOverdueActive,
-  onOverdueToggle,
-  onClearAll,
-  appliedDateOption,
-  appliedTypes,
-  appliedCategories,
-  appliedStatuses,
-  onDateRangePress,
-  onTypePress,
-  onCategoryPress,
-  onStatusPress,
-  onClearDateRange,
-  onClearType,
-  onClearCategory,
-  onClearStatus,
-}: {
-  activeTab: TabType;
-  assignedFilter: AssignedFilter;
-  isOverdueActive: boolean;
-  onOverdueToggle: () => void;
-  onClearAll: () => void;
-  appliedDateOption: '7' | '14' | '21' | 'custom' | null;
-  appliedTypes: string[];
-  appliedCategories: string[];
-  appliedStatuses: ResolvedStatus[];
-  onDateRangePress: () => void;
-  onTypePress: () => void;
-  onCategoryPress: () => void;
-  onStatusPress: () => void;
-  onClearDateRange: () => void;
-  onClearType: () => void;
-  onClearCategory: () => void;
-  onClearStatus: () => void;
-}) => {
-  const safeTypes = appliedTypes || [];
-  const safeCategories = appliedCategories || [];
-  const safeStatuses = appliedStatuses || [];
-  const isCdpoPending = assignedFilter === 'CDPO' && activeTab === 'Pending';
-  const isAnyFilterActive =
-    isOverdueActive ||
-    appliedDateOption !== null ||
-    safeTypes.length > 0 ||
-    safeCategories.length > 0 ||
-    safeStatuses.length > 0;
-
-  return (
-    <View>
-      <View style={styles.filterRow}>
-        {activeTab === 'Pending' ? (
-          <>
-            <TouchableOpacity
-              style={[styles.filterChip, isOverdueActive && styles.filterChipOverdueActive]}
-              onPress={onOverdueToggle}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.filterChipText, isOverdueActive && styles.filterChipTextOverdueActive]}>
-                Overdue
-              </Text>
-              {isOverdueActive && (
-                <Text style={styles.filterChipCloseOverdue}> ×</Text>
-              )}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.filterChip, appliedDateOption !== null && styles.filterChipActive]}
-              onPress={onDateRangePress}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.filterChipText, appliedDateOption !== null && styles.filterChipTextActive]}>
-                {appliedDateOption === '7'
-                  ? '7 Days'
-                  : appliedDateOption === '14'
-                  ? '14 Days'
-                  : appliedDateOption === '21'
-                  ? '21 Days'
-                  : appliedDateOption === 'custom'
-                  ? 'Custom Range'
-                  : 'Date Range ▾'}
-              </Text>
-              {appliedDateOption !== null && (
-                <TouchableOpacity onPress={onClearDateRange} hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }}>
-                  <Text style={styles.filterChipClose}> ×</Text>
-                </TouchableOpacity>
-              )}
-            </TouchableOpacity>
-
-            {isCdpoPending ? (
-              <TouchableOpacity
-                style={[styles.filterChip, safeTypes.length > 0 && styles.filterChipActive]}
-                onPress={onTypePress}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.filterChipText, safeTypes.length > 0 && styles.filterChipTextActive]}>
-                  {safeTypes.length === 0
-                    ? 'Type ▾'
-                    : safeTypes.length === 1
-                    ? safeTypes[0]
-                    : `${safeTypes.length} Types`}
-                </Text>
-                {safeTypes.length > 0 && (
-                  <TouchableOpacity onPress={onClearType} hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }}>
-                    <Text style={styles.filterChipClose}> ×</Text>
-                  </TouchableOpacity>
-                )}
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                style={[styles.filterChip, safeCategories.length > 0 && styles.filterChipActive]}
-                onPress={onCategoryPress}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.filterChipText, safeCategories.length > 0 && styles.filterChipTextActive]}>
-                  {safeCategories.length === 0
-                    ? 'Category ▾'
-                    : safeCategories.length === 1
-                    ? safeCategories[0]
-                    : `${safeCategories.length} Categories`}
-                </Text>
-                {safeCategories.length > 0 && (
-                  <TouchableOpacity onPress={onClearCategory} hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }}>
-                    <Text style={styles.filterChipClose}> ×</Text>
-                  </TouchableOpacity>
-                )}
-              </TouchableOpacity>
-            )}
-          </>
-        ) : (
-          <>
-            <TouchableOpacity
-              style={[styles.filterChip, safeStatuses.length > 0 && styles.filterChipActive]}
-              onPress={onStatusPress}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.filterChipText, safeStatuses.length > 0 && styles.filterChipTextActive]}>
-                {safeStatuses.length === 0
-                  ? 'Status ▾'
-                  : safeStatuses.length === 1
-                  ? getStatusLabel(safeStatuses[0])
-                  : `${safeStatuses.length} Statuses`}
-              </Text>
-              {safeStatuses.length > 0 && (
-                <TouchableOpacity onPress={onClearStatus} hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }}>
-                  <Text style={styles.filterChipClose}> ×</Text>
-                </TouchableOpacity>
-              )}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.filterChip, appliedDateOption !== null && styles.filterChipActive]}
-              onPress={onDateRangePress}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.filterChipText, appliedDateOption !== null && styles.filterChipTextActive]}>
-                {appliedDateOption === '7'
-                  ? '7 Days'
-                  : appliedDateOption === '14'
-                  ? '14 Days'
-                  : appliedDateOption === '21'
-                  ? '21 Days'
-                  : appliedDateOption === 'custom'
-                  ? 'Custom Range'
-                  : 'Date Range ▾'}
-              </Text>
-              {appliedDateOption !== null && (
-                <TouchableOpacity onPress={onClearDateRange} hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }}>
-                  <Text style={styles.filterChipClose}> ×</Text>
-                </TouchableOpacity>
-              )}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.filterChip, safeCategories.length > 0 && styles.filterChipActive]}
-              onPress={onCategoryPress}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.filterChipText, safeCategories.length > 0 && styles.filterChipTextActive]}>
-                {safeCategories.length === 0
-                  ? 'Category ▾'
-                  : safeCategories.length === 1
-                  ? safeCategories[0]
-                  : `${safeCategories.length} Categories`}
-              </Text>
-              {safeCategories.length > 0 && (
-                <TouchableOpacity onPress={onClearCategory} hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }}>
-                  <Text style={styles.filterChipClose}> ×</Text>
-                </TouchableOpacity>
-              )}
-            </TouchableOpacity>
-          </>
-        )}
-      </View>
-      {isAnyFilterActive && (
-        <TouchableOpacity style={styles.clearAllRow} onPress={onClearAll} activeOpacity={0.7}>
-          <Text style={styles.clearAllText}>Clear all</Text>
-        </TouchableOpacity>
-      )}
-    </View>
-  );
-};
-
-export const TicketCardComponent = ({
-  card,
-  showDocs = true,
-  onPress,
-}: {
-  card: TicketCard;
-  showDocs?: boolean;
-  onPress?: () => void;
-}) => {
-  const isCorruptionOrUrgent = card.complaintType === 'Corruption' || card.complaintType === 'Urgent';
-  const roleColor = (card.status === 'APPEAL_RAISED' || (card as any)._isAppeal) && card.assignedTo ? (
-    card.assignedTo.toUpperCase() === 'CDPO' ? { bg: '#e3f2fd', border: '#90caf9', text: '#1565c0' } :
-    card.assignedTo.toUpperCase() === 'SUPERVISOR' ? { bg: '#f3e5f5', border: '#ce93d8', text: '#7b1fa2' } :
-    card.assignedTo.toUpperCase() === 'AWW' ? { bg: '#e8f5e9', border: '#a5d6a7', text: '#2e7d32' } :
-    { bg: '#f5f5f5', border: '#e0e0e0', text: '#616161' }
-  ) : null;
-
-  return (
-    <TouchableOpacity
-      style={[styles.card, { borderColor: card.borderColor ?? (card.isOverdue ? '#ffcdd2' : '#e0e0e0') }]}
-      activeOpacity={0.85}
-      onPress={onPress}
-    >
-      {/* Ticket # + Badges Row */}
-      <View style={styles.cardTopRow}>
-        <Text style={styles.cardTicketNum}>{card.ticketNumber}</Text>
-        <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
-          {roleColor && (
-            <View style={{
-              backgroundColor: roleColor.bg,
-              borderColor: roleColor.border,
-              borderWidth: 1,
-              borderRadius: 4,
-              paddingHorizontal: 6,
-              height: 19,
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}>
-              <Text style={{
-                fontFamily: 'Inter',
-                fontWeight: '600',
-                fontSize: 10,
-                color: roleColor.text,
-              }}>
-                {card.assignedTo}
-              </Text>
-            </View>
-          )}
-          {card.isOverdue && (
-            <View style={styles.overdueBadge}>
-              <Text style={styles.overdueBadgeText}>
-                {card._isOverdueTab ? card.assignedTo?.toUpperCase() : 'OVERDUE'}
-              </Text>
-            </View>
-          )}
-        </View>
-      </View>
-
-      {/* Beneficiary Name + Tag Row */}
-      {(card.beneficiaryName || card.beneficiaryType) && (
-        <View style={styles.nameRow}>
-          {card.beneficiaryName && (
-            <Text style={styles.beneficiaryName}>{card.beneficiaryName}</Text>
-          )}
-          {card.beneficiaryType && (
-            <View style={styles.beneficiaryTag}>
-              <Text style={styles.beneficiaryTagText}>{card.beneficiaryType}</Text>
-            </View>
-          )}
-        </View>
-      )}
-
-      {/* Fallback to old title if beneficiaryName is not available */}
-      {!card.beneficiaryName && card.title && (
-        <Text style={styles.cardTitle}>{card.title}</Text>
-      )}
-
-      {/* Topic + Description */}
-      <View style={styles.topicRow}>
-        {card.topic ? (
-          <Text style={styles.topicText}>{card.topic}</Text>
-        ) : null}
-        <Text style={styles.cardDescription} numberOfLines={1}>
-          {card.description}
-        </Text>
-      </View>
-
-      {/* Date + Days Remaining/Overdue */}
-      <View style={styles.cardDateRow}>
-        <Text style={styles.cardDate}>{card.submittedDate}</Text>
-        {card.daysLabel ? (
-          <View
-            style={[
-              styles.daysBadge,
-              card.daysType === 'overdue'
-                ? { backgroundColor: '#ffebee' }
-                : { backgroundColor: '#fff3e0' },
-            ]}
-          >
-            <Text
-              style={[
-                styles.daysBadgeText,
-                card.daysType === 'overdue' ? { color: '#d32f2f' } : { color: '#e65100' },
-              ]}
-            >
-              {card.daysLabel}
-            </Text>
-          </View>
-        ) : null}
-      </View>
-
-      {/* Bottom row: AWC Name + Doc uploaded badge OR old Fallbacks (byName & documents) */}
-      {card.awcName ? (
-        <View style={styles.cardBottomRow}>
-          <View style={styles.awcInfo}>
-            <Text style={styles.awcLabel}>AWC: </Text>
-            <Text style={styles.awcName}>{card.awcName}</Text>
-          </View>
-          {showDocs && isCorruptionOrUrgent && (card.documentsCount !== undefined && card.documentsCount > 0 || card.documents) ? (
-            <View style={styles.docChip}>
-              <Text style={styles.docChipText}>Doc Uploaded</Text>
-            </View>
-          ) : null}
-        </View>
-      ) : (
-        <View style={styles.cardBottomRow}>
-          {card.byName ? (
-            <View style={styles.cardByRow}>
-              <Text style={styles.cardByLabel}>By:</Text>
-              <Text style={styles.cardByName}>{card.byName}</Text>
-            </View>
-          ) : <View />}
-          {(isCorruptionOrUrgent && card.documents) ? (
-            <View style={styles.docChip}>
-              <Text style={styles.docChipText}>Doc Uploaded</Text>
-            </View>
-          ) : null}
-        </View>
-      )}
-    </TouchableOpacity>
-  );
-};
-
-const STATUS_CONFIG: Record<ResolvedStatus, { label: string; color: string; bg: string; border: string; hasIcon: boolean }> = {
-  CLOSED:          { label: 'CLOSED',          color: '#2e7d32', bg: '#e8f5e9', border: '#a5d6a7', hasIcon: false },
-  CLOSURE_PENDING: { label: 'CLOSURE PENDING', color: '#f57f17', bg: '#fff8e1', border: '#ffe082', hasIcon: true  },
-  APPEAL_RAISED:   { label: 'APPEAL RAISED',   color: '#e65100', bg: '#fff3e0', border: '#ffcc80', hasIcon: true  },
-  APPEAL_RESOLVED: { label: 'APPEAL RESOLVED', color: '#1565c0', bg: '#e8eaf6', border: '#90caf9', hasIcon: true  },
-};
-
-export function getStatusLabel(status: ResolvedStatus): string {
-  switch (status) {
-    case 'CLOSURE_PENDING': return 'Closure Pending';
-    case 'CLOSED':          return 'Closed';
-    case 'APPEAL_RAISED':   return 'Appeal Raised';
-    case 'APPEAL_RESOLVED': return 'Appeal Resolved';
-    default:                return status;
-  }
-}
-
-
-export const ResolvedTicketCardComponent = ({
-  card,
-  onPress,
-}: {
-  card: ResolvedTicketCard;
-  onPress?: () => void;
-}) => {
-  const cfg = STATUS_CONFIG[card.status];
-  return (
-    <TouchableOpacity
-      style={[resolvedCardStyles.card, card.awaitingCdpoClosure && resolvedCardStyles.cardAwaitingClosure]}
-      activeOpacity={0.85}
-      onPress={onPress}
-    >
-      {/* Awaiting CDPO Closure indicator row */}
-      {card.awaitingCdpoClosure && (
-        <View style={resolvedCardStyles.awaitingClosureRow}>
-          <Text style={resolvedCardStyles.awaitingClosureText}>Awaiting CDPO Closure</Text>
-        </View>
-      )}
-
-      {/* Ticket # + Status Badge */}
-      <View style={resolvedCardStyles.topRow}>
-        <Text style={resolvedCardStyles.ticketNum}>{card.ticketNumber}</Text>
-        <View style={[resolvedCardStyles.statusBadge, { backgroundColor: cfg.bg, borderColor: cfg.border }]}>
-          <Text style={[resolvedCardStyles.statusBadgeText, { color: cfg.color }]}>{cfg.label}</Text>
-          {cfg.hasIcon && <Text style={[resolvedCardStyles.statusIcon, { color: cfg.color }]}> ⓘ</Text>}
-        </View>
-      </View>
-
-      {/* Beneficiary Name + Type */}
-      <View style={resolvedCardStyles.nameRow}>
-        <Text style={resolvedCardStyles.beneficiaryName}>{card.beneficiaryName}</Text>
-        <View style={resolvedCardStyles.beneficiaryTag}>
-          <Text style={resolvedCardStyles.beneficiaryTagText}>{card.beneficiaryType}</Text>
-        </View>
-      </View>
-
-      {/* Topic + Description */}
-      <View style={resolvedCardStyles.topicBlock}>
-        <Text style={resolvedCardStyles.topicText}>{card.topic}</Text>
-        <Text style={resolvedCardStyles.descriptionText} numberOfLines={1}>{card.description}</Text>
-      </View>
-
-      {/* Resolved Date */}
-      <Text style={resolvedCardStyles.resolvedDate}>{card.resolvedDate}</Text>
-
-      {/* Action Taken box */}
-      <View style={resolvedCardStyles.actionBox}>
-        <Text style={resolvedCardStyles.actionLabel}>ACTION TAKEN</Text>
-        <Text style={resolvedCardStyles.actionText} numberOfLines={2}>{card.actionTaken}</Text>
-      </View>
-
-      {/* AWC */}
-      <View style={resolvedCardStyles.awcRow}>
-        <Text style={resolvedCardStyles.awcLabel}>AWC: </Text>
-        <Text style={resolvedCardStyles.awcName}>{card.awcName}</Text>
-      </View>
-    </TouchableOpacity>
-  );
-};
-
-const AnganwadiCentreDropdown = ({ value, onPress }: { value: string; onPress: () => void }) => (
-  <View style={resolvedCardStyles.dropdownWrapper}>
-    <TouchableOpacity style={resolvedCardStyles.dropdownCard} activeOpacity={0.75} onPress={onPress}>
-      <View style={resolvedCardStyles.dropdownDot} />
-      <View style={resolvedCardStyles.dropdownTextBlock}>
-        <Text style={resolvedCardStyles.dropdownLabel}>ANGANWADI CENTRE</Text>
-        <Text style={resolvedCardStyles.dropdownValue}>{value}</Text>
-      </View>
-      <Image source={{ uri: imgChevronDown }} style={resolvedCardStyles.dropdownChevron} />
-    </TouchableOpacity>
-  </View>
-);
-
-const SectorDropdown = ({ value, onPress }: { value: string; onPress: () => void }) => (
-  <View style={resolvedCardStyles.dropdownWrapper}>
-    <TouchableOpacity style={resolvedCardStyles.dropdownCard} activeOpacity={0.75} onPress={onPress}>
-      <View style={resolvedCardStyles.dropdownDot} />
-      <View style={resolvedCardStyles.dropdownTextBlock}>
-        <Text style={resolvedCardStyles.dropdownLabel}>SECTOR</Text>
-        <Text style={resolvedCardStyles.dropdownValue}>{value}</Text>
-      </View>
-      <Image source={{ uri: imgChevronDown }} style={resolvedCardStyles.dropdownChevron} />
-    </TouchableOpacity>
-  </View>
-);
-
-// ─── Sector / AWC Pick Sheets ─────────────────────────────────────────────────
+// ─── Constants ─────────────────────────────────────────────────────────────────
 
 const SECTOR_OPTIONS = ['All Sectors', 'Sector 1', 'Sector 2', 'Sector 3', 'Sector 4'];
 const AWC_OPTIONS = [
   'All Centres',
-  'Anganwadi Centre 1',
-  'Anganwadi Centre 2',
-  'Anganwadi Centre 3',
-  'Anganwadi Centre 4',
-  'Anganwadi Centre 5',
-  'Anganwadi Centre 6',
+  'Anganwadi Centre 1', 'Anganwadi Centre 2', 'Anganwadi Centre 3',
+  'Anganwadi Centre 4', 'Anganwadi Centre 5', 'Anganwadi Centre 6',
 ];
+const COMPLAINT_TYPES = ['Corruption', 'Urgent', 'Others'];
+const BENEFICIARY_CATEGORIES = [
+  'Pregnant Woman', 'Lactating Mother', 'Children 0-6 months',
+  'Children (6m-3y)', 'Children (3-6y)', 'Adolescent Girl',
+];
+const RESOLVED_STATUSES = [
+  { value: 'CLOSED',          label: 'Closed',          color: '#2e7d32' },
+  { value: 'CLOSURE_PENDING', label: 'Closure Pending', color: '#f57f17' },
+  { value: 'APPEAL_RAISED',   label: 'Appeal Raised',   color: '#e65100' },
+  { value: 'APPEAL_RESOLVED', label: 'Appeal Resolved', color: '#1565c0' },
+];
+const STATUS_CFG: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  CLOSED:          { label: 'CLOSED',          color: '#2e7d32', bg: '#e8f5e9', border: '#a5d6a7' },
+  CLOSURE_PENDING: { label: 'CLOSURE PENDING', color: '#f57f17', bg: '#fff8e1', border: '#ffe082' },
+  APPEAL_RAISED:   { label: 'APPEAL RAISED',   color: '#e65100', bg: '#fff3e0', border: '#ffcc80' },
+  APPEAL_RESOLVED: { label: 'APPEAL RESOLVED', color: '#1565c0', bg: '#e8eaf6', border: '#90caf9' },
+};
+const REFERENCE_TODAY = new Date(2025, 5, 30);
 
-const DropdownPickSheet = ({
-  visible,
-  title,
-  options,
-  selected,
-  onSelect,
-  onClose,
+// ─── Helpers ───────────────────────────────────────────────────────────────────
+
+function parseDateStr(str: string): Date | null {
+  if (!str) return null;
+  const m = str.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+  if (!m) return null;
+  return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+}
+
+function toInputDate(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
+function passesDateFilter(dateStr: string, option: DateRangeOption | null, fromStr: string, toStr: string): boolean {
+  if (!option) return true;
+  const d = parseDateStr(dateStr);
+  if (!d) return false;
+  if (option === 'custom') {
+    const from = fromStr ? new Date(fromStr) : null;
+    const to   = toStr   ? new Date(toStr)   : null;
+    return (!from || d >= from) && (!to || d <= to);
+  }
+  const days = Number(option);
+  const windowStart = new Date(REFERENCE_TODAY);
+  windowStart.setDate(windowStart.getDate() - (days - 1));
+  return d >= windowStart && d <= REFERENCE_TODAY;
+}
+
+// ─── Date Range Popover ────────────────────────────────────────────────────────
+
+const DateRangePopover = ({
+  open, onClose, applied, appliedFrom, appliedTo, onApply, placement = 'below',
 }: {
-  visible: boolean;
-  title: string;
-  options: string[];
-  selected: string;
-  onSelect: (val: string) => void;
-  onClose: () => void;
+  open: boolean; onClose: () => void;
+  applied: DateRangeOption | null; appliedFrom: string; appliedTo: string;
+  onApply: (opt: DateRangeOption | null, from: string, to: string) => void;
+  placement?: 'below' | 'above';
 }) => {
-  const { slideAnim, fadeAnim, mounted } = useSheetAnim(visible);
-  if (!mounted) return null;
+  const [draft, setDraft] = useState<DateRangeOption | null>(applied);
+  const [from, setFrom]   = useState(appliedFrom);
+  const [to, setTo]       = useState(appliedTo);
+
+  if (!open) return null;
+
+  const handleCancel = () => { setDraft(applied); setFrom(appliedFrom); setTo(appliedTo); onClose(); };
 
   return (
-    <View pointerEvents={visible ? 'auto' : 'box-none'} style={modalStyles.inlineOverlayWrapper}>
-      <Animated.View style={[modalStyles.inlineBackdrop, { opacity: fadeAnim }]} />
-      <TouchableOpacity style={modalStyles.inlineDismiss} activeOpacity={1} onPress={onClose} />
-      <Animated.View
-        style={[
-          modalStyles.inlineSheet,
-          { height: 80 + options.length * 52, transform: [{ translateY: slideAnim }] },
-        ]}
-      >
-        <View style={modalStyles.handleRow}><View style={modalStyles.handle} /></View>
-        <View style={modalStyles.titleRow}>
-          <Text style={modalStyles.sheetTitle}>{title}</Text>
-          <TouchableOpacity onPress={onClose} activeOpacity={0.7} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Image source={{ uri: imgCloseIcon }} style={modalStyles.closeIcon} />
-          </TouchableOpacity>
-        </View>
-        <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-          <View style={filterSheetStyles.optionsList}>
-            {options.map((opt) => (
-              <TouchableOpacity
-                key={opt}
-                style={filterSheetStyles.radioRow}
-                onPress={() => { onSelect(opt); onClose(); }}
-                activeOpacity={0.7}
-              >
-                <View style={[filterSheetStyles.radioOutline, selected === opt && filterSheetStyles.radioOutlineActive]}>
-                  {selected === opt && <View style={filterSheetStyles.radioInner} />}
-                </View>
-                <Text style={[filterSheetStyles.radioLabel, selected === opt && { color: '#1a237e', fontWeight: '600' }]}>
-                  {opt}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </ScrollView>
-        <View style={{ height: 20 }} />
-      </Animated.View>
-    </View>
+    <>
+      <div onClick={handleCancel} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
+      <div style={{
+        position: 'absolute',
+        ...(placement === 'below' ? { top: 'calc(100% + 8px)' } : { bottom: 'calc(100% + 8px)' }),
+        left: 0, zIndex: 50, maxHeight: 'calc(100vh - 32px)', overflowY: 'auto',
+        width: 280, background: '#fff', border: '1px solid var(--border-color)',
+        borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', padding: '18px 20px',
+      }}>
+        <h4 style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, color: 'var(--primary-deep)', marginBottom: 12 }}>
+          Filter by Date Range
+        </h4>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {([['7','Last 7 Days'],['14','Last 14 Days'],['21','Last 21 Days'],['custom','Custom Range']] as [DateRangeOption, string][]).map(([val, lbl]) => (
+            <label key={val} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 4px', cursor: 'pointer', fontSize: 13, fontWeight: draft === val ? 600 : 400, color: draft === val ? 'var(--primary-deep)' : 'var(--text-dark)' }}>
+              <input type="radio" name="dateRangeCDPO" checked={draft === val} onChange={() => setDraft(val)} style={{ accentColor: 'var(--primary-deep)', width: 16, height: 16 }} />
+              {lbl}
+            </label>
+          ))}
+        </div>
+        {draft === 'custom' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10, paddingLeft: 4 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>From Date</label>
+              <input type="date" className="form-control" value={from} max={toInputDate(REFERENCE_TODAY)} onChange={e => setFrom(e.target.value)} style={{ height: 36, fontSize: 13 }} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>To Date</label>
+              <input type="date" className="form-control" value={to} max={toInputDate(REFERENCE_TODAY)} onChange={e => setTo(e.target.value)} style={{ height: 36, fontSize: 13 }} />
+            </div>
+          </div>
+        )}
+        <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+          <button className="ux4g-btn ux4g-btn-outline-neutral ux4g-btn-sm" style={{ flex: 1 }}
+            onClick={() => { setDraft(null); setFrom(''); setTo(''); onApply(null,'',''); }}>Clear</button>
+          <button className="ux4g-btn ux4g-btn-primary ux4g-btn-sm" style={{ flex: 1 }}
+            onClick={() => { onApply(draft, from, to); onClose(); }}>Apply</button>
+        </div>
+      </div>
+    </>
   );
 };
 
-// ─── Reusable Bottom Sheet ────────────────────────────────────────────────────
+// ─── Pending Breakdown Modal ───────────────────────────────────────────────────
 
-const useSheetAnim = (visible: boolean) => {
-  const [mounted, setMounted] = useState(false);
-  const slideAnim = useRef(new Animated.Value(600)).current;
-  const fadeAnim  = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    if (visible) {
-      // Mount first, then animate in
-      setMounted(true);
-      Animated.parallel([
-        Animated.timing(fadeAnim,  { toValue: 1, duration: 240, useNativeDriver: true }),
-        Animated.spring(slideAnim, { toValue: 0, tension: 70, friction: 12, useNativeDriver: true }),
-      ]).start();
-    } else {
-      // Animate out, THEN unmount (via callback)
-      Animated.parallel([
-        Animated.timing(fadeAnim,  { toValue: 0, duration: 200, useNativeDriver: true }),
-        Animated.timing(slideAnim, { toValue: 600, duration: 220, useNativeDriver: true }),
-      ]).start(() => {
-        setMounted(false);
-        // Reset values for next open
-        slideAnim.setValue(600);
-        fadeAnim.setValue(0);
-      });
-    }
-  }, [visible]);
-
-  return { slideAnim, fadeAnim, mounted };
-};
-
-// ─── Pending Breakdown Sheet ──────────────────────────────────────────────────
-
-const PendingBreakdownSheet = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => {
-  const { slideAnim, fadeAnim, mounted } = useSheetAnim(visible);
-  if (!mounted) return null;
-
-  const rows = [
-    { role: 'CDPO',       pending: '7',     overdue: '3',   isSeparatorLight: true },
-    { role: 'Supervisor', pending: '50',    overdue: '10',  isSeparatorLight: true },
-    { role: 'AWW',        pending: '2,000', overdue: '503', isSeparatorLight: false },
-    { role: 'Total',      pending: '2,057', overdue: '516', isTotal: true },
-  ];
-
+const PendingBreakdownModal = ({
+  open, onClose, cdpoP, cdpoO, supP, supO, awwP, awwO,
+}: { open: boolean; onClose: () => void; cdpoP: number; cdpoO: number; supP: number; supO: number; awwP: number; awwO: number }) => {
+  if (!open) return null;
+  const totalP = cdpoP + supP + awwP;
+  const totalO = cdpoO + supO + awwO;
   return (
-    <View
-      pointerEvents={visible ? 'auto' : 'box-none'}
-      style={modalStyles.inlineOverlayWrapper}
-    >
-      {/* Dimmed backdrop */}
-      <Animated.View style={[modalStyles.inlineBackdrop, { opacity: fadeAnim }]} />
-      <TouchableOpacity style={modalStyles.inlineDismiss} activeOpacity={1} onPress={onClose} />
-
-      {/* Sheet */}
-      <Animated.View style={[modalStyles.inlineSheet, { height: 560, transform: [{ translateY: slideAnim }] }]}>
-        {/* Handle */}
-        <View style={modalStyles.handleRow}><View style={modalStyles.handle} /></View>
-
-        {/* Title */}
-        <View style={modalStyles.titleRow}>
-          <Text style={modalStyles.sheetTitle}>Pending Breakdown</Text>
-          <TouchableOpacity onPress={onClose} activeOpacity={0.7} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Image source={{ uri: imgCloseIcon }} style={modalStyles.closeIcon} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Body */}
-        <View style={modalStyles.sheetBody}>
-          {/* Total card — blue */}
-          <View style={[modalStyles.pendingTotalCard, { backgroundColor: '#e8eaf6' }]}>
-            <Text style={[modalStyles.pendingTotalLabel, { color: '#5c67b5' }]}>TOTAL PENDING</Text>
-            <Text style={[modalStyles.pendingTotalValue, { color: '#1a237e' }]}>2,057</Text>
-          </View>
-
-          {/* Table */}
-          <View style={modalStyles.pendingTableWrapper}>
-            <View style={[modalStyles.pendingTableRow, modalStyles.pendingTableHeaderRow]}>
-              <View style={modalStyles.pendingTableColRole}><Text style={modalStyles.pendingTableHeaderCell}>ROLE</Text></View>
-              <View style={modalStyles.pendingTableColStat}><Text style={[modalStyles.pendingTableHeaderCell, { color: '#e65100' }]}>PENDING</Text></View>
-              <View style={modalStyles.pendingTableColStat}><Text style={[modalStyles.pendingTableHeaderCell, { color: '#d32f2f' }]}>OVERDUE</Text></View>
-            </View>
-            {rows.map((row, idx) => (
-              <View key={row.role} style={[
-                modalStyles.pendingTableRow,
-                { height: 58 },
-                idx < rows.length - 1 ? { borderBottomWidth: 1, borderBottomColor: row.isSeparatorLight === false ? '#e0e0e0' : '#f5f5f5' } : {},
-                (row as any).isTotal ? { backgroundColor: '#fafafa' } : {},
-              ]}>
-                <View style={modalStyles.pendingTableColRole}>
-                  <Text style={[modalStyles.pendingTableRoleText, (row as any).isTotal ? { fontWeight: '600', color: '#1a237e' } : {}]}>{row.role}</Text>
-                </View>
-                <View style={modalStyles.pendingTableColStat}>
-                  <Text style={[modalStyles.pendingTableStatVal, { color: '#e65100' }]}>{row.pending}</Text>
-                </View>
-                <View style={modalStyles.pendingTableColStat}>
-                  <Text style={[modalStyles.pendingTableStatVal, { color: '#d32f2f' }]}>{row.overdue}</Text>
-                </View>
-              </View>
-            ))}
-          </View>
-
-          {/* Help note */}
-          <View style={modalStyles.helpNote}>
-            <Text style={modalStyles.helpNoteText}>
-              <Text style={modalStyles.helpNoteHighlight}>Pending</Text> is the count of tickets still awaiting action. <Text style={modalStyles.helpNoteHighlight}>Overdue</Text> tickets are the grievances which are pending for more than 21 days and need your immediate attention.
-            </Text>
-          </View>
-        </View>
-        <View style={{ height: 28 }} />
-      </Animated.View>
-    </View>
-  );
-};
-
-// ─── Resolved Breakdown Sheet ─────────────────────────────────────────────────
-
-const ResolvedBreakdownSheet = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => {
-  const { slideAnim, fadeAnim, mounted } = useSheetAnim(visible);
-  if (!mounted) return null;
-
-  const subCards = [
-    {
-      label: 'Closure Pending', value: '104', color: '#f57f17',
-      bg: '#fff8e1', border: '#ffe082', divider: '#ffe082',
-      rows: [{ role: 'CDPO', val: '1' }, { role: 'Supervisor', val: '3' }, { role: 'AWW', val: '100' }],
-    },
-    {
-      label: 'Closed', value: '863', color: '#2e7d32',
-      bg: '#e8f5e9', border: '#a5d6a7', divider: '#a5d6a7',
-      rows: [{ role: 'CDPO', val: '3' }, { role: 'Supervisor', val: '110' }, { role: 'AWW', val: '750' }],
-    },
-    {
-      label: 'Appeal Raised', value: '92', color: '#e65100',
-      bg: '#fff3e0', border: '#ffcc80', divider: '#ffcc80',
-      rows: [{ role: 'CDPO', val: '0' }, { role: 'Supervisor', val: '12' }, { role: 'AWW', val: '80' }],
-    },
-    {
-      label: 'Appeal Resolved', value: '79', color: '#1565c0',
-      bg: '#e8eaf6', border: '#90caf9', divider: '#90caf9',
-      rows: [{ role: 'CDPO', val: '1' }, { role: 'Supervisor', val: '8' }, { role: 'AWW', val: '70' }],
-    },
-  ];
-
-  return (
-    <View
-      pointerEvents={visible ? 'auto' : 'box-none'}
-      style={modalStyles.inlineOverlayWrapper}
-    >
-      <Animated.View style={[modalStyles.inlineBackdrop, { opacity: fadeAnim }]} />
-      <TouchableOpacity style={modalStyles.inlineDismiss} activeOpacity={1} onPress={onClose} />
-
-      <Animated.View style={[modalStyles.inlineSheet, { height: 510, transform: [{ translateY: slideAnim }] }]}>
-        {/* Handle */}
-        <View style={modalStyles.handleRow}><View style={modalStyles.handle} /></View>
-
-        {/* Title */}
-        <View style={modalStyles.titleRow}>
-          <Text style={modalStyles.sheetTitle}>Resolved Breakdown</Text>
-          <TouchableOpacity onPress={onClose} activeOpacity={0.7} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Image source={{ uri: imgCloseIcon }} style={modalStyles.closeIcon} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Body */}
-        <View style={modalStyles.sheetBody}>
-          {/* Total card — green */}
-          <View style={[modalStyles.resolvedTotalCard]}>
-            <View>
-              <Text style={[modalStyles.totalLabel, { color: '#388e3c' }]}>TOTAL RESOLVED</Text>
-              <Text style={[modalStyles.totalValue, { color: '#2e7d32' }]}>1,155</Text>
-            </View>
-            <View style={{ gap: 3, alignItems: 'flex-end' }}>
-              {[{ label: 'CDPO', val: '5' }, { label: 'Supervisor', val: '150' }, { label: 'AWW', val: '1,000' }].map(r => (
-                <View key={r.label} style={{ flexDirection: 'row', gap: 6 }}>
-                  <Text style={{ fontFamily: 'Inter', fontSize: 11, color: '#66bb6a' }}>{r.label}</Text>
-                  <Text style={{ fontFamily: 'Inter', fontWeight: '700', fontSize: 13, color: '#2e7d32' }}>{r.val}</Text>
-                </View>
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal-card" onClick={e => e.stopPropagation()} style={{ padding: 28, maxWidth: 480 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 19, fontWeight: 700, color: 'var(--primary-deep)' }}>Pending Breakdown</h3>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4, display: 'flex', borderRadius: 6 }}><X size={20} /></button>
+        </div>
+        <div style={{ background: '#e8eaf6', borderRadius: 'var(--radius-lg)', padding: '16px 24px', marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: '#5c67b5', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Total Pending</span>
+          <span style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 800, color: '#1a237e', lineHeight: 1 }}>{totalP.toLocaleString()}</span>
+        </div>
+        <div style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', overflow: 'hidden', marginBottom: 18 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+            <thead>
+              <tr style={{ background: 'var(--bg-main)' }}>
+                <th style={{ textAlign: 'left', padding: '10px 16px', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Role</th>
+                <th style={{ textAlign: 'right', padding: '10px 16px', fontSize: 11, fontWeight: 700, color: '#e65100', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Pending</th>
+                <th style={{ textAlign: 'right', padding: '10px 16px', fontSize: 11, fontWeight: 700, color: '#d32f2f', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Overdue</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[{r:'CDPO',p:cdpoP,o:cdpoO},{r:'Supervisor',p:supP,o:supO},{r:'AWW',p:awwP,o:awwO}].map(row => (
+                <tr key={row.r} style={{ borderTop: '1px solid var(--border-color)' }}>
+                  <td style={{ padding: '12px 16px', color: 'var(--text-dark)', fontWeight: 500 }}>{row.r}</td>
+                  <td style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 700, color: '#e65100', fontSize: 15 }}>{row.p}</td>
+                  <td style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 700, color: '#d32f2f', fontSize: 15 }}>{row.o}</td>
+                </tr>
               ))}
-            </View>
-          </View>
+              <tr style={{ background: '#e8eaf6', borderTop: '2px solid var(--border-color)' }}>
+                <td style={{ padding: '12px 16px', color: '#1a237e', fontWeight: 700 }}>Total</td>
+                <td style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 800, color: '#e65100', fontSize: 16 }}>{totalP}</td>
+                <td style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 800, color: '#d32f2f', fontSize: 16 }}>{totalO}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div style={{ display: 'flex', gap: 10, background: 'var(--color-info-light)', borderRadius: 'var(--radius-md)', padding: '12px 14px' }}>
+          <Info size={15} style={{ color: 'var(--color-info)', flexShrink: 0, marginTop: 1 }} />
+          <p style={{ margin: 0, fontSize: 12.5, color: 'var(--text-dark)', lineHeight: 1.55 }}>
+            <strong>Pending</strong> is the count of tickets still awaiting action. <strong>Overdue</strong> tickets are grievances pending for more than 21 days and need immediate attention.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
 
-          {/* 2x2 sub-cards grid */}
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 16 }}>
-            {subCards.map(card => (
-              <View key={card.label} style={[modalStyles.subCard, { backgroundColor: card.bg, borderColor: card.border }]}>
-                <Text style={[modalStyles.subCardLabel, { color: card.color }]}>{card.label.toUpperCase()}</Text>
-                <Text style={[modalStyles.subCardValue, { color: card.color }]}>{card.value}</Text>
-                <View style={[modalStyles.subCardDivider, { borderTopColor: card.divider }]}>
-                  {card.rows.map(r => (
-                    <View key={r.role} style={modalStyles.subCardRow}>
-                      <Text style={[modalStyles.subCardRowLabel, { color: card.color }]}>{r.role}</Text>
-                      <Text style={[modalStyles.subCardRowVal, { color: card.color }]}>{r.val}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
+// ─── Resolved Breakdown Modal ──────────────────────────────────────────────────
+
+const ResolvedBreakdownModal = ({
+  open, onClose, byRole, byStatus,
+}: {
+  open: boolean; onClose: () => void;
+  byRole: { cdpo: number; sup: number; aww: number };
+  byStatus: { closurePending: {cdpo:number;sup:number;aww:number}; closed: {cdpo:number;sup:number;aww:number}; appealRaised: {cdpo:number;sup:number;aww:number}; appealResolved: {cdpo:number;sup:number;aww:number} };
+}) => {
+  if (!open) return null;
+  const totalResolved = byRole.cdpo + byRole.sup + byRole.aww;
+  const subCards = [
+    { label: 'Closure Pending', icon: Clock,         color: '#f57f17', bg: '#fff8e1', border: '#ffe082', total: byStatus.closurePending.cdpo + byStatus.closurePending.sup + byStatus.closurePending.aww, rows: [{r:'CDPO',v:byStatus.closurePending.cdpo},{r:'Supervisor',v:byStatus.closurePending.sup},{r:'AWW',v:byStatus.closurePending.aww}] },
+    { label: 'Closed',          icon: CheckCircle2,  color: '#2e7d32', bg: '#e8f5e9', border: '#a5d6a7', total: byStatus.closed.cdpo         + byStatus.closed.sup         + byStatus.closed.aww,         rows: [{r:'CDPO',v:byStatus.closed.cdpo},        {r:'Supervisor',v:byStatus.closed.sup},        {r:'AWW',v:byStatus.closed.aww}]         },
+    { label: 'Appeal Raised',   icon: AlertTriangle, color: '#e65100', bg: '#fff3e0', border: '#ffcc80', total: byStatus.appealRaised.cdpo    + byStatus.appealRaised.sup    + byStatus.appealRaised.aww,   rows: [{r:'CDPO',v:byStatus.appealRaised.cdpo},  {r:'Supervisor',v:byStatus.appealRaised.sup},  {r:'AWW',v:byStatus.appealRaised.aww}]   },
+    { label: 'Appeal Resolved', icon: ShieldCheck,   color: '#1565c0', bg: '#e8eaf6', border: '#90caf9', total: byStatus.appealResolved.cdpo  + byStatus.appealResolved.sup  + byStatus.appealResolved.aww, rows: [{r:'CDPO',v:byStatus.appealResolved.cdpo},{r:'Supervisor',v:byStatus.appealResolved.sup},{r:'AWW',v:byStatus.appealResolved.aww}] },
+  ];
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal-card" onClick={e => e.stopPropagation()} style={{ padding: 28, maxWidth: 580 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 19, fontWeight: 700, color: 'var(--primary-deep)' }}>Resolved Breakdown</h3>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4, display: 'flex', borderRadius: 6 }}><X size={20} /></button>
+        </div>
+        <div style={{ background: 'var(--accent-green-light)', borderRadius: 'var(--radius-lg)', padding: '16px 24px', marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent-green)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Total Resolved</span>
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 800, color: 'var(--accent-green)', lineHeight: 1 }}>{totalResolved.toLocaleString()}</span>
+          </div>
+          <div style={{ display: 'flex', gap: 6 }}>
+            {[{l:'CDPO',v:byRole.cdpo},{l:'Supervisor',v:byRole.sup},{l:'AWW',v:byRole.aww}].map(r => (
+              <span key={r.l} style={{ background: 'rgba(255,255,255,0.75)', borderRadius: 999, padding: '4px 10px', fontSize: 11, fontWeight: 600, color: 'var(--text-dark)' }}>
+                {r.l} <strong style={{ color: 'var(--accent-green)' }}>{r.v}</strong>
+              </span>
             ))}
-          </View>
-        </View>
-        <View style={{ height: 28 }} />
-      </Animated.View>
-    </View>
-  );
-};
-
-// ─── Ticket Details Overlay ───────────────────────────────────────────────────
-
-const TicketDetailsOverlay = ({
-  card,
-  assignedFilter,
-  onBack,
-  onResolveTicket,
-}: {
-  card: any;
-  assignedFilter: AssignedFilter;
-  onBack: () => void;
-  onResolveTicket?: (ticketId: string, closureNote: string) => void;
-}) => (
-  <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%' }}>
-    <TicketDetailsScreen
-      card={card}
-      assignedFilter={assignedFilter}
-      onBack={onBack}
-      onResolveTicket={onResolveTicket}
-      isCdpoView={true}
-    />
-  </View>
-);
-
-// Helper functions for date filtering (mock current date 30/06/2025)
-function parseDateString(str: string): Date | null {
-  const match = str.match(/(\d{2})\/(\d{2})\/(\d{4})/);
-  if (!match) return null;
-  const day = parseInt(match[1], 10);
-  const month = parseInt(match[2], 10) - 1; // 0-indexed month
-  const year = parseInt(match[3], 10);
-  return new Date(year, month, day);
-}
-
-function parseInputDate(str: string): Date | null {
-  const match = str.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-  if (!match) return null;
-  const day = parseInt(match[1], 10);
-  const month = parseInt(match[2], 10) - 1;
-  const year = parseInt(match[3], 10);
-  return new Date(year, month, day);
-}
-
-const handleDateChange = (text: string, setter: (val: string) => void) => {
-  const clean = text.replace(/[^0-9/]/g, '');
-  setter(clean);
-};
-
-
-const filterSheetStyles = StyleSheet.create({
-  optionsList: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-  },
-  radioRow: {
-    height: 52,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-  },
-  radioOutline: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 2,
-    borderColor: '#bdbdbd',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  radioOutlineActive: {
-    borderColor: '#1a237e',
-  },
-  radioInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#1a237e',
-  },
-  radioLabel: {
-    flex: 1,
-    fontFamily: 'Inter',
-    fontWeight: '400',
-    fontSize: 14,
-    color: '#424242',
-  },
-  calendarIcon: {
-    width: 20,
-    height: 20,
-  },
-  customFieldsContainer: {
-    paddingLeft: 36,
-    paddingRight: 16,
-    paddingVertical: 12,
-  },
-  inputLabel: {
-    fontFamily: 'Inter',
-    fontWeight: '600',
-    fontSize: 11,
-    color: '#9e9e9e',
-    letterSpacing: 0.6,
-    marginBottom: 6,
-  },
-  inputWrapper: {
-    position: 'relative',
-    justifyContent: 'center',
-  },
-  textInput: {
-    height: 40,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 8,
-    backgroundColor: '#ffffff',
-    paddingLeft: 12,
-    paddingRight: 40,
-    fontFamily: 'Inter',
-    fontSize: 14,
-    color: '#212121',
-  },
-  inputCalIcon: {
-    position: 'absolute',
-    right: 12,
-    width: 18,
-    height: 18,
-    tintColor: '#9e9e9e',
-  },
-  buttonsContainer: {
-    borderTopWidth: 1,
-    borderTopColor: '#eeeeee',
-    flexDirection: 'row',
-    gap: 10,
-    paddingHorizontal: 16,
-    paddingTop: 15,
-    paddingBottom: 14,
-  },
-  clearBtn: {
-    flex: 112,
-    height: 46,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    backgroundColor: '#ffffff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  clearBtnText: {
-    fontFamily: 'Inter',
-    fontWeight: '500',
-    fontSize: 14,
-    color: '#757575',
-  },
-  applyBtn: {
-    flex: 220,
-    height: 46,
-    borderRadius: 8,
-    backgroundColor: '#1a237e',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  applyBtnDisabled: {
-    backgroundColor: '#e0e0e0',
-  },
-  applyBtnText: {
-    fontFamily: 'Inter',
-    fontWeight: '600',
-    fontSize: 14,
-    color: '#ffffff',
-  },
-});
-
-// ─── Date Range Filter Sheet ──────────────────────────────────────────────────
-
-export const DateRangeFilterSheet = ({
-  visible,
-  onClose,
-  appliedOption,
-  appliedFrom,
-  appliedTo,
-  onApply,
-}: {
-  visible: boolean;
-  onClose: () => void;
-  appliedOption: '7' | '14' | '21' | 'custom' | null;
-  appliedFrom: string;
-  appliedTo: string;
-  onApply: (opt: '7' | '14' | '21' | 'custom' | null, from: string, to: string) => void;
-}) => {
-  const { slideAnim, fadeAnim, mounted } = useSheetAnim(visible);
-  const [option, setOption] = useState<'7' | '14' | '21' | 'custom' | null>(appliedOption);
-  const [fromText, setFromText] = useState(appliedFrom);
-  const [toText, setToText] = useState(appliedTo);
-
-  useEffect(() => {
-    if (visible) {
-      setOption(appliedOption);
-      setFromText(appliedFrom);
-      setToText(appliedTo);
-    }
-  }, [visible, appliedOption, appliedFrom, appliedTo]);
-
-  if (!mounted) return null;
-
-  const handleApply = () => {
-    onApply(option, fromText, toText);
-  };
-
-  const handleClear = () => {
-    setOption(null);
-    setFromText('');
-    setToText('');
-    onApply(null, '', '');
-  };
-
-  const isApplyDisabled =
-    option === null ||
-    (option === 'custom' && (!fromText || !toText || fromText.length < 10 || toText.length < 10));
-
-  const sheetHeight = option === 'custom' ? 520 : 360;
-
-  return (
-    <View pointerEvents={visible ? 'auto' : 'box-none'} style={modalStyles.inlineOverlayWrapper}>
-      <Animated.View style={[modalStyles.inlineBackdrop, { opacity: fadeAnim }]} />
-      <TouchableOpacity style={modalStyles.inlineDismiss} activeOpacity={1} onPress={onClose} />
-
-      <Animated.View
-        style={[
-          modalStyles.inlineSheet,
-          { height: sheetHeight, transform: [{ translateY: slideAnim }] },
-        ]}
-      >
-        <View style={modalStyles.handleRow}>
-          <View style={modalStyles.handle} />
-        </View>
-
-        <View style={modalStyles.titleRow}>
-          <Text style={modalStyles.sheetTitle}>Filter by Date Range</Text>
-          <TouchableOpacity onPress={onClose} activeOpacity={0.7} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Image source={{ uri: imgCloseIcon }} style={modalStyles.closeIcon} />
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-          <View style={filterSheetStyles.optionsList}>
-            {/* Last 7 Days */}
-            <TouchableOpacity
-              style={filterSheetStyles.radioRow}
-              onPress={() => setOption('7')}
-              activeOpacity={0.7}
-            >
-              <View style={[filterSheetStyles.radioOutline, option === '7' && filterSheetStyles.radioOutlineActive]}>
-                {option === '7' && <View style={filterSheetStyles.radioInner} />}
-              </View>
-              <Text style={filterSheetStyles.radioLabel}>Last 7 Days</Text>
-              <Image
-                source={{ uri: option === '7' ? imgCalendarIcon2 : imgCalendarIcon }}
-                style={filterSheetStyles.calendarIcon}
-              />
-            </TouchableOpacity>
-
-            {/* Last 14 Days */}
-            <TouchableOpacity
-              style={filterSheetStyles.radioRow}
-              onPress={() => setOption('14')}
-              activeOpacity={0.7}
-            >
-              <View style={[filterSheetStyles.radioOutline, option === '14' && filterSheetStyles.radioOutlineActive]}>
-                {option === '14' && <View style={filterSheetStyles.radioInner} />}
-              </View>
-              <Text style={filterSheetStyles.radioLabel}>Last 14 Days</Text>
-              <Image
-                source={{ uri: option === '14' ? imgCalendarIcon2 : imgCalendarIcon }}
-                style={filterSheetStyles.calendarIcon}
-              />
-            </TouchableOpacity>
-
-            {/* Last 21 Days */}
-            <TouchableOpacity
-              style={filterSheetStyles.radioRow}
-              onPress={() => setOption('21')}
-              activeOpacity={0.7}
-            >
-              <View style={[filterSheetStyles.radioOutline, option === '21' && filterSheetStyles.radioOutlineActive]}>
-                {option === '21' && <View style={filterSheetStyles.radioInner} />}
-              </View>
-              <Text style={filterSheetStyles.radioLabel}>Last 21 Days</Text>
-              <Image
-                source={{ uri: option === '21' ? imgCalendarIcon2 : imgCalendarIcon }}
-                style={filterSheetStyles.calendarIcon}
-              />
-            </TouchableOpacity>
-
-            {/* Custom Range */}
-            <TouchableOpacity
-              style={[
-                filterSheetStyles.radioRow,
-                option === 'custom' && { backgroundColor: '#f5f6ff' },
-              ]}
-              onPress={() => setOption('custom')}
-              activeOpacity={0.7}
-            >
-              <View style={[filterSheetStyles.radioOutline, option === 'custom' && filterSheetStyles.radioOutlineActive]}>
-                {option === 'custom' && <View style={filterSheetStyles.radioInner} />}
-              </View>
-              <Text style={[filterSheetStyles.radioLabel, option === 'custom' && { color: '#1a237e', fontWeight: '600' }]}>
-                Custom Range
-              </Text>
-              <Image
-                source={{ uri: option === 'custom' ? imgCalendarIcon2 : imgCalendarIcon }}
-                style={filterSheetStyles.calendarIcon}
-              />
-            </TouchableOpacity>
-
-            {/* Custom fields */}
-            {option === 'custom' && (
-              <View style={filterSheetStyles.customFieldsContainer}>
-                <Text style={filterSheetStyles.inputLabel}>FROM DATE</Text>
-                <View style={filterSheetStyles.inputWrapper}>
-                  <TextInput
-                    style={filterSheetStyles.textInput}
-                    placeholder="DD/MM/YYYY"
-                    placeholderTextColor="#9e9e9e"
-                    value={fromText}
-                    maxLength={10}
-                    onChangeText={(t) => handleDateChange(t, setFromText)}
-                  />
-                  <Image source={{ uri: imgCalendarIcon1 }} style={filterSheetStyles.inputCalIcon} />
-                </View>
-
-                <Text style={[filterSheetStyles.inputLabel, { marginTop: 12 }]}>TO DATE</Text>
-                <View style={filterSheetStyles.inputWrapper}>
-                  <TextInput
-                    style={filterSheetStyles.textInput}
-                    placeholder="DD/MM/YYYY"
-                    placeholderTextColor="#9e9e9e"
-                    value={toText}
-                    maxLength={10}
-                    onChangeText={(t) => handleDateChange(t, setToText)}
-                  />
-                  <Image source={{ uri: imgCalendarIcon1 }} style={filterSheetStyles.inputCalIcon} />
-                </View>
-              </View>
-            )}
-          </View>
-        </ScrollView>
-
-        {/* Buttons */}
-        <View style={filterSheetStyles.buttonsContainer}>
-          <TouchableOpacity style={filterSheetStyles.clearBtn} onPress={handleClear} activeOpacity={0.7}>
-            <Text style={filterSheetStyles.clearBtnText}>Clear</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[filterSheetStyles.applyBtn, isApplyDisabled && filterSheetStyles.applyBtnDisabled]}
-            disabled={isApplyDisabled}
-            onPress={handleApply}
-            activeOpacity={0.7}
-          >
-            <Text style={filterSheetStyles.applyBtnText}>Apply Filters</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={{ height: 20 }} />
-      </Animated.View>
-    </View>
-  );
-};
-
-// ─── Type Filter Sheet ────────────────────────────────────────────────────────
-
-export const TypeFilterSheet = ({
-  visible,
-  onClose,
-  appliedTypes,
-  onApply,
-}: {
-  visible: boolean;
-  onClose: () => void;
-  appliedTypes: string[];
-  onApply: (types: string[]) => void;
-}) => {
-  const { slideAnim, fadeAnim, mounted } = useSheetAnim(visible);
-  const [tempTypes, setTempTypes] = useState<string[]>(appliedTypes);
-
-  useEffect(() => {
-    if (visible) {
-      setTempTypes(appliedTypes);
-    }
-  }, [visible, appliedTypes]);
-
-  if (!mounted) return null;
-
-  const handleToggle = (type: string) => {
-    if (tempTypes.includes(type)) {
-      setTempTypes(tempTypes.filter((t) => t !== type));
-    } else {
-      setTempTypes([...tempTypes, type]);
-    }
-  };
-
-  const handleApply = () => {
-    onApply(tempTypes);
-  };
-
-  const handleCancel = () => {
-    setTempTypes(appliedTypes);
-    onClose();
-  };
-
-  const options = ['Corruption', 'Urgent', 'Others'];
-
-  return (
-    <View pointerEvents={visible ? 'auto' : 'box-none'} style={modalStyles.inlineOverlayWrapper}>
-      <Animated.View style={[modalStyles.inlineBackdrop, { opacity: fadeAnim }]} />
-      <TouchableOpacity style={modalStyles.inlineDismiss} activeOpacity={1} onPress={handleCancel} />
-
-      <Animated.View
-        style={[
-          modalStyles.inlineSheet,
-          { height: 340, transform: [{ translateY: slideAnim }] },
-        ]}
-      >
-        <View style={modalStyles.handleRow}>
-          <View style={modalStyles.handle} />
-        </View>
-
-        <View style={modalStyles.titleRow}>
-          <Text style={modalStyles.sheetTitle}>Filter by Type</Text>
-        </View>
-
-        <View style={filterSheetStyles.optionsList}>
-          {options.map((opt) => {
-            const isSelected = tempTypes.includes(opt);
+          </div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          {subCards.map(card => {
+            const Icon = card.icon;
             return (
-              <TouchableOpacity
-                key={opt}
-                style={filterSheetStyles.radioRow}
-                onPress={() => handleToggle(opt)}
-                activeOpacity={0.7}
-              >
-                <View style={[filterSheetStyles.radioOutline, isSelected && filterSheetStyles.radioOutlineActive]}>
-                  {isSelected && <View style={filterSheetStyles.radioInner} />}
-                </View>
-                <Text style={filterSheetStyles.radioLabel}>{opt}</Text>
-              </TouchableOpacity>
+              <div key={card.label} style={{ background: card.bg, border: `1px solid ${card.border}`, borderRadius: 'var(--radius-lg)', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Icon size={13} style={{ color: card.color }} />
+                  <span style={{ fontSize: 11, fontWeight: 700, color: card.color, textTransform: 'uppercase', letterSpacing: '0.4px' }}>{card.label}</span>
+                </div>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 800, color: card.color, lineHeight: 1 }}>{card.total}</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, borderTop: `1px solid ${card.border}`, paddingTop: 8 }}>
+                  {card.rows.map(r => (
+                    <div key={r.r} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: card.color }}>
+                      <span>{r.r}</span><strong>{r.v}</strong>
+                    </div>
+                  ))}
+                </div>
+              </div>
             );
           })}
-        </View>
-
-        {/* Buttons */}
-        <View style={filterSheetStyles.buttonsContainer}>
-          <TouchableOpacity style={filterSheetStyles.clearBtn} onPress={handleCancel} activeOpacity={0.7}>
-            <Text style={filterSheetStyles.clearBtnText}>Cancel</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={filterSheetStyles.applyBtn} onPress={handleApply} activeOpacity={0.7}>
-            <Text style={filterSheetStyles.applyBtnText}>Apply Filters</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={{ height: 20 }} />
-      </Animated.View>
-    </View>
+        </div>
+      </div>
+    </div>
   );
 };
 
-// ─── Category Filter Sheet ────────────────────────────────────────────────────
+// ─── Pending Ticket Card ───────────────────────────────────────────────────────
 
-const CategoryFilterSheet = ({
-  visible,
-  onClose,
-  appliedCategories,
-  onApply,
-}: {
-  visible: boolean;
-  onClose: () => void;
-  appliedCategories: string[];
-  onApply: (categories: string[]) => void;
-}) => {
-  const { slideAnim, fadeAnim, mounted } = useSheetAnim(visible);
-  const [tempCategories, setTempCategories] = useState<string[]>(appliedCategories);
-
-  useEffect(() => {
-    if (visible) {
-      setTempCategories(appliedCategories);
-    }
-  }, [visible, appliedCategories]);
-
-  if (!mounted) return null;
-
-  const handleToggle = (opt: string) => {
-    if (tempCategories.includes(opt)) {
-      setTempCategories(tempCategories.filter((c) => c !== opt));
-    } else {
-      setTempCategories([...tempCategories, opt]);
-    }
-  };
-
-  const handleApply = () => {
-    onApply(tempCategories);
-  };
-
-  const handleCancel = () => {
-    setTempCategories(appliedCategories);
-    onClose();
-  };
-
-  const options = [
-    'Pregnant Woman',
-    'Lactating Mother',
-    'Children (6m-3y)',
-    'Children (3-6y)',
-    'Children 0-6 months',
-    'Adolescent Girl',
-  ];
-
+const PendingCard = ({ card, showDocs, onView }: { card: TicketCard; showDocs: boolean; onView: () => void }) => {
+  const isCorruptionOrUrgent = card.complaintType === 'Corruption' || card.complaintType === 'Urgent';
+  const overdue = card.isOverdue || card.daysType === 'overdue';
   return (
-    <View pointerEvents={visible ? 'auto' : 'box-none'} style={modalStyles.inlineOverlayWrapper}>
-      <Animated.View style={[modalStyles.inlineBackdrop, { opacity: fadeAnim }]} />
-      <TouchableOpacity style={modalStyles.inlineDismiss} activeOpacity={1} onPress={handleCancel} />
-
-      <Animated.View
-        style={[
-          modalStyles.inlineSheet,
-          { height: 490, transform: [{ translateY: slideAnim }] },
-        ]}
-      >
-        <View style={modalStyles.handleRow}>
-          <View style={modalStyles.handle} />
-        </View>
-
-        <View style={modalStyles.titleRow}>
-          <Text style={modalStyles.sheetTitle}>Filter by Category</Text>
-        </View>
-
-        <View style={filterSheetStyles.optionsList}>
-          {options.map((opt) => {
-            const isSelected = tempCategories.includes(opt);
-            return (
-              <TouchableOpacity
-                key={opt}
-                style={filterSheetStyles.radioRow}
-                onPress={() => handleToggle(opt)}
-                activeOpacity={0.7}
-              >
-                <View style={[filterSheetStyles.radioOutline, isSelected && filterSheetStyles.radioOutlineActive]}>
-                  {isSelected && <View style={filterSheetStyles.radioInner} />}
-                </View>
-                <Text style={filterSheetStyles.radioLabel}>{opt}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        {/* Buttons */}
-        <View style={filterSheetStyles.buttonsContainer}>
-          <TouchableOpacity style={filterSheetStyles.clearBtn} onPress={handleCancel} activeOpacity={0.7}>
-            <Text style={filterSheetStyles.clearBtnText}>Cancel</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={filterSheetStyles.applyBtn} onPress={handleApply} activeOpacity={0.7}>
-            <Text style={filterSheetStyles.applyBtnText}>Apply Filters</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={{ height: 20 }} />
-      </Animated.View>
-    </View>
+    <div className="ticket-card" onClick={onView} style={{ cursor: 'pointer', borderColor: overdue ? 'var(--color-danger)' : 'var(--border-color)' }}>
+      <div className="ticket-card-header">
+        <span className="ticket-id">{card.ticketNumber}</span>
+        <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+          {card.complaintType === 'Corruption' && <span className="badge badge-danger">Corruption</span>}
+          {card.complaintType === 'Urgent'     && <span className="badge badge-warning">Urgent</span>}
+          {overdue && <span className="badge badge-danger">OVERDUE</span>}
+        </div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <h4 className="ticket-title" style={{ margin: 0 }}>{card.beneficiaryName}</h4>
+        {card.beneficiaryType && (
+          <span style={{ fontSize: 11, background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: 4, fontWeight: 600, flexShrink: 0 }}>{card.beneficiaryType}</span>
+        )}
+      </div>
+      <div>
+        {card.topic && <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--primary-deep)', marginBottom: 2 }}>{card.topic}</div>}
+        <p className="ticket-desc">{card.description}</p>
+      </div>
+      <div className="ticket-metadata">
+        <span className="ticket-date" style={{ fontSize: 12 }}>{card.submittedDate?.replace('Submitted: ', '')}</span>
+        {card.daysLabel && (
+          <span style={{ padding: '3px 10px', borderRadius: 12, fontSize: 11, fontWeight: 700, background: overdue ? '#ffebee' : '#fff3e0', color: overdue ? '#d32f2f' : '#e65100' }}>{card.daysLabel}</span>
+        )}
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, color: 'var(--text-muted)' }}>
+        <span>AWC: <strong style={{ color: 'var(--primary-deep)' }}>{card.awcName}</strong></span>
+        {showDocs && isCorruptionOrUrgent && (card.documentsCount ?? 0) > 0 && (
+          <span style={{ background: '#e8eaf6', color: '#1565c0', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600, border: '1px solid #90caf9' }}>Doc Uploaded</span>
+        )}
+      </div>
+      <button className="ux4g-btn ux4g-btn-secondary ux4g-btn-md" style={{ width: '100%', marginTop: 4, display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center' }}
+        onClick={e => { e.stopPropagation(); onView(); }}>
+        <Eye size={14} /> View Details
+      </button>
+    </div>
   );
 };
 
+// ─── Resolved Ticket Card ──────────────────────────────────────────────────────
 
-const StatusFilterSheet = ({
-  visible,
-  onClose,
-  appliedStatuses,
-  onApply,
-  assignedFilter,
-}: {
-  visible: boolean;
-  onClose: () => void;
-  appliedStatuses: ResolvedStatus[];
-  onApply: (statuses: ResolvedStatus[]) => void;
-  assignedFilter: AssignedFilter;
-}) => {
-  const { slideAnim, fadeAnim, mounted } = useSheetAnim(visible);
-  const [tempStatuses, setTempStatuses] = useState<ResolvedStatus[]>(appliedStatuses);
-
-  useEffect(() => {
-    if (visible) {
-      setTempStatuses(appliedStatuses);
-    }
-  }, [visible, appliedStatuses]);
-
-  if (!mounted) return null;
-
-  const handleToggle = (opt: ResolvedStatus) => {
-    if (tempStatuses.includes(opt)) {
-      setTempStatuses(tempStatuses.filter((s) => s !== opt));
-    } else {
-      setTempStatuses([...tempStatuses, opt]);
-    }
-  };
-
-  const handleApply = () => {
-    onApply(tempStatuses);
-  };
-
-  const handleCancel = () => {
-    setTempStatuses(appliedStatuses);
-    onClose();
-  };
-
-  const allOptions: { value: ResolvedStatus; label: string; color: string }[] = [
-    { value: 'CLOSURE_PENDING', label: 'Closure Pending', color: '#f57f17' },
-    { value: 'CLOSED',          label: 'Closed',          color: '#2e7d32' },
-    { value: 'APPEAL_RAISED',   label: 'Appeal Raised',   color: '#e65100' },
-    { value: 'APPEAL_RESOLVED', label: 'Appeal Resolved', color: '#1565c0' },
-  ];
-
-  const options = assignedFilter === 'CDPO' 
-    ? allOptions.filter(o => o.value !== 'CLOSURE_PENDING') 
-    : allOptions;
-
-  const selectedCount = tempStatuses.filter(s => options.some(o => o.value === s)).length;
-
+const ResolvedCard = ({ card, onView }: { card: ResolvedTicketCard; onView: () => void }) => {
+  const cfg = STATUS_CFG[card.status] ?? STATUS_CFG.CLOSED;
   return (
-    <View pointerEvents={visible ? 'auto' : 'box-none'} style={modalStyles.inlineOverlayWrapper}>
-      <Animated.View style={[modalStyles.inlineBackdrop, { opacity: fadeAnim }]} />
-      <TouchableOpacity style={modalStyles.inlineDismiss} activeOpacity={1} onPress={handleCancel} />
-
-      <Animated.View
-        style={[
-          modalStyles.inlineSheet,
-          { height: assignedFilter === 'CDPO' ? 338 : 390, transform: [{ translateY: slideAnim }] },
-        ]}
-      >
-        <View style={modalStyles.handleRow}>
-          <View style={modalStyles.handle} />
-        </View>
-
-        <View style={modalStyles.titleRow}>
-          <Text style={modalStyles.sheetTitle}>Filter by Status</Text>
-        </View>
-
-        <View style={filterSheetStyles.optionsList}>
-          {options.map((opt) => {
-            const isSelected = tempStatuses.includes(opt.value);
-            return (
-              <TouchableOpacity
-                key={opt.value}
-                style={[
-                  filterSheetStyles.radioRow,
-                  { paddingHorizontal: 16, marginHorizontal: -16 },
-                  isSelected && { backgroundColor: '#f3f4fb' },
-                ]}
-                onPress={() => handleToggle(opt.value)}
-                activeOpacity={0.7}
-              >
-                <View
-                  style={[
-                    filterSheetStyles.radioOutline,
-                    { borderRadius: 11 },
-                    isSelected && { borderColor: '#1a237e', backgroundColor: '#1a237e' },
-                  ]}
-                >
-                  {isSelected && (
-                    <Image
-                      source={{ uri: imgIcon3 }}
-                      style={{ width: 12, height: 12, tintColor: '#ffffff' }}
-                    />
-                  )}
-                </View>
-
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
-                  <View
-                    style={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: 4,
-                      backgroundColor: opt.color,
-                    }}
-                  />
-                  <Text
-                    style={[
-                      filterSheetStyles.radioLabel,
-                      isSelected && { color: '#1a237e', fontWeight: '600' },
-                    ]}
-                  >
-                    {opt.label}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        {/* Buttons */}
-        <View style={filterSheetStyles.buttonsContainer}>
-          <TouchableOpacity style={filterSheetStyles.clearBtn} onPress={handleCancel} activeOpacity={0.7}>
-            <Text style={filterSheetStyles.clearBtnText}>Cancel</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={filterSheetStyles.applyBtn} onPress={handleApply} activeOpacity={0.7}>
-            <Text style={filterSheetStyles.applyBtnText}>
-              {selectedCount > 0 ? `Apply Filters (${selectedCount})` : 'Apply Filters'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-        <View style={{ height: 20 }} />
-      </Animated.View>
-    </View>
+    <div className="ticket-card" style={{ cursor: 'pointer', padding: 0, overflow: 'hidden' }} onClick={onView}>
+      {card.awaitingCdpoClosure && (
+        <div style={{ background: '#fff8e1', borderBottom: '1px solid #ffe082', padding: '7px 18px', fontSize: 12, fontWeight: 700, color: '#f57f17' }}>
+          Awaiting CDPO Closure
+        </div>
+      )}
+      <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span className="ticket-id">{card.ticketNumber}</span>
+          <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 10.5, fontWeight: 700, background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}>{cfg.label}</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <h4 className="ticket-title" style={{ margin: 0 }}>{card.beneficiaryName}</h4>
+          {card.beneficiaryType && (
+            <span style={{ fontSize: 11, background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: 4, fontWeight: 600, flexShrink: 0 }}>{card.beneficiaryType}</span>
+          )}
+        </div>
+        <div>
+          {card.topic && <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--primary-deep)', marginBottom: 2 }}>{card.topic}</div>}
+          <p className="ticket-desc">{card.description}</p>
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 500 }}>{card.resolvedDate}</div>
+        {card.actionTaken && (
+          <div style={{ background: '#f8fafc', border: '1px solid var(--border-color)', borderRadius: 6, padding: '8px 12px' }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>Action Taken</div>
+            <p style={{ fontSize: 12.5, color: 'var(--text-dark)', margin: 0, lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' } as any}>{card.actionTaken}</p>
+          </div>
+        )}
+        <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>AWC: <strong style={{ color: 'var(--primary-deep)' }}>{card.awcName}</strong></div>
+        <button className="ux4g-btn ux4g-btn-secondary ux4g-btn-md" style={{ width: '100%', display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center' }}
+          onClick={e => { e.stopPropagation(); onView(); }}>
+          <Eye size={14} /> View Details
+        </button>
+      </div>
+    </div>
   );
 };
-
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
-export default function BeneficiaryRedressalScreen({
-  initialAssignedFilter = 'CDPO',
-  onBack,
+export default function CDPOView({
   sharedPendingCards,
   setSharedPendingCards,
   sharedResolvedCards,
   setSharedResolvedCards,
-}: {
-  initialAssignedFilter?: AssignedFilter;
-  onBack?: () => void;
-  sharedPendingCards?: TicketCard[];
-  setSharedPendingCards?: React.Dispatch<React.SetStateAction<TicketCard[]>>;
-  sharedResolvedCards?: ResolvedTicketCard[];
-  setSharedResolvedCards?: React.Dispatch<React.SetStateAction<ResolvedTicketCard[]>>;
-}) {
-  const [activeTab, setActiveTab] = useState<TabType>('Pending');
-  const [assignedFilter, setAssignedFilter] = useState<AssignedFilter>(initialAssignedFilter);
-  const [pendingModalVisible, setPendingModalVisible] = useState(false);
-  const [resolvedModalVisible, setResolvedModalVisible] = useState(false);
-  const [isOverdueActive, setIsOverdueActive] = useState(false);
+}: CDPOViewProps) {
+
+  // ── Core state ────────────────────────────────────────────────────────────────
+  const [assignedFilter, setAssignedFilter] = useState<AssignedFilter>('CDPO');
+  const [activeTab,      setActiveTab]      = useState<'Pending' | 'Resolved'>('Pending');
   const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
+  const [pendingModal,   setPendingModal]   = useState(false);
+  const [resolvedModal,  setResolvedModal]  = useState(false);
 
-  // CDPO Pending filters state
-  const [dateRangeModalVisible, setDateRangeModalVisible] = useState(false);
-  const [typeModalVisible, setTypeModalVisible] = useState(false);
-  const [categoryModalVisible, setCategoryModalVisible] = useState(false);
-  const [statusModalVisible, setStatusModalVisible] = useState(false);
-  const [appliedDateOption, setAppliedDateOption] = useState<'7' | '14' | '21' | 'custom' | null>(null);
-  const [appliedFromDate, setAppliedFromDate] = useState('');
-  const [appliedToDate, setAppliedToDate] = useState('');
-  const [appliedTypes, setAppliedTypes] = useState<string[]>([]);
-  const [appliedCategories, setAppliedCategories] = useState<string[]>([]);
-  const [appliedStatuses, setAppliedStatuses] = useState<ResolvedStatus[]>([]);
-
-  const [localPending, setLocalPending] = useState<TicketCard[]>(() => pendingCards);
-  const [localResolved, setLocalResolved] = useState<ResolvedTicketCard[]>(() => resolvedCards);
-
-  const myPendingCards = sharedPendingCards ?? localPending;
-  const setMyPendingCards = setSharedPendingCards ?? setLocalPending;
-  const myResolvedCards = sharedResolvedCards ?? localResolved;
-  const setMyResolvedCards = setSharedResolvedCards ?? setLocalResolved;
-
-  // Sector / AWC dropdowns
+  // ── Scope sub-filters ─────────────────────────────────────────────────────────
   const [selectedSector, setSelectedSector] = useState('All Sectors');
-  const [selectedAWC, setSelectedAWC] = useState('All Centres');
-  const [sectorPickVisible, setSectorPickVisible] = useState(false);
-  const [awcPickVisible, setAwcPickVisible] = useState(false);
+  const [selectedAWC,    setSelectedAWC]    = useState('All Centres');
 
-  const handleResolveTicket = (ticketId: string, closureNote: string) => {
-    const ticket = myPendingCards.find((t) => t.id === ticketId);
-    if (ticket) {
-      const newResolvedCard: ResolvedTicketCard = {
-        id: ticket.id,
-        ticketNumber: ticket.ticketNumber,
-        beneficiaryName: ticket.beneficiaryName,
-        beneficiaryType: ticket.beneficiaryType,
-        topic: ticket.topic ?? ticket.title ?? '',
-        description: ticket.description,
-        resolvedDate: 'Resolved: 30/06/2025',
-        status: 'CLOSED',
-        actionTaken: closureNote,
-        awcName: ticket.awcName,
-        helpTopic: ticket.helpTopic ?? ticket.topic ?? '',
-        subTopic: ticket.subTopic ?? ticket.topic ?? '',
-        beneficiaryMobile: ticket.beneficiaryMobile ?? '',
-        beneficiaryEmail: ticket.beneficiaryEmail,
-        awcCode: ticket.awcCode ?? '',
-        district: ticket.district ?? 'Jaipur',
-        project: ticket.project ?? 'Sanganer',
-        sector: ticket.sector ?? 'Sector 1',
-        assignedTo: ticket.assignedTo ?? 'CDPO',
-      };
-
-      setMyPendingCards((prev) => prev.filter((t) => t.id !== ticketId));
-      setMyResolvedCards((prev) => [newResolvedCard, ...prev]);
-    } else {
-      setMyResolvedCards((prev) =>
-        prev.map((t) =>
-          t.id === ticketId
-            ? { ...t, status: 'CLOSED', actionTaken: closureNote, awaitingCdpoClosure: false }
-            : t
-        )
-      );
-    }
+  // ── Sidebar filter state ──────────────────────────────────────────────────────
+  const [searchQuery,     setSearchQuery]     = useState('');
+  const [isOverdueOnly,   setIsOverdueOnly]   = useState(false);
+  const [appliedDateOption, setAppliedDateOption] = useState<DateRangeOption | null>(null);
+  const [appliedFrom,     setAppliedFrom]     = useState('');
+  const [appliedTo,       setAppliedTo]       = useState('');
+  const [dateOpen,        setDateOpen]        = useState(false);
+  const dateButtonRef = useRef<HTMLButtonElement>(null);
+  const [datePanelPlacement, setDatePanelPlacement] = useState<'below' | 'above'>('below');
+  const toggleDatePanel = () => {
+    const buttonRect = dateButtonRef.current?.getBoundingClientRect();
+    const estimatedPanelHeight = 340;
+    setDatePanelPlacement(
+      buttonRect && window.innerHeight - buttonRect.bottom < estimatedPanelHeight ? 'above' : 'below'
+    );
+    setDateOpen(v => !v);
   };
 
-  useEffect(() => {
-    setAssignedFilter(initialAssignedFilter);
-  }, [initialAssignedFilter]);
+  // Pending-only: Type (CDPO) or Category (Supervisor/AWW)
+  const [appliedTypes,      setAppliedTypes]      = useState<string[]>([]);
+  const [appliedCategories, setAppliedCategories] = useState<string[]>([]);
 
-  const handleTabChange = (tab: TabType) => {
+  // Resolved-only: Status filter
+  const [appliedStatuses, setAppliedStatuses] = useState<string[]>([]);
+
+  // ── Handle role/tab switch ────────────────────────────────────────────────────
+  const clearAllFilters = () => {
+    setSearchQuery(''); setIsOverdueOnly(false);
+    setAppliedDateOption(null); setAppliedFrom(''); setAppliedTo('');
+    setAppliedTypes([]); setAppliedCategories([]); setAppliedStatuses([]);
+  };
+
+  const handleRoleSwitch = (role: AssignedFilter) => {
+    setAssignedFilter(role);
+    setSelectedSector('All Sectors');
+    setSelectedAWC('All Centres');
+    clearAllFilters();
+  };
+
+  const handleTabChange = (tab: 'Pending' | 'Resolved') => {
     setActiveTab(tab);
-    setIsOverdueActive(false);
-    setAppliedDateOption(null);
-    setAppliedFromDate('');
-    setAppliedToDate('');
-    setAppliedTypes([]);
-    setAppliedCategories([]);
-    setAppliedStatuses([]);
+    clearAllFilters();
   };
 
-  const mockCurrentDate = new Date(2025, 5, 30); // 30 June 2025
+  // ── Derived summary counts ────────────────────────────────────────────────────
+  const allPending  = sharedPendingCards;
+  const allResolved = sharedResolvedCards;
 
-  const displayedPendingCards = myPendingCards.filter((card) => {
-    // 0. Role assignment filter
+  const countP = (role: AssignedFilter) => allPending.filter(c => c.assignedTo === role).length;
+  const countR = (role: AssignedFilter) => allResolved.filter(c => c.assignedTo === role).length;
+  const countOD= (role: AssignedFilter) => allPending.filter(c => c.assignedTo === role && (c.isOverdue || c.daysType === 'overdue')).length;
+  const countSt= (role: AssignedFilter, s: string) => allResolved.filter(c => c.assignedTo === role && c.status === s).length;
+
+  const cdpoP = countP('CDPO');  const cdpoO = countOD('CDPO');  const cdpoR = countR('CDPO');
+  const supP  = countP('Supervisor'); const supO = countOD('Supervisor'); const supR = countR('Supervisor');
+  const awwP  = countP('AWW');   const awwO = countOD('AWW');   const awwR = countR('AWW');
+
+  const byStatus = {
+    closurePending:  { cdpo: countSt('CDPO','CLOSURE_PENDING'),  sup: countSt('Supervisor','CLOSURE_PENDING'),  aww: countSt('AWW','CLOSURE_PENDING')  },
+    closed:          { cdpo: countSt('CDPO','CLOSED'),            sup: countSt('Supervisor','CLOSED'),            aww: countSt('AWW','CLOSED')            },
+    appealRaised:    { cdpo: countSt('CDPO','APPEAL_RAISED'),     sup: countSt('Supervisor','APPEAL_RAISED'),     aww: countSt('AWW','APPEAL_RAISED')     },
+    appealResolved:  { cdpo: countSt('CDPO','APPEAL_RESOLVED'),   sup: countSt('Supervisor','APPEAL_RESOLVED'),   aww: countSt('AWW','APPEAL_RESOLVED')   },
+  };
+
+  // ── Filter logic ──────────────────────────────────────────────────────────────
+  const displayedPending = allPending.filter(card => {
     if (card.assignedTo && card.assignedTo !== assignedFilter) return false;
-
-    // 0a. Sector filter (Supervisor tab or AWW tab) — filter by sector field
     if ((assignedFilter === 'Supervisor' || assignedFilter === 'AWW') && selectedSector !== 'All Sectors') {
       if (!card.sector || card.sector !== selectedSector) return false;
     }
-    // 0b. AWC filter (AWW tab) — filter by awcName field
     if (assignedFilter === 'AWW' && selectedAWC !== 'All Centres') {
       if (!card.awcName || card.awcName !== selectedAWC) return false;
     }
-
-    // 1. Overdue filter
-    if (isOverdueActive && !card.isOverdue) return false;
-
-    // 2. Date Range filter (Applies to all roles/chips under Pending tab)
-    if (appliedDateOption !== null) {
-      const cardDate = parseDateString(card.submittedDate);
-      if (!cardDate) return false;
-
-      if (appliedDateOption === '7') {
-        const diffTime = mockCurrentDate.getTime() - cardDate.getTime();
-        const diffDays = diffTime / (1000 * 60 * 60 * 24);
-        if (diffDays < 0 || diffDays > 7) return false;
-      } else if (appliedDateOption === '14') {
-        const diffTime = mockCurrentDate.getTime() - cardDate.getTime();
-        const diffDays = diffTime / (1000 * 60 * 60 * 24);
-        if (diffDays < 0 || diffDays > 14) return false;
-      } else if (appliedDateOption === '21') {
-        const diffTime = mockCurrentDate.getTime() - cardDate.getTime();
-        const diffDays = diffTime / (1000 * 60 * 60 * 24);
-        if (diffDays < 0 || diffDays > 21) return false;
-      } else if (appliedDateOption === 'custom') {
-        const fromDate = parseInputDate(appliedFromDate);
-        const toDate = parseInputDate(appliedToDate);
-        if (fromDate && cardDate < fromDate) return false;
-        if (toDate && cardDate > toDate) return false;
-      }
-    }
-
-    // 3. Type or Category filter
+    if (isOverdueOnly && !(card.isOverdue || card.daysType === 'overdue')) return false;
+    if (!passesDateFilter(card.submittedDate ?? '', appliedDateOption, appliedFrom, appliedTo)) return false;
     if (assignedFilter === 'CDPO') {
-      if (appliedTypes.length > 0) {
-        if (!card.complaintType || !appliedTypes.includes(card.complaintType)) {
-          return false;
-        }
-      }
+      if (appliedTypes.length > 0 && (!card.complaintType || !appliedTypes.includes(card.complaintType))) return false;
     } else {
-      if (appliedCategories.length > 0) {
-        if (!card.beneficiaryType || !appliedCategories.includes(card.beneficiaryType)) {
-          return false;
-        }
-      }
+      if (appliedCategories.length > 0 && (!card.beneficiaryType || !appliedCategories.includes(card.beneficiaryType))) return false;
     }
-
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      const hit = card.ticketNumber.toLowerCase().includes(q) || card.beneficiaryName.toLowerCase().includes(q) ||
+        (card.description && card.description.toLowerCase().includes(q)) || (card.topic && card.topic.toLowerCase().includes(q));
+      if (!hit) return false;
+    }
     return true;
   });
 
-  const displayedResolvedCards = myResolvedCards.filter((card) => {
-    // 0. Role assignment filter
+  const displayedResolved = allResolved.filter(card => {
     if (card.assignedTo && card.assignedTo !== assignedFilter) return false;
-
-    // 0a. Sector filter (Supervisor tab or AWW tab)
     if ((assignedFilter === 'Supervisor' || assignedFilter === 'AWW') && selectedSector !== 'All Sectors') {
       if (!card.sector || card.sector !== selectedSector) return false;
     }
-    // 0b. AWC filter (AWW tab)
     if (assignedFilter === 'AWW' && selectedAWC !== 'All Centres') {
       if (!card.awcName || card.awcName !== selectedAWC) return false;
     }
-
-    if (assignedFilter === 'CDPO' && card.status === 'CLOSURE_PENDING') {
-      return false;
+    if (assignedFilter === 'CDPO' && card.status === 'CLOSURE_PENDING') return false;
+    if (appliedStatuses.length > 0 && (!card.status || !appliedStatuses.includes(card.status))) return false;
+    if (!passesDateFilter(card.resolvedDate ?? '', appliedDateOption, appliedFrom, appliedTo)) return false;
+    if (appliedCategories.length > 0 && (!card.beneficiaryType || !appliedCategories.includes(card.beneficiaryType))) return false;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      const hit = card.ticketNumber.toLowerCase().includes(q) || card.beneficiaryName.toLowerCase().includes(q) ||
+        (card.description && card.description.toLowerCase().includes(q));
+      if (!hit) return false;
     }
-
-    // Status filter (Applies to all roles under Resolved tab)
-    if (appliedStatuses.length > 0) {
-      if (!card.status || !appliedStatuses.includes(card.status)) {
-        return false;
-      }
-    }
-
-    // Date Range filter (Applies to all roles under Resolved tab)
-    if (appliedDateOption !== null) {
-      const cardDate = parseDateString(card.resolvedDate);
-      if (!cardDate) return false;
-
-      if (appliedDateOption === '7') {
-        const diffTime = mockCurrentDate.getTime() - cardDate.getTime();
-        const diffDays = diffTime / (1000 * 60 * 60 * 24);
-        if (diffDays < 0 || diffDays > 7) return false;
-      } else if (appliedDateOption === '14') {
-        const diffTime = mockCurrentDate.getTime() - cardDate.getTime();
-        const diffDays = diffTime / (1000 * 60 * 60 * 24);
-        if (diffDays < 0 || diffDays > 14) return false;
-      } else if (appliedDateOption === '21') {
-        const diffTime = mockCurrentDate.getTime() - cardDate.getTime();
-        const diffDays = diffTime / (1000 * 60 * 60 * 24);
-        if (diffDays < 0 || diffDays > 21) return false;
-      } else if (appliedDateOption === 'custom') {
-        const fromDate = parseInputDate(appliedFromDate);
-        const toDate = parseInputDate(appliedToDate);
-        if (fromDate && cardDate < fromDate) return false;
-        if (toDate && cardDate > toDate) return false;
-      }
-    }
-
-    // Category filter (Applies to all roles under Resolved tab)
-    if (appliedCategories.length > 0) {
-      if (!card.beneficiaryType || !appliedCategories.includes(card.beneficiaryType)) {
-        return false;
-      }
-    }
-
     return true;
   });
 
+  const awaitingClosureCount = allResolved.filter(c => c.awaitingCdpoClosure && c.assignedTo === 'Supervisor').length;
   const showDocs = assignedFilter === 'CDPO';
-  const awaitingClosureCount = myResolvedCards.filter((c) => c.awaitingCdpoClosure).length;
+  const isCdpoPending = assignedFilter === 'CDPO' && activeTab === 'Pending';
 
+  // Active filter count for badge
+  const activeFilterCount =
+    (activeTab === 'Pending' && isOverdueOnly ? 1 : 0) +
+    (appliedDateOption ? 1 : 0) +
+    appliedTypes.length +
+    appliedCategories.length +
+    appliedStatuses.length;
+
+  // ── Action handlers ───────────────────────────────────────────────────────────
+  const handleResolveTicket = (ticketId: string, closureNote: string) => {
+    const ticket = sharedPendingCards.find(t => t.id === ticketId);
+    if (ticket) {
+      const newCard: ResolvedTicketCard = { ...ticket, resolvedDate: 'Resolved: 30/06/2025', status: 'CLOSED', actionTaken: closureNote };
+      setSharedPendingCards(prev => prev.filter(t => t.id !== ticketId));
+      setSharedResolvedCards(prev => [newCard, ...prev]);
+    }
+  };
+
+  const handleCloseTicket = (ticketId: string, note?: string) => {
+    const ticket = sharedPendingCards.find(t => t.id === ticketId);
+    if (ticket) {
+      const newCard: ResolvedTicketCard = { 
+        ...ticket, 
+        resolvedDate: 'Resolved: 30/06/2025', 
+        status: 'CLOSED', 
+        actionTaken: note || 'Ticket closed by CDPO.', 
+        awaitingCdpoClosure: false 
+      };
+      setSharedPendingCards(prev => prev.filter(t => t.id !== ticketId));
+      setSharedResolvedCards(prev => [newCard, ...prev]);
+    } else {
+      setSharedResolvedCards(prev => prev.map(t => t.id === ticketId ? { 
+        ...t, 
+        status: 'CLOSED', 
+        actionTaken: note || t.actionTaken || 'Ticket closed by CDPO.', 
+        awaitingCdpoClosure: false 
+      } : t));
+    }
+  };
+
+  const dateLabelText =
+    appliedDateOption === '7' ? 'Last 7 Days' : appliedDateOption === '14' ? 'Last 14 Days' :
+    appliedDateOption === '21' ? 'Last 21 Days' : appliedDateOption === 'custom' ? 'Custom Range' : 'Date Range: All';
+
+  // ─── Render ───────────────────────────────────────────────────────────────────
   return (
-    <View style={styles.root}>
-      <StatusBar barStyle="light-content" backgroundColor="#1a237e" />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
-      {/* Status Bar */}
-      <StatusBar_ />
+      {/* Title + Project Badge */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700, color: 'var(--primary-deep)' }}>
+            Beneficiary Redressal
+          </h1>
+          <p style={{ color: 'var(--text-muted)', fontSize: 14, marginTop: 4 }}>
+            Review project complaints, audit Supervisor resolutions, and manage escalations.
+          </p>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2, padding: '8px 16px', background: '#ffffff', border: '1px solid var(--border-color)', borderRadius: 8, fontSize: 13, fontWeight: 600 }}>
+          <span>Project: <span style={{ color: 'var(--accent-saffron)' }}>Sanganer</span></span>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500 }}>4 Sectors</span>
+        </div>
+      </div>
 
-      {/* Header */}
-      <Header onBack={onBack} />
+      {/* Summary Table */}
+      <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-color)', padding: '22px 24px', boxShadow: 'var(--shadow-sm)' }}>
+        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--primary-deep)', letterSpacing: '0.5px', textTransform: 'uppercase', display: 'block', marginBottom: 14 }}>Summary</span>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+          <thead>
+            <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
+              <th style={{ textAlign: 'left', paddingBottom: 10, fontWeight: 600, width: '35%' }}></th>
+              <th style={{ textAlign: 'right', paddingBottom: 10, fontWeight: 600 }}>
+                <button onClick={() => setPendingModal(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: '#e65100', fontSize: 13, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 2 }}>PENDING ▼</button>
+              </th>
+              <th style={{ textAlign: 'right', paddingBottom: 10, fontWeight: 600 }}>
+                <button onClick={() => setResolvedModal(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--accent-green)', fontSize: 13, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 2 }}>RESOLVED ▼</button>
+              </th>
+              <th style={{ textAlign: 'right', paddingBottom: 10, fontWeight: 700, color: 'var(--primary-deep)', fontSize: 13 }}>TOTAL</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[{label:'CDPO',p:cdpoP,r:cdpoR},{label:'Supervisor',p:supP,r:supR},{label:'AWW',p:awwP,r:awwR}].map(row => (
+              <tr key={row.label} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                <td style={{ padding: '12px 0', fontWeight: 500, color: 'var(--text-muted)' }}>{row.label}</td>
+                <td style={{ textAlign: 'right', padding: '12px 0', fontWeight: 700, color: '#e65100', fontSize: 16 }}>{row.p}</td>
+                <td style={{ textAlign: 'right', padding: '12px 0', fontWeight: 700, color: 'var(--accent-green)', fontSize: 16 }}>{row.r}</td>
+                <td style={{ textAlign: 'right', padding: '12px 0', fontWeight: 700, color: 'var(--primary-deep)', fontSize: 16 }}>{row.p + row.r}</td>
+              </tr>
+            ))}
+            <tr style={{ background: '#e8eaf6', fontWeight: 700 }}>
+              <td style={{ padding: '12px 10px', color: '#1a237e', borderRadius: '6px 0 0 6px' }}>Total</td>
+              <td style={{ textAlign: 'right', padding: '12px 10px', color: '#e65100', fontSize: 18 }}>{cdpoP + supP + awwP}</td>
+              <td style={{ textAlign: 'right', padding: '12px 10px', color: 'var(--accent-green)', fontSize: 18 }}>{cdpoR + supR + awwR}</td>
+              <td style={{ textAlign: 'right', padding: '12px 10px', color: '#1a237e', fontSize: 18, borderRadius: '0 6px 6px 0' }}>{cdpoP + supP + awwP + cdpoR + supR + awwR}</td>
+            </tr>
+          </tbody>
+        </table>
+        <span style={{ display: 'block', textAlign: 'center', fontSize: 11, color: 'var(--text-muted)', marginTop: 12 }}>
+          Click PENDING or RESOLVED column for detailed breakdown
+        </span>
+      </div>
 
-      {/* Sub Header */}
-      <SubHeader />
-
-      {/* Scrollable content */}
-      <ScrollView
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {/* Summary Table */}
-        <SummaryTable
-          pendingFilter={pendingModalVisible}
-          resolvedFilter={resolvedModalVisible}
-          onPendingFilter={() => setPendingModalVisible(true)}
-          onResolvedFilter={() => setResolvedModalVisible(true)}
-        />
-
-        {/* Assigned To Filter */}
-        <AssignedToFilter
-          selected={assignedFilter}
-          onSelect={(val) => {
-            setAssignedFilter(val);
-            setSelectedSector('All Sectors');
-            setSelectedAWC('All Centres');
-            // Clear filters when role changes
-            setIsOverdueActive(false);
-            setAppliedDateOption(null);
-            setAppliedFromDate('');
-            setAppliedToDate('');
-            setAppliedTypes([]);
-            setAppliedCategories([]);
-            setAppliedStatuses([]);
-          }}
-        />
-
-        {/* Sector dropdown (Supervisor chip) or Anganwadi Centre dropdown (AWW chip) — above tabs */}
-        {assignedFilter === 'Supervisor' && (
-          <SectorDropdown value={selectedSector} onPress={() => setSectorPickVisible(true)} />
+      {/* ── Assigned To — uniform full-width row above main content ── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', flexShrink: 0 }}>Assigned To</span>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {(['CDPO','Supervisor','AWW'] as AssignedFilter[]).map(role => (
+            <button key={role} onClick={() => handleRoleSwitch(role)} style={{
+              padding: '7px 20px', borderRadius: 20,
+              border: `1.5px solid ${assignedFilter === role ? 'var(--primary-deep)' : 'var(--border-color)'}`,
+              background: assignedFilter === role ? 'var(--primary-deep)' : '#ffffff',
+              color: assignedFilter === role ? '#ffffff' : 'var(--text-dark)',
+              fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
+            }}>
+              {role === 'CDPO' ? 'me' : role}
+            </button>
+          ))}
+        </div>
+        {/* Sector/AWC sub-filters inline when Supervisor/AWW selected */}
+        {(assignedFilter === 'Supervisor' || assignedFilter === 'AWW') && (
+          <select className="form-select" value={selectedSector} onChange={e => setSelectedSector(e.target.value)}
+            style={{ height: 38, padding: '0 32px 0 12px', fontSize: 13, fontWeight: 500, maxWidth: 180 }}>
+            {SECTOR_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+          </select>
         )}
         {assignedFilter === 'AWW' && (
-          <>
-            <SectorDropdown value={selectedSector} onPress={() => setSectorPickVisible(true)} />
-            <AnganwadiCentreDropdown value={selectedAWC} onPress={() => setAwcPickVisible(true)} />
-          </>
+          <select className="form-select" value={selectedAWC} onChange={e => setSelectedAWC(e.target.value)}
+            style={{ height: 38, padding: '0 32px 0 12px', fontSize: 13, fontWeight: 500, maxWidth: 210 }}>
+            {AWC_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+          </select>
         )}
+      </div>
 
-        {/* Tab Bar */}
-        <TabBar
-          activeTab={activeTab}
-          onTabChange={handleTabChange}
-          pendingCount={displayedPendingCards.length}
-          resolvedCount={displayedResolvedCards.length}
-        />
+      {/* ── Main content: sidebar + ticket workspace ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 24, alignItems: 'start' }}>
 
-        {/* Filter Chips */}
-        <FilterChips
-          activeTab={activeTab}
-          assignedFilter={assignedFilter}
-          isOverdueActive={isOverdueActive}
-          onOverdueToggle={() => setIsOverdueActive((v) => !v)}
-          onClearAll={() => {
-            setIsOverdueActive(false);
-            setAppliedDateOption(null);
-            setAppliedFromDate('');
-            setAppliedToDate('');
-            setAppliedTypes([]);
-            setAppliedCategories([]);
-            setAppliedStatuses([]);
-          }}
-          appliedDateOption={appliedDateOption}
-          appliedTypes={appliedTypes}
-          appliedCategories={appliedCategories}
-          appliedStatuses={appliedStatuses}
-          onDateRangePress={() => setDateRangeModalVisible(true)}
-          onTypePress={() => setTypeModalVisible(true)}
-          onCategoryPress={() => setCategoryModalVisible(true)}
-          onStatusPress={() => setStatusModalVisible(true)}
-          onClearDateRange={() => {
-            setAppliedDateOption(null);
-            setAppliedFromDate('');
-            setAppliedToDate('');
-          }}
-          onClearType={() => setAppliedTypes([])}
-          onClearCategory={() => setAppliedCategories([])}
-          onClearStatus={() => setAppliedStatuses([])}
-        />
+        {/* Left Filter Sidebar */}
+        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-lg)', padding: '20px', display: 'flex', flexDirection: 'column', gap: 20, boxShadow: 'var(--shadow-sm)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: 10 }}>
+            <h3 style={{ fontSize: 13, fontWeight: 700, color: 'var(--primary-deep)' }}>Filter Options</h3>
+            {activeFilterCount > 0 && (
+              <span style={{ background: 'var(--primary-deep)', color: '#fff', borderRadius: 99, padding: '2px 8px', fontSize: 11, fontWeight: 700 }}>{activeFilterCount}</span>
+            )}
+          </div>
 
-        {/* Awaiting closure info banner — resolved tab, Supervisor chip */}
-        {activeTab === 'Resolved' && assignedFilter === 'Supervisor' && awaitingClosureCount > 0 && (
-          <View style={styles.closureBanner}>
-            <Text style={styles.closureBannerText}>
-              {awaitingClosureCount} ticket{awaitingClosureCount > 1 ? 's' : ''} awaiting your closure — tap a card to close
-            </Text>
-          </View>
-        )}
+          {/* Overdue Toggle — SLA breach only applies to open (Pending) tickets */}
+          {activeTab === 'Pending' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Urgency</label>
+              <button
+                onClick={() => setIsOverdueOnly(v => !v)}
+                style={{
+                  padding: '8px 16px', borderRadius: 20, fontSize: 13, fontWeight: 600,
+                  cursor: 'pointer', transition: 'all 0.2s',
+                  background: isOverdueOnly ? 'var(--color-danger)' : 'var(--bg-main)',
+                  color: isOverdueOnly ? '#fff' : 'var(--text-dark)',
+                  border: `1.5px solid ${isOverdueOnly ? 'var(--color-danger)' : 'var(--border-color)'}`,
+                }}
+              >
+                {isOverdueOnly && '× '}Overdue Only
+              </button>
+            </div>
+          )}
 
-        {/* Cards */}
-        <View style={styles.cardList}>
-          {activeTab === 'Pending'
-            ? displayedPendingCards.map((card) => (
-                <TicketCardComponent
-                  key={card.id}
-                  card={card}
-                  showDocs={showDocs}
-                  onPress={() => setSelectedTicket({ ...card, isPendingTicket: true })}
-                />
-              ))
-            : displayedResolvedCards.map((card) => (
-                <ResolvedTicketCardComponent
-                  key={card.id}
-                  card={card}
-                  onPress={() => setSelectedTicket(card)}
-                />
+          {/* Type (CDPO pending) or Category (other pending + all resolved) */}
+          {activeTab === 'Pending' && isCdpoPending && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Complaint Type</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {COMPLAINT_TYPES.map(t => (
+                  <label key={t} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer', padding: '4px 0' }}>
+                    <input type="checkbox" checked={appliedTypes.includes(t)} onChange={() => setAppliedTypes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}
+                      style={{ accentColor: 'var(--primary-deep)', width: 15, height: 15 }} />
+                    <span style={{ color: appliedTypes.includes(t) ? 'var(--primary-deep)' : 'var(--text-dark)', fontWeight: appliedTypes.includes(t) ? 600 : 400 }}>{t}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {(activeTab === 'Pending' && !isCdpoPending) && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Beneficiary Category</label>
+              <select className="form-select" value={appliedCategories[0] || 'All'}
+                onChange={e => setAppliedCategories(e.target.value === 'All' ? [] : [e.target.value])}
+                style={{ width: '100%', height: 40, padding: '0 32px 0 12px', fontSize: 13 }}>
+                <option value="All">Category: All</option>
+                {BENEFICIARY_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+          )}
+
+          {activeTab === 'Resolved' && (
+            <>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Status</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {RESOLVED_STATUSES.map(s => (
+                    <label key={s.value} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer', padding: '4px 0' }}>
+                      <input type="checkbox" checked={appliedStatuses.includes(s.value)} onChange={() => setAppliedStatuses(prev => prev.includes(s.value) ? prev.filter(x => x !== s.value) : [...prev, s.value])}
+                        style={{ accentColor: 'var(--primary-deep)', width: 15, height: 15 }} />
+                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: s.color, flexShrink: 0 }} />
+                      <span style={{ color: appliedStatuses.includes(s.value) ? 'var(--primary-deep)' : 'var(--text-dark)', fontWeight: appliedStatuses.includes(s.value) ? 600 : 400 }}>{s.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Beneficiary Category</label>
+                <select className="form-select" value={appliedCategories[0] || 'All'}
+                  onChange={e => setAppliedCategories(e.target.value === 'All' ? [] : [e.target.value])}
+                  style={{ width: '100%', height: 40, padding: '0 32px 0 12px', fontSize: 13 }}>
+                  <option value="All">Category: All</option>
+                  {BENEFICIARY_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+            </>
+          )}
+
+          {/* Date Range */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, position: 'relative' }}>
+            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+              {activeTab === 'Pending' ? 'Submission Date' : 'Resolution Date'}
+            </label>
+            <button
+              ref={dateButtonRef}
+              onClick={toggleDatePanel}
+              className="ux4g-btn ux4g-btn-outline-neutral ux4g-btn-md"
+              style={{
+                width: '100%', justifyContent: 'space-between', height: 40,
+                border: appliedDateOption ? '1.5px solid var(--primary-deep)' : undefined,
+                color: appliedDateOption ? 'var(--primary-deep)' : undefined,
+                fontWeight: appliedDateOption ? 700 : undefined,
+              }}
+            >
+              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Calendar size={14} /> {dateLabelText}
+              </span>
+            </button>
+            <DateRangePopover
+              open={dateOpen} onClose={() => setDateOpen(false)}
+              applied={appliedDateOption} appliedFrom={appliedFrom} appliedTo={appliedTo}
+              onApply={(opt, from, to) => { setAppliedDateOption(opt); setAppliedFrom(from); setAppliedTo(to); setDateOpen(false); }}
+              placement={datePanelPlacement}
+            />
+          </div>
+
+          {/* Reset */}
+          {activeFilterCount > 0 && (
+            <button className="ux4g-btn ux4g-btn-outline-neutral ux4g-btn-sm" style={{ borderRadius: 20, fontSize: 12 }} onClick={clearAllFilters}>
+              Reset Filters
+            </button>
+          )}
+        </div>
+
+        {/* Right workspace: tabs + search + closure banner + cards */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+          {/* Tabs + Search */}
+          <div className="search-filter-section" style={{ marginBottom: 0 }}>
+            <div className="tabs-navigation" style={{ borderBottom: 'none', margin: 0 }}>
+              {(['Pending','Resolved'] as const).map(tab => (
+                <button key={tab} className={`tab-btn ${activeTab === tab ? 'active' : ''}`} onClick={() => handleTabChange(tab)}>
+                  {tab}
+                  <span className="tab-count">{tab === 'Pending' ? displayedPending.length : displayedResolved.length}</span>
+                </button>
               ))}
-        </View>
-      </ScrollView>
+            </div>
+            <div className="search-input-wrapper" style={{ maxWidth: 260 }}>
+              <Search className="search-icon-svg" />
+              <input type="text" className="search-input" placeholder="Search tickets..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+            </div>
+          </div>
 
-      {/* Inline bottom sheets */}
-      <PendingBreakdownSheet
-        visible={pendingModalVisible}
-        onClose={() => setPendingModalVisible(false)}
-      />
-      <ResolvedBreakdownSheet
-        visible={resolvedModalVisible}
-        onClose={() => setResolvedModalVisible(false)}
-      />
+          {/* Closure Banner */}
+          {activeTab === 'Resolved' && assignedFilter === 'Supervisor' && awaitingClosureCount > 0 && (
+            <div style={{ background: '#fff8e1', border: '1px solid #ffe082', borderRadius: 'var(--radius-md)', padding: '10px 16px', fontSize: 13, fontWeight: 600, color: '#f57f17', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span>⚠</span>
+              {awaitingClosureCount} ticket{awaitingClosureCount > 1 ? 's' : ''} awaiting your closure — click a card to close
+            </div>
+          )}
 
-      {/* Date Range & Type Filter Sheets */}
-      <DateRangeFilterSheet
-        visible={dateRangeModalVisible}
-        onClose={() => setDateRangeModalVisible(false)}
-        appliedOption={appliedDateOption}
-        appliedFrom={appliedFromDate}
-        appliedTo={appliedToDate}
-        onApply={(opt, from, to) => {
-          setAppliedDateOption(opt);
-          setAppliedFromDate(from);
-          setAppliedToDate(to);
-          setDateRangeModalVisible(false);
-        }}
-      />
+          {/* Ticket Grid */}
+          {activeTab === 'Pending' ? (
+            displayedPending.length === 0 ? (
+              <div style={{ padding: '64px 32px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-lg)', textAlign: 'center', color: 'var(--text-muted)' }}>
+                <Inbox size={48} style={{ opacity: 0.4, marginBottom: 16 }} />
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 600, color: 'var(--primary-deep)' }}>No Pending Grievances</h3>
+                <p style={{ fontSize: 13, marginTop: 4 }}>No tickets match the current filters.</p>
+              </div>
+            ) : (
+              <div className="ticket-grid">
+                {displayedPending.map(card => (
+                  <PendingCard key={card.id} card={card} showDocs={showDocs} onView={() => setSelectedTicket({ ...card, isPendingTicket: true })} />
+                ))}
+              </div>
+            )
+          ) : (
+            displayedResolved.length === 0 ? (
+              <div style={{ padding: '64px 32px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-lg)', textAlign: 'center', color: 'var(--text-muted)' }}>
+                <Inbox size={48} style={{ opacity: 0.4, marginBottom: 16 }} />
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 600, color: 'var(--primary-deep)' }}>No Resolved Tickets</h3>
+                <p style={{ fontSize: 13, marginTop: 4 }}>No tickets match the current filters.</p>
+              </div>
+            ) : (
+              <div className="ticket-grid">
+                {displayedResolved.map(card => (
+                  <ResolvedCard key={card.id} card={card} onView={() => setSelectedTicket(card)} />
+                ))}
+              </div>
+            )
+          )}
+        </div>
+      </div>
 
-      <TypeFilterSheet
-        visible={typeModalVisible}
-        onClose={() => setTypeModalVisible(false)}
-        appliedTypes={appliedTypes}
-        onApply={(types) => {
-          setAppliedTypes(types);
-          setTypeModalVisible(false);
-        }}
-      />
-
-      <CategoryFilterSheet
-        visible={categoryModalVisible}
-        onClose={() => setCategoryModalVisible(false)}
-        appliedCategories={appliedCategories}
-        onApply={(categories) => {
-          setAppliedCategories(categories);
-          setCategoryModalVisible(false);
-        }}
-      />
-
-      <StatusFilterSheet
-        visible={statusModalVisible}
-        onClose={() => setStatusModalVisible(false)}
-        appliedStatuses={appliedStatuses}
-        assignedFilter={assignedFilter}
-        onApply={(statuses) => {
-          setAppliedStatuses(statuses);
-          setStatusModalVisible(false);
-        }}
-      />
-
-      {/* Sector & AWC Pick Sheets */}
-      <DropdownPickSheet
-        visible={sectorPickVisible}
-        title="Select Sector"
-        options={SECTOR_OPTIONS}
-        selected={selectedSector}
-        onSelect={(val) => {
-          setSelectedSector(val);
-          // Reset AWC when sector changes
-          setSelectedAWC('All Centres');
-        }}
-        onClose={() => setSectorPickVisible(false)}
-      />
-      <DropdownPickSheet
-        visible={awcPickVisible}
-        title="Select Anganwadi Centre"
-        options={AWC_OPTIONS}
-        selected={selectedAWC}
-        onSelect={setSelectedAWC}
-        onClose={() => setAwcPickVisible(false)}
-      />
-
-      {/* Ticket Details overlay */}
+      {/* Ticket Detail Drawer */}
       {selectedTicket && (
-        <TicketDetailsOverlay
+        <TicketDetailsScreen
           card={selectedTicket}
-          assignedFilter={assignedFilter}
+          assignedFilter="CDPO"
           onBack={() => setSelectedTicket(null)}
           onResolveTicket={handleResolveTicket}
+          onCloseTicket={handleCloseTicket}
         />
       )}
-    </View>
+
+      {/* Breakdown Modals */}
+      <PendingBreakdownModal open={pendingModal} onClose={() => setPendingModal(false)}
+        cdpoP={cdpoP} cdpoO={cdpoO} supP={supP} supO={supO} awwP={awwP} awwO={awwO} />
+      <ResolvedBreakdownModal open={resolvedModal} onClose={() => setResolvedModal(false)}
+        byRole={{ cdpo: cdpoR, sup: supR, aww: awwR }} byStatus={byStatus} />
+    </div>
   );
 }
-
-// ─── Styles ───────────────────────────────────────────────────────────────────
-
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    width: '100%',
-    backgroundColor: '#fafafa',
-    overflow: 'hidden',
-  },
-
-  // ── Status Bar
-  statusBar: {
-    height: 24,
-    backgroundColor: '#1a237e',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-  },
-  statusTime: {
-    fontFamily: 'Inter',
-    fontWeight: '600',
-    fontSize: 14,
-    color: '#ffffff',
-    lineHeight: 21,
-  },
-  statusIcons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  statusIcon16: { width: 16, height: 12 },
-  statusIcon14: { width: 14, height: 12 },
-  statusIcon20: { width: 20, height: 12 },
-
-  // ── Header
-  header: {
-    height: 56,
-    backgroundColor: '#1a237e',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-  },
-  backButton: {
-    width: 29,
-    height: 24,
-    justifyContent: 'center',
-  },
-  backIcon: { width: 29, height: 24, tintColor: '#ffffff' },
-  headerTitle: {
-    flex: 1,
-    fontFamily: 'Inter',
-    fontWeight: '700',
-    fontSize: 16,
-    color: '#ffffff',
-    textAlign: 'center',
-    lineHeight: 24,
-  },
-  headerSpacer: { width: 24, height: 24 },
-
-  // ── SubHeader
-  subHeader: {
-    height: 36,
-    backgroundColor: '#f0f0f0',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    gap: 8,
-  },
-  subHeaderText: {
-    fontFamily: 'Inter',
-    fontWeight: '500',
-    fontSize: 12,
-    color: '#5c5c5c',
-    lineHeight: 18,
-  },
-  subHeaderSeparator: {
-    fontFamily: 'Inter',
-    fontWeight: '400',
-    fontSize: 12,
-    color: '#bdbdbd',
-    lineHeight: 18,
-  },
-
-  // ── Scroll
-  scrollView: { flex: 1 },
-  scrollContent: { paddingBottom: 32 },
-
-  // ── Summary
-  summarySection: {
-    backgroundColor: '#f5f5f5',
-    paddingHorizontal: 16,
-    paddingTop: 14,
-    paddingBottom: 16,
-  },
-  summaryLabel: {
-    fontFamily: 'Inter',
-    fontWeight: '700',
-    fontSize: 10,
-    color: '#1a237e',
-    letterSpacing: 0.8,
-    lineHeight: 15,
-    textTransform: 'uppercase',
-    marginBottom: 10,
-  },
-  summaryCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 10,
-    overflow: 'hidden',
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  summaryHeaderRow: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-    height: 36,
-  },
-  summaryDataRow: {
-    borderBottomWidth: 1,
-    height: 44.5,
-  },
-  summaryCol0: {
-    width: 90,
-    paddingHorizontal: 10,
-    paddingVertical: 9,
-    justifyContent: 'center',
-  },
-  summaryColBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 4,
-    paddingVertical: 10,
-    gap: 3,
-  },
-  summaryColBtnText: {
-    fontFamily: 'Inter',
-    fontWeight: '600',
-    fontSize: 10,
-    textTransform: 'uppercase',
-    lineHeight: 15,
-  },
-  chevronText: {
-    fontSize: 12,
-    lineHeight: 15,
-    fontWeight: '600',
-  },
-  summaryColData: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  summaryRowLabel: {
-    fontFamily: 'Inter',
-    fontWeight: '400',
-    fontSize: 12,
-    color: '#5c5c5c',
-    lineHeight: 18,
-  },
-  summaryDataValue: {
-    fontFamily: 'Inter',
-    fontWeight: '700',
-    fontSize: 17,
-    lineHeight: 25.5,
-  },
-
-  // ── Assigned To
-  assignedToRow: {
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    gap: 10,
-  },
-  assignedToLabel: {
-    fontFamily: 'Inter',
-    fontWeight: '500',
-    fontSize: 11,
-    color: '#9e9e9e',
-    lineHeight: 16.5,
-  },
-  assignedChips: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  assignedChip: {
-    height: 28,
-    borderRadius: 100,
-    paddingHorizontal: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  assignedChipActive: {
-    backgroundColor: '#1a237e',
-  },
-  assignedChipInactive: {
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#bdbdbd',
-  },
-  assignedChipText: {
-    fontFamily: 'Inter',
-    fontSize: 12,
-    lineHeight: 18,
-    textAlign: 'center',
-  },
-  assignedChipTextActive: {
-    fontWeight: '600',
-    color: '#ffffff',
-  },
-  assignedChipTextInactive: {
-    fontWeight: '400',
-    color: '#757575',
-  },
-
-  // ── Tab Bar
-  tabBar: {
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-    flexDirection: 'row',
-  },
-  tabItem: {
-    flex: 1,
-    flexDirection: 'column',
-    alignItems: 'center',
-  },
-  tabContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingTop: 14,
-    paddingBottom: 12,
-  },
-  tabText: {
-    fontFamily: 'Inter',
-    fontWeight: '500',
-    fontSize: 14,
-    color: '#5c5c5c',
-    lineHeight: 21,
-  },
-  tabTextActive: {
-    fontWeight: '700',
-    color: '#1a237e',
-  },
-  tabBadge: {
-    height: 18,
-    minWidth: 22,
-    borderRadius: 9,
-    paddingHorizontal: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tabBadgeActive: { backgroundColor: '#1a237e' },
-  tabBadgeInactive: { backgroundColor: '#eeeeee' },
-  tabBadgeText: {
-    fontFamily: 'Inter',
-    fontWeight: '600',
-    fontSize: 11,
-    lineHeight: 16.5,
-    textAlign: 'center',
-  },
-  tabBadgeTextActive: { color: '#ffffff' },
-  tabBadgeTextInactive: { color: '#757575' },
-  tabUnderline: {
-    height: 2,
-    width: '100%',
-    backgroundColor: 'transparent',
-  },
-  tabUnderlineActive: { backgroundColor: '#1a237e' },
-
-  // ── Filter Chips
-  filterRow: {
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 11,
-    gap: 8,
-  },
-  filterChip: {
-    height: 32,
-    borderRadius: 100,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 13,
-    paddingVertical: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  filterChipText: {
-    fontFamily: 'Inter',
-    fontWeight: '400',
-    fontSize: 13,
-    color: '#424242',
-    lineHeight: 19.5,
-  },
-  filterChipOverdueActive: {
-    backgroundColor: '#ffebee',
-    borderColor: '#ef9a9a',
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  filterChipTextActive: {
-    fontFamily: 'Inter',
-    fontWeight: '600',
-    fontSize: 13,
-    color: '#1a237e',
-    lineHeight: 19.5,
-  },
-  filterChipTextOverdueActive: {
-    fontFamily: 'Inter',
-    fontWeight: '600',
-    fontSize: 13,
-    color: '#c62828',
-    lineHeight: 19.5,
-  },
-  filterChipClose: {
-    fontFamily: 'Inter',
-    fontWeight: '700',
-    fontSize: 14,
-    color: '#1a237e',
-    lineHeight: 19.5,
-  },
-  filterChipCloseOverdue: {
-    fontFamily: 'Inter',
-    fontWeight: '700',
-    fontSize: 14,
-    color: '#c62828',
-    lineHeight: 19.5,
-  },
-  clearAllRow: {
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  clearAllText: {
-    fontFamily: 'Inter',
-    fontWeight: '500',
-    fontSize: 12,
-    color: '#1a237e',
-    lineHeight: 18,
-  },
-
-  // ── Card List
-  cardList: {
-    paddingHorizontal: 12,
-    paddingTop: 12,
-    gap: 10,
-  },
-
-  // ── Ticket Card
-  card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 10,
-    borderWidth: 1,
-    padding: 16,
-    gap: 8,
-  },
-  cardTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  cardTicketNum: {
-    fontFamily: 'Inter',
-    fontWeight: '400',
-    fontSize: 11,
-    color: '#9e9e9e',
-    lineHeight: 16.5,
-  },
-  overdueBadge: {
-    backgroundColor: '#d32f2f',
-    borderRadius: 4,
-    paddingHorizontal: 8,
-    height: 19,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  overdueBadgeText: {
-    fontFamily: 'Inter',
-    fontWeight: '700',
-    fontSize: 10,
-    color: '#ffffff',
-    lineHeight: 15,
-    textTransform: 'uppercase',
-  },
-  nameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  beneficiaryName: {
-    fontFamily: 'Inter',
-    fontWeight: '700',
-    fontSize: 15,
-    color: '#181818',
-    lineHeight: 22.5,
-  },
-  beneficiaryTag: {
-    backgroundColor: '#f5f5f5',
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 4,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  beneficiaryTagText: {
-    fontFamily: 'Inter',
-    fontWeight: '400',
-    fontSize: 10,
-    color: '#5c5c5c',
-  },
-  topicRow: {
-    flexDirection: 'column',
-    gap: 2,
-  },
-  topicText: {
-    fontFamily: 'Inter',
-    fontWeight: '600',
-    fontSize: 13,
-    color: '#2d2d2d',
-    lineHeight: 19.5,
-  },
-  cardTitle: {
-    fontFamily: 'Inter',
-    fontWeight: '700',
-    fontSize: 14,
-    color: '#181818',
-    lineHeight: 18.2,
-  },
-  cardDescription: {
-    fontFamily: 'Inter',
-    fontWeight: '400',
-    fontSize: 12,
-    color: '#757575',
-    lineHeight: 18,
-  },
-  cardDateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  cardDate: {
-    fontFamily: 'Inter',
-    fontWeight: '400',
-    fontSize: 12,
-    color: '#5c5c5c',
-    lineHeight: 18,
-  },
-  daysBadge: {
-    height: 24.5,
-    borderRadius: 4,
-    paddingHorizontal: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  daysBadgeText: {
-    fontFamily: 'Inter',
-    fontWeight: '600',
-    fontSize: 11,
-    lineHeight: 16.5,
-  },
-  cardBottomRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 2,
-  },
-  awcInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  awcLabel: {
-    fontFamily: 'Inter',
-    fontWeight: '400',
-    fontSize: 12,
-    color: '#9e9e9e',
-  },
-  awcName: {
-    fontFamily: 'Inter',
-    fontWeight: '500',
-    fontSize: 12,
-    color: '#424242',
-  },
-  docChip: {
-    backgroundColor: '#e9f1ff',
-    borderWidth: 1,
-    borderColor: '#9cb6f5',
-    borderRadius: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  docChipText: {
-    fontFamily: 'Inter',
-    fontWeight: '600',
-    fontSize: 10,
-    color: '#2e4ab5',
-  },
-  docsButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: '#e8eaf6',
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    alignSelf: 'flex-start',
-  },
-  docsIcon: { width: 13, height: 13 },
-  docsText: {
-    fontFamily: 'Inter',
-    fontWeight: '500',
-    fontSize: 11,
-    color: '#1a237e',
-    lineHeight: 16.5,
-  },
-  cardByRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  cardByLabel: {
-    fontFamily: 'Inter',
-    fontWeight: '400',
-    fontSize: 12,
-    color: '#9e9e9e',
-    lineHeight: 18,
-  },
-  cardByName: {
-    fontFamily: 'Inter',
-    fontWeight: '500',
-    fontSize: 12,
-    color: '#424242',
-    lineHeight: 18,
-  },
-
-  // ── Closure info banner
-  closureBanner: {
-    backgroundColor: '#fff3e0',
-    borderBottomWidth: 1,
-    borderBottomColor: '#ffe0b2',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  closureBannerText: {
-    fontFamily: 'Inter',
-    fontWeight: '500',
-    fontSize: 12,
-    color: '#e65100',
-    lineHeight: 18,
-  },
-  filterChipActive: {
-    backgroundColor: '#1a237e',
-    borderColor: '#1a237e',
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-});
-
-// ─── Resolved Card Styles ─────────────────────────────────────────────────────
-
-const resolvedCardStyles = StyleSheet.create({
-  card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    overflow: 'hidden',
-    gap: 8,
-    padding: 16,
-  },
-  cardAwaitingClosure: {
-    borderColor: '#ffe082',
-    borderWidth: 1.5,
-  },
-  awaitingClosureRow: {
-    marginHorizontal: -16,
-    marginTop: -16,
-    marginBottom: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    backgroundColor: '#fff8e1',
-    borderBottomWidth: 1,
-    borderBottomColor: '#ffe082',
-  },
-  awaitingClosureText: {
-    fontFamily: 'Inter',
-    fontWeight: '600',
-    fontSize: 11,
-    color: '#f57f17',
-    lineHeight: 16.5,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-  },
-  topRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  ticketNum: {
-    fontFamily: 'Inter',
-    fontWeight: '400',
-    fontSize: 11,
-    color: '#9e9e9e',
-    lineHeight: 16.5,
-  },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  statusBadgeText: {
-    fontFamily: 'Inter',
-    fontWeight: '600',
-    fontSize: 10,
-    lineHeight: 15,
-    textTransform: 'uppercase',
-  },
-  statusIcon: {
-    fontSize: 11,
-    lineHeight: 15,
-  },
-  nameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  beneficiaryName: {
-    fontFamily: 'Inter',
-    fontWeight: '700',
-    fontSize: 15,
-    color: '#181818',
-    lineHeight: 22.5,
-  },
-  beneficiaryTag: {
-    backgroundColor: '#f5f5f5',
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 4,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-  },
-  beneficiaryTagText: {
-    fontFamily: 'Inter',
-    fontWeight: '400',
-    fontSize: 10,
-    color: '#5c5c5c',
-  },
-  topicBlock: {
-    gap: 2,
-  },
-  topicText: {
-    fontFamily: 'Inter',
-    fontWeight: '600',
-    fontSize: 13,
-    color: '#2d2d2d',
-    lineHeight: 19.5,
-  },
-  descriptionText: {
-    fontFamily: 'Inter',
-    fontWeight: '400',
-    fontSize: 12,
-    color: '#757575',
-    lineHeight: 18,
-  },
-  resolvedDate: {
-    fontFamily: 'Inter',
-    fontWeight: '500',
-    fontSize: 12,
-    color: '#2e7d32',
-    lineHeight: 18,
-  },
-  actionBox: {
-    backgroundColor: '#f5f5f5',
-    borderRadius: 6,
-    padding: 10,
-    gap: 4,
-  },
-  actionLabel: {
-    fontFamily: 'Inter',
-    fontWeight: '600',
-    fontSize: 9,
-    color: '#9e9e9e',
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    lineHeight: 13.5,
-  },
-  actionText: {
-    fontFamily: 'Inter',
-    fontWeight: '400',
-    fontSize: 12,
-    color: '#424242',
-    lineHeight: 18,
-  },
-  awcRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  awcLabel: {
-    fontFamily: 'Inter',
-    fontWeight: '400',
-    fontSize: 12,
-    color: '#9e9e9e',
-  },
-  awcName: {
-    fontFamily: 'Inter',
-    fontWeight: '500',
-    fontSize: 12,
-    color: '#424242',
-  },
-  // Sector / Anganwadi Dropdown
-  dropdownWrapper: {
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  dropdownCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 8,
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  dropdownTextBlock: {
-    flex: 1,
-  },
-  dropdownLabel: {
-    fontFamily: 'Inter',
-    fontWeight: '600',
-    fontSize: 9,
-    color: '#9e9e9e',
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    lineHeight: 13.5,
-    marginBottom: 2,
-  },
-  dropdownDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#1a237e',
-  },
-  dropdownValue: {
-    fontFamily: 'Inter',
-    fontWeight: '500',
-    fontSize: 14,
-    color: '#212121',
-    lineHeight: 21,
-  },
-  dropdownChevron: {
-    width: 16,
-    height: 16,
-  },
-});
-
-// ─── Sheet Styles ─────────────────────────────────────────────────────────────
-
-const modalStyles = StyleSheet.create({
-  // ── Inline overlay (stays within the 375px phone frame)
-  inlineOverlayWrapper: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    width: '100%',
-  },
-  inlineBackdrop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  inlineDismiss: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  inlineSheet: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    width: '100%',
-    height: 491,
-    backgroundColor: '#ffffff',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    overflow: 'hidden',
-  },
-
-  // ── Handle
-  handleRow: {
-    alignItems: 'center',
-    paddingTop: 10,
-    paddingBottom: 2,
-  },
-  handle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#e0e0e0',
-  },
-
-  // ── Title bar
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 13,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eeeeee',
-  },
-  sheetTitle: {
-    fontFamily: 'Inter',
-    fontWeight: '700',
-    fontSize: 15,
-    color: '#1a237e',
-    lineHeight: 22.5,
-  },
-  closeIcon: { width: 18, height: 18 },
-
-  // ── Sheet body
-  sheetBody: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    gap: 0,
-  },
-
-  // ── Pending total card
-  totalCard: {
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  totalLabel: {
-    fontFamily: 'Inter',
-    fontWeight: '500',
-    fontSize: 11,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    lineHeight: 16.5,
-  },
-  totalValue: {
-    fontFamily: 'Inter',
-    fontWeight: '700',
-    fontSize: 32,
-    lineHeight: 34,
-    marginTop: 2,
-  },
-
-  // ── Resolved total card (row layout)
-  resolvedTotalCard: {
-    backgroundColor: '#e8f5e9',
-    borderRadius: 10,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-
-  // ── Pending breakdown table
-  tableWrapper: {
-    borderWidth: 1,
-    borderColor: '#eeeeee',
-    borderRadius: 10,
-    overflow: 'hidden',
-    marginTop: 16,
-  },
-  tableRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  tableHeaderRow: {
-    backgroundColor: '#f9f9fb',
-    height: 36,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eeeeee',
-  },
-  tableColRole: {
-    width: 110,
-    paddingLeft: 14,
-    justifyContent: 'center',
-    height: 36,
-  },
-  tableColStat: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tableHeaderCell: {
-    fontFamily: 'Inter',
-    fontWeight: '600',
-    fontSize: 10,
-    color: '#9e9e9e',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  },
-  tableRoleText: {
-    fontFamily: 'Inter',
-    fontWeight: '400',
-    fontSize: 14,
-    color: '#424242',
-  },
-  tableStatVal: {
-    fontFamily: 'Inter',
-    fontWeight: '700',
-    fontSize: 20,
-    lineHeight: 30,
-  },
-
-  // ── Pending total card & table (matches Supervisor view for uniformity)
-  pendingTotalCard: { borderRadius: 10, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  pendingTotalLabel: { fontFamily: 'Inter', fontWeight: '700', fontSize: 10, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 2 },
-  pendingTotalValue: { fontFamily: 'Inter', fontWeight: '700', fontSize: 28 },
-  pendingTableWrapper: { marginTop: 16, borderRadius: 10, overflow: 'hidden', borderWidth: 1, borderColor: '#f0f0f0' },
-  pendingTableRow: { flexDirection: 'row', alignItems: 'center' },
-  pendingTableHeaderRow: { height: 40, backgroundColor: '#f5f5f5' },
-  pendingTableColRole: { width: 120, paddingHorizontal: 12 },
-  pendingTableColStat: { flex: 1, alignItems: 'center' },
-  pendingTableHeaderCell: { fontFamily: 'Inter', fontWeight: '700', fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.6, color: '#757575' },
-  pendingTableRoleText: { fontFamily: 'Inter', fontWeight: '400', fontSize: 13, color: '#5c5c5c' },
-  pendingTableStatVal: { fontFamily: 'Inter', fontWeight: '700', fontSize: 18, textAlign: 'center' },
-
-  // ── Help note
-  helpNote: {
-    backgroundColor: '#f5f6fb',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e3e6f5',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginTop: 12,
-  },
-  helpNoteText: {
-    fontFamily: 'Inter',
-    fontSize: 11,
-    lineHeight: 16,
-    color: '#5c6470',
-  },
-  helpNoteHighlight: {
-    fontWeight: '700',
-    color: '#d32f2f',
-  },
-
-  // ── Resolved sub-cards (matches Supervisor view for uniformity)
-  subCard: {
-    width: '47.5%',
-    borderRadius: 10,
-    borderWidth: 1,
-    padding: 12,
-  },
-  subCardLabel: {
-    fontFamily: 'Inter',
-    fontWeight: '700',
-    fontSize: 9,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    marginBottom: 2,
-  },
-  subCardValue: {
-    fontFamily: 'Inter',
-    fontWeight: '700',
-    fontSize: 22,
-    marginBottom: 8,
-  },
-  subCardDivider: {
-    borderTopWidth: 1,
-    paddingTop: 8,
-    gap: 4,
-  },
-  subCardRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  subCardRowLabel: {
-    fontFamily: 'Inter',
-    fontWeight: '400',
-    fontSize: 11,
-    opacity: 0.75,
-  },
-  subCardRowVal: {
-    fontFamily: 'Inter',
-    fontWeight: '700',
-    fontSize: 13,
-  },
-});

@@ -1,25 +1,17 @@
-import React, { useState, useEffect, useRef } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Image,
-  StatusBar,
-  Animated,
-  TextInput,
-} from 'react-native';
-import { ResolvedTicketCard, AssignedFilter } from './BeneficiaryRedressalScreen';
+import React, { useEffect, useState } from 'react';
+import { X, ArrowLeft, FileText, Check } from 'lucide-react';
 
-const imgBackIconWhite = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/arrow-left.svg';
-const imgIcon  = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/reception-4.svg';
-const imgIcon1 = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/wifi.svg';
-const imgIcon2 = 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/battery-full.svg';
+interface TicketDetailsProps {
+  card: any;
+  assignedFilter: 'Supervisor' | 'CDPO' | 'DPO' | 'AWW';
+  onBack: () => void;
+  onResolveTicket?: (ticketId: string, closureNote: string) => void;
+  onCloseTicket?: (ticketId: string, note?: string) => void;
+  onResolveAppeal?: (ticketId: string, notes: string) => void;
+}
 
-// ─── Status config ────────────────────────────────────────────────────────────
-
-const STATUS_CFG = {
+// Status badge config — ported verbatim from the mobile app (my-app/src/screens/TicketDetailsScreen.tsx STATUS_CFG)
+const STATUS_CFG: Record<string, { label: string; color: string; bg: string; border: string; hasIcon: boolean }> = {
   PENDING:         { label: 'PENDING',         color: '#e65100', bg: '#fff3e0', border: '#ffcc80', hasIcon: false },
   OVERDUE:         { label: 'OVERDUE',         color: '#d32f2f', bg: '#ffebee', border: '#ffcdd2', hasIcon: true  },
   CLOSED:          { label: 'CLOSED',          color: '#2e7d32', bg: '#e8f5e9', border: '#a5d6a7', hasIcon: false },
@@ -28,1510 +20,617 @@ const STATUS_CFG = {
   APPEAL_RESOLVED: { label: 'APPEAL RESOLVED', color: '#ffffff', bg: '#4f46e5', border: '#4f46e5', hasIcon: true  },
 };
 
-// ─── Timeline definitions ─────────────────────────────────────────────────────
-
-type TimelineItem = { label: string; date: string; dotColor: string };
-
-const TIMELINE: Record<string, TimelineItem[]> = {
-  CLOSED: [
-    { label: 'Ticket Closed by CDPO',  date: '05 Jul 2025, 10:00 AM', dotColor: '#2e7d32' },
-    { label: 'Ticket Resolved by AWW', date: '02 Jul 2025, 03:00 PM', dotColor: '#2e7d32' },
-    { label: 'Reminder Sent',          date: '30 Jun 2025, 09:00 AM', dotColor: '#f57f17' },
-    { label: 'Assigned to AWW',        date: '23 Jun 2025, 09:00 AM', dotColor: '#1a237e' },
-  ],
-  CLOSURE_PENDING: [
-    { label: 'Closure Pending',        date: '08 Jul 2025, 11:00 AM', dotColor: '#f57f17' },
-    { label: 'Ticket Resolved by AWW', date: '05 Jul 2025, 03:00 PM', dotColor: '#2e7d32' },
-    { label: 'Reminder Sent',          date: '01 Jul 2025, 09:00 AM', dotColor: '#f57f17' },
-    { label: 'Assigned to AWW',        date: '25 Jun 2025, 09:00 AM', dotColor: '#1a237e' },
-  ],
-  APPEAL_RAISED: [
-    { label: 'Appeal Raised by Beneficiary', date: '07 Jul 2025, 02:00 PM', dotColor: '#f57f17' },
-    { label: 'Ticket Closed by CDPO',        date: '05 Jul 2025, 10:00 AM', dotColor: '#2e7d32' },
-    { label: 'Ticket Resolved by AWW',       date: '02 Jul 2025, 03:00 PM', dotColor: '#2e7d32' },
-    { label: 'Reminder Sent',                date: '30 Jun 2025, 09:00 AM', dotColor: '#f57f17' },
-    { label: 'Assigned to AWW',              date: '23 Jun 2025, 09:00 AM', dotColor: '#1a237e' },
-  ],
-  APPEAL_RESOLVED: [
-    { label: 'Appeal Resolved by DPO',       date: '12 Jul 2025, 11:00 AM', dotColor: '#1a237e' },
-    { label: 'Appeal Raised by Beneficiary', date: '07 Jul 2025, 02:00 PM', dotColor: '#f57f17' },
-    { label: 'Ticket Closed by CDPO',        date: '05 Jul 2025, 10:00 AM', dotColor: '#2e7d32' },
-    { label: 'Ticket Resolved by AWW',       date: '02 Jul 2025, 03:00 PM', dotColor: '#2e7d32' },
-    { label: 'Reminder Sent',                date: '30 Jun 2025, 09:00 AM', dotColor: '#f57f17' },
-    { label: 'Assigned to AWW',              date: '23 Jun 2025, 09:00 AM', dotColor: '#1a237e' },
-  ],
-};
-
-const useSheetAnim = (visible: boolean) => {
-  const [mounted, setMounted] = useState(false);
-  const slideAnim = useRef(new Animated.Value(600)).current;
-  const fadeAnim  = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    if (visible) {
-      setMounted(true);
-      Animated.parallel([
-        Animated.timing(fadeAnim,  { toValue: 1, duration: 240, useNativeDriver: true }),
-        Animated.spring(slideAnim, { toValue: 0, tension: 70, friction: 12, useNativeDriver: true }),
-      ]).start();
-    } else {
-      Animated.parallel([
-        Animated.timing(fadeAnim,  { toValue: 0, duration: 200, useNativeDriver: true }),
-        Animated.timing(slideAnim, { toValue: 600, duration: 220, useNativeDriver: true }),
-      ]).start(() => {
-        setMounted(false);
-        slideAnim.setValue(600);
-        fadeAnim.setValue(0);
-      });
-    }
-  }, [visible]);
-
-  return { slideAnim, fadeAnim, mounted };
-};
-
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-const InfoRow = ({ label, value }: { label: string; value: string }) => (
-  <View style={dtStyles.detailsRow}>
-    <Text style={dtStyles.detailsLabel}>{label}</Text>
-    <Text style={dtStyles.detailsValue}>{value}</Text>
-  </View>
-);
-
-const SectionHeader = ({ title }: { title: string }) => (
-  <View style={dtStyles.sectionHeaderContainer}>
-    <Text style={dtStyles.sectionHeaderText}>{title}</Text>
-    <View style={dtStyles.sectionLine} />
-  </View>
-);
-
-const ActionBox = ({ label, text }: { label: string; text: string }) => (
-  <View style={dtStyles.actionBoxContainer}>
-    <Text style={dtStyles.actionLabel}>{label}</Text>
-    <View style={dtStyles.greenBox}>
-      <Text style={dtStyles.greenBoxText}>{text}</Text>
-    </View>
-  </View>
-);
-
-const TimelineRow = ({ item, isLast }: { item: TimelineItem; isLast: boolean }) => (
-  <View style={dtStyles.timelineRow}>
-    <View style={dtStyles.timelineDotCol}>
-      <View style={[dtStyles.timelineDot, { backgroundColor: item.dotColor }]} />
-      {!isLast && <View style={dtStyles.timelineLine} />}
-    </View>
-    <View style={dtStyles.timelineTextCol}>
-      <Text style={dtStyles.timelineLabel}>{item.label}</Text>
-      <Text style={dtStyles.timelineDate}>{item.date}</Text>
-    </View>
-  </View>
-);
-
-// ─── Main screen ──────────────────────────────────────────────────────────────
-
 export default function TicketDetailsScreen({
   card,
   assignedFilter,
   onBack,
   onResolveTicket,
-  resolveLabel = 'Resolve and Close',
-  hideResolveCTA = false,
-  isCdpoView = false,
-  isAppealTicket = false,
+  onCloseTicket,
   onResolveAppeal,
-  onSimulateAppeal,
-}: {
-  card: any;
-  assignedFilter: AssignedFilter;
-  onBack: () => void;
-  onResolveTicket?: (ticketId: string, closureNote: string) => void;
-  resolveLabel?: string;
-  hideResolveCTA?: boolean;
-  isCdpoView?: boolean;
-  isAppealTicket?: boolean;
-  onResolveAppeal?: (ticketId: string, notes: string) => void;
-  onSimulateAppeal?: (ticketId: string) => void;
-}) {
+}: TicketDetailsProps) {
+  // Local copy of the ticket that gets patched in place on resolve/close, so
+  // the drawer can flip straight to the updated details behind the success
+  // screen — mirroring the mobile app's `currentCard` pattern.
   const [currentCard, setCurrentCard] = useState(card);
+  useEffect(() => setCurrentCard(card), [card]);
+
+  const [actionNote, setActionNote] = useState('');
   const [actionModalVisible, setActionModalVisible] = useState(false);
-  const [closureNote, setClosureNote] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
-
-  // Appeal resolution state
-  const [appealModalVisible, setAppealModalVisible] = useState(false);
-  const [appealDecision, setAppealDecision] = useState<'uphold' | 'dismiss' | null>(null);
-  const [appealNotes, setAppealNotes] = useState('');
-  const [appealConfirmed, setAppealConfirmed] = useState(false);
   const [showAppealSuccess, setShowAppealSuccess] = useState(false);
-  const [showAppealFiledSuccess, setShowAppealFiledSuccess] = useState(false);
+  const [successInfo, setSuccessInfo] = useState<{ title: string; description: string; viewLabel: string } | null>(null);
 
-  useEffect(() => {
-    setCurrentCard(card);
-  }, [card]);
-
-  const isPending = currentCard.isPendingTicket;
+  const isPending = !currentCard.resolvedDate && currentCard.status !== 'CLOSED' && currentCard.status !== 'APPEAL_RESOLVED' && currentCard.status !== 'CLOSURE_PENDING';
+  const isClosurePending = currentCard.status === 'CLOSURE_PENDING';
+  const isAppeal = currentCard.status === 'APPEAL_RAISED' || currentCard._isAppeal;
+  const hasAppealReason = isAppeal || currentCard.status === 'APPEAL_RESOLVED';
   const isOverdue = isPending && (currentCard.isOverdue || currentCard.daysType === 'overdue');
-  const statusKey = isOverdue ? 'OVERDUE' : ((isPending ? 'PENDING' : currentCard.status) as keyof typeof STATUS_CFG);
-  const cfg = STATUS_CFG[statusKey] ?? STATUS_CFG.CLOSED;
 
-  // Construct timeline items dynamically for ALL tickets
-  let timelineItems: TimelineItem[] = [];
-  const assignedRole = currentCard.assignedTo || 'AWW';
-  const dateSubmitted = (currentCard.submittedDate || currentCard._appealTicket?.submittedDate)
-    ? (currentCard.submittedDate || currentCard._appealTicket.submittedDate).replace('Submitted: ', '') 
-    : '25/06/2025';
-  
-  // Parse date parts
-  const subDateParts = dateSubmitted.split('/');
-  let subDay = 25, subMonth = 6, subYear = 2025;
-  if (subDateParts.length === 3) {
-    subDay = parseInt(subDateParts[0], 10);
-    subMonth = parseInt(subDateParts[1], 10);
-    subYear = parseInt(subDateParts[2], 10);
-  }
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const monthName = months[subMonth - 1] || 'Jun';
-  
-  // Base Assignment
-  timelineItems.push({
-    label: `Assigned to ${assignedRole}`,
-    date: `${subDay < 10 ? '0' + subDay : subDay} ${monthName} ${subYear}, 09:00 AM`,
-    dotColor: '#1a237e'
-  });
+  const statusKey = isOverdue ? 'OVERDUE' : (isPending ? 'PENDING' : currentCard.status);
+  const statusCfg = STATUS_CFG[statusKey] ?? STATUS_CFG.CLOSED;
 
-  // Calculate age at the time of resolution/current date
-  const submissionDate = new Date(subYear, subMonth - 1, subDay);
-  const currentDate = new Date(2025, 5, 30); // 30/06/2025
-  const diffTime = currentDate.getTime() - submissionDate.getTime();
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  // Timeline construction — ported verbatim from the mobile app
+  // (my-app/src/screens/TicketDetailsScreen.tsx). Same events, per-event dot
+  // colours, labels and date math so the web drawer matches the app exactly.
+  type TimelineItem = { label: string; date: string; dotColor: string };
 
-  // Reminder Sent (after 7 days)
-  if (diffDays >= 7) {
-    const reminderDayVal = new Date(subYear, subMonth - 1, subDay + 7);
-    const reminderDay = reminderDayVal.getDate();
-    const reminderMonth = months[reminderDayVal.getMonth()];
-    const reminderYear = reminderDayVal.getFullYear();
-    timelineItems.push({
-      label: `Reminder Sent to ${assignedRole}`,
-      date: `${reminderDay < 10 ? '0' + reminderDay : reminderDay} ${reminderMonth} ${reminderYear}, 10:30 AM`,
-      dotColor: '#f57f17'
-    });
-  }
+  const buildTimelineItems = (): TimelineItem[] => {
+    const items: TimelineItem[] = [];
+    const assignedRole = currentCard.assignedTo || 'AWW';
+    const dateSubmitted = (currentCard.submittedDate || currentCard._appealTicket?.submittedDate)
+      ? (currentCard.submittedDate || currentCard._appealTicket.submittedDate).replace('Submitted: ', '')
+      : '25/06/2025';
 
-  // DPO Escalation (after 14 days)
-  if (diffDays >= 14) {
-    const escalationDayVal = new Date(subYear, subMonth - 1, subDay + 14);
-    const escalationDay = escalationDayVal.getDate();
-    const escalationMonth = months[escalationDayVal.getMonth()];
-    const escalationYear = escalationDayVal.getFullYear();
-    timelineItems.push({
-      label: 'Ticket Escalated to DPO (View Only)',
-      date: `${escalationDay < 10 ? '0' + escalationDay : escalationDay} ${escalationMonth} ${escalationYear}, 02:00 PM`,
-      dotColor: '#e65100'
-    });
-  }
+    // Parse submitted date (dd/mm/yyyy)
+    const subDateParts = dateSubmitted.split('/');
+    let subDay = 25, subMonth = 6, subYear = 2025;
+    if (subDateParts.length === 3) {
+      subDay = parseInt(subDateParts[0], 10);
+      subMonth = parseInt(subDateParts[1], 10);
+      subYear = parseInt(subDateParts[2], 10);
+    }
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthName = months[subMonth - 1] || 'Jun';
+    const pad = (n: number) => (n < 10 ? '0' + n : '' + n);
 
-  // Ticket Overdue (after 21 days)
-  if (diffDays >= 21) {
-    const overdueDayVal = new Date(subYear, subMonth - 1, subDay + 21);
-    const overdueDay = overdueDayVal.getDate();
-    const overdueMonth = months[overdueDayVal.getMonth()];
-    const overdueYear = overdueDayVal.getFullYear();
-    timelineItems.push({
-      label: 'Ticket Overdue',
-      date: `${overdueDay < 10 ? '0' + overdueDay : overdueDay} ${overdueMonth} ${overdueYear}, 05:00 PM`,
-      dotColor: '#d32f2f'
+    // Base assignment
+    items.push({
+      label: `Assigned to ${assignedRole}`,
+      date: `${pad(subDay)} ${monthName} ${subYear}, 09:00 AM`,
+      dotColor: '#1a237e',
     });
 
-    const isEscalatedFromOther = currentCard.ticketNumber.includes('CDPO') || currentCard.ticketNumber.includes('SUP') || currentCard.ticketNumber.includes('AWW') || (assignedRole !== 'DPO');
-    if (isEscalatedFromOther) {
-      timelineItems.push({
-        label: 'Reassigned to DPO (Overdue Escalation)',
-        date: `${overdueDay < 10 ? '0' + overdueDay : overdueDay} ${overdueMonth} ${overdueYear}, 05:01 PM`,
-        dotColor: '#1a237e'
+    // Age relative to the app's fixed "today" (30/06/2025)
+    const submissionDate = new Date(subYear, subMonth - 1, subDay);
+    const currentDate = new Date(2025, 5, 30);
+    const diffDays = Math.floor((currentDate.getTime() - submissionDate.getTime()) / (1000 * 60 * 60 * 24));
+
+    // Reminder Sent (after 7 days)
+    if (diffDays >= 7) {
+      const d = new Date(subYear, subMonth - 1, subDay + 7);
+      items.push({
+        label: `Reminder Sent to ${assignedRole}`,
+        date: `${pad(d.getDate())} ${months[d.getMonth()]} ${d.getFullYear()}, 10:30 AM`,
+        dotColor: '#f57f17',
       });
     }
-  }
 
-  // Add resolution & closure steps if not pending
-  if (!isPending) {
-    const resolvedDayVal = new Date(subYear, subMonth - 1, subDay + Math.min(diffDays, 9));
-    const resDay = resolvedDayVal.getDate();
-    const resMonth = months[resolvedDayVal.getMonth()];
-    const resYear = resolvedDayVal.getFullYear();
-
-    const closedDayVal = new Date(subYear, subMonth - 1, subDay + Math.min(diffDays, 12));
-    const clsDay = closedDayVal.getDate();
-    const clsMonth = months[closedDayVal.getMonth()];
-    const clsYear = closedDayVal.getFullYear();
-
-    const appealDayVal = new Date(subYear, subMonth - 1, subDay + Math.min(diffDays, 14));
-    const appDay = appealDayVal.getDate();
-    const appMonth = months[appealDayVal.getMonth()];
-    const appYear = appealDayVal.getFullYear();
-
-    if (currentCard.status === 'CLOSURE_PENDING') {
-      timelineItems.push({
-        label: `Ticket Resolved by ${assignedRole}`,
-        date: `${resDay < 10 ? '0' + resDay : resDay} ${resMonth} ${resYear}, 03:00 PM`,
-        dotColor: '#2e7d32'
+    // DPO Escalation (after 14 days)
+    if (diffDays >= 14) {
+      const d = new Date(subYear, subMonth - 1, subDay + 14);
+      items.push({
+        label: 'Ticket Escalated to DPO (View Only)',
+        date: `${pad(d.getDate())} ${months[d.getMonth()]} ${d.getFullYear()}, 02:00 PM`,
+        dotColor: '#e65100',
       });
-    } else if (currentCard.status === 'CLOSED') {
-      if (assignedRole === 'DPO') {
-        const isOverdueEscalation = currentCard.ticketNumber.includes('CDPO') || currentCard.ticketNumber.includes('SUP') || currentCard.ticketNumber.includes('AWW');
-        if (isOverdueEscalation) {
-          timelineItems.push({
-            label: 'Ticket Resolved & Closed by DPO (Overdue Escalation)',
-            date: `${clsDay < 10 ? '0' + clsDay : clsDay} ${clsMonth} ${clsYear}, 10:00 AM`,
-            dotColor: '#2e7d32'
+    }
+
+    // Ticket Overdue (after 21 days)
+    if (diffDays >= 21) {
+      const d = new Date(subYear, subMonth - 1, subDay + 21);
+      const od = pad(d.getDate()), om = months[d.getMonth()], oy = d.getFullYear();
+      items.push({ label: 'Ticket Overdue', date: `${od} ${om} ${oy}, 05:00 PM`, dotColor: '#d32f2f' });
+
+      const isEscalatedFromOther = currentCard.ticketNumber.includes('CDPO') || currentCard.ticketNumber.includes('SUP') || currentCard.ticketNumber.includes('AWW') || (assignedRole !== 'DPO');
+      if (isEscalatedFromOther) {
+        items.push({
+          label: 'Reassigned to DPO (Overdue Escalation)',
+          date: `${od} ${om} ${oy}, 05:01 PM`,
+          dotColor: '#1a237e',
+        });
+      }
+    }
+
+    // Resolution & closure steps once the ticket is no longer pending
+    if (!isPending) {
+      const resolvedDayVal = new Date(subYear, subMonth - 1, subDay + Math.min(diffDays, 9));
+      const resDay = pad(resolvedDayVal.getDate()), resMonth = months[resolvedDayVal.getMonth()], resYear = resolvedDayVal.getFullYear();
+
+      const closedDayVal = new Date(subYear, subMonth - 1, subDay + Math.min(diffDays, 12));
+      const clsDay = pad(closedDayVal.getDate()), clsMonth = months[closedDayVal.getMonth()], clsYear = closedDayVal.getFullYear();
+
+      const appealDayVal = new Date(subYear, subMonth - 1, subDay + Math.min(diffDays, 14));
+      const appDay = appealDayVal.getDate(), appMonth = months[appealDayVal.getMonth()], appYear = appealDayVal.getFullYear();
+
+      if (currentCard.status === 'CLOSURE_PENDING') {
+        items.push({ label: `Ticket Resolved by ${assignedRole}`, date: `${resDay} ${resMonth} ${resYear}, 03:00 PM`, dotColor: '#2e7d32' });
+      } else if (currentCard.status === 'CLOSED') {
+        if (assignedRole === 'DPO') {
+          const isOverdueEscalation = currentCard.ticketNumber.includes('CDPO') || currentCard.ticketNumber.includes('SUP') || currentCard.ticketNumber.includes('AWW');
+          items.push({
+            label: isOverdueEscalation ? 'Ticket Resolved & Closed by DPO (Overdue Escalation)' : 'Ticket Resolved & Closed by DPO',
+            date: `${clsDay} ${clsMonth} ${clsYear}, 10:00 AM`,
+            dotColor: '#2e7d32',
           });
+        } else if (assignedRole === 'CDPO') {
+          items.push({ label: 'Ticket Resolved & Closed by CDPO', date: `${clsDay} ${clsMonth} ${clsYear}, 10:00 AM`, dotColor: '#2e7d32' });
         } else {
-          timelineItems.push({
-            label: 'Ticket Resolved & Closed by DPO',
-            date: `${clsDay < 10 ? '0' + clsDay : clsDay} ${clsMonth} ${clsYear}, 10:00 AM`,
-            dotColor: '#2e7d32'
-          });
+          items.push({ label: `Ticket Resolved by ${assignedRole}`, date: `${resDay} ${resMonth} ${resYear}, 03:00 PM`, dotColor: '#2e7d32' });
+          items.push({ label: 'Ticket Closed by CDPO', date: `${clsDay} ${clsMonth} ${clsYear}, 10:00 AM`, dotColor: '#2e7d32' });
         }
-      } else if (assignedRole === 'CDPO') {
-        timelineItems.push({
-          label: 'Ticket Resolved & Closed by CDPO',
-          date: `${clsDay < 10 ? '0' + clsDay : clsDay} ${clsMonth} ${clsYear}, 10:00 AM`,
-          dotColor: '#2e7d32'
-        });
-      } else {
-        timelineItems.push({
-          label: `Ticket Resolved by ${assignedRole}`,
-          date: `${resDay < 10 ? '0' + resDay : resDay} ${resMonth} ${resYear}, 03:00 PM`,
-          dotColor: '#2e7d32'
-        });
-        timelineItems.push({
-          label: 'Ticket Closed by CDPO',
-          date: `${clsDay < 10 ? '0' + clsDay : clsDay} ${clsMonth} ${clsYear}, 10:00 AM`,
-          dotColor: '#2e7d32'
-        });
-      }
-    } else if (currentCard.status === 'APPEAL_RAISED') {
-      if (assignedRole === 'CDPO') {
-        timelineItems.push({
-          label: 'Ticket Resolved & Closed by CDPO',
-          date: `${clsDay < 10 ? '0' + clsDay : clsDay} ${clsMonth} ${clsYear}, 10:00 AM`,
-          dotColor: '#2e7d32'
-        });
-      } else {
-        timelineItems.push({
-          label: `Ticket Resolved by ${assignedRole}`,
-          date: `${resDay < 10 ? '0' + resDay : resDay} ${resMonth} ${resYear}, 03:00 PM`,
-          dotColor: '#2e7d32'
-        });
-        timelineItems.push({
-          label: 'Ticket Closed by CDPO',
-          date: `${clsDay < 10 ? '0' + clsDay : clsDay} ${clsMonth} ${clsYear}, 10:00 AM`,
-          dotColor: '#2e7d32'
+      } else if (currentCard.status === 'APPEAL_RAISED') {
+        if (assignedRole === 'CDPO') {
+          items.push({ label: 'Ticket Resolved & Closed by CDPO', date: `${clsDay} ${clsMonth} ${clsYear}, 10:00 AM`, dotColor: '#2e7d32' });
+        } else {
+          items.push({ label: `Ticket Resolved by ${assignedRole}`, date: `${resDay} ${resMonth} ${resYear}, 03:00 PM`, dotColor: '#2e7d32' });
+          items.push({ label: 'Ticket Closed by CDPO', date: `${clsDay} ${clsMonth} ${clsYear}, 10:00 AM`, dotColor: '#2e7d32' });
+        }
+        items.push({ label: 'Appeal Raised by Beneficiary', date: `${pad(appDay)} ${appMonth} ${appYear}, 02:00 PM`, dotColor: '#f57f17' });
+      } else if (currentCard.status === 'APPEAL_RESOLVED') {
+        if (assignedRole === 'CDPO') {
+          items.push({ label: 'Ticket Resolved & Closed by CDPO', date: `${clsDay} ${clsMonth} ${clsYear}, 10:00 AM`, dotColor: '#2e7d32' });
+        } else {
+          items.push({ label: `Ticket Resolved by ${assignedRole}`, date: `${resDay} ${resMonth} ${resYear}, 03:00 PM`, dotColor: '#2e7d32' });
+          items.push({ label: 'Ticket Closed by CDPO', date: `${clsDay} ${clsMonth} ${clsYear}, 10:00 AM`, dotColor: '#2e7d32' });
+        }
+        items.push({ label: 'Appeal Raised by Beneficiary', date: `${pad(appDay)} ${appMonth} ${appYear}, 02:00 PM`, dotColor: '#f57f17' });
+        items.push({
+          label: 'Appeal Resolved by DPO',
+          date: `${appDay < 10 ? '0' + (appDay + 5) : (appDay + 5)} ${appMonth} ${appYear}, 11:00 AM`,
+          dotColor: '#1a237e',
         });
       }
-      timelineItems.push({
-        label: 'Appeal Raised by Beneficiary',
-        date: `${appDay < 10 ? '0' + appDay : appDay} ${appMonth} ${appYear}, 02:00 PM`,
-        dotColor: '#f57f17'
-      });
-    } else if (currentCard.status === 'APPEAL_RESOLVED') {
-      if (assignedRole === 'CDPO') {
-        timelineItems.push({
-          label: 'Ticket Resolved & Closed by CDPO',
-          date: `${clsDay < 10 ? '0' + clsDay : clsDay} ${clsMonth} ${clsYear}, 10:00 AM`,
-          dotColor: '#2e7d32'
-        });
-      } else {
-        timelineItems.push({
-          label: `Ticket Resolved by ${assignedRole}`,
-          date: `${resDay < 10 ? '0' + resDay : resDay} ${resMonth} ${resYear}, 03:00 PM`,
-          dotColor: '#2e7d32'
-        });
-        timelineItems.push({
-          label: 'Ticket Closed by CDPO',
-          date: `${clsDay < 10 ? '0' + clsDay : clsDay} ${clsMonth} ${clsYear}, 10:00 AM`,
-          dotColor: '#2e7d32'
-        });
-      }
-      timelineItems.push({
-        label: 'Appeal Raised by Beneficiary',
-        date: `${appDay < 10 ? '0' + appDay : appDay} ${appMonth} ${appYear}, 02:00 PM`,
-        dotColor: '#f57f17'
-      });
-      timelineItems.push({
-        label: 'Appeal Resolved by DPO',
-        date: `${appDay < 10 ? '0' + (appDay + 5) : (appDay + 5)} ${appMonth} ${appYear}, 11:00 AM`,
-        dotColor: '#1a237e'
-      });
     }
+
+    // Latest first
+    items.reverse();
+    return items;
+  };
+
+  const timelineItems = buildTimelineItems();
+
+  // Modal copy — mirrors the mobile app's ActionTakenModal / AppealResolutionSheet titles, placeholders and button text.
+  const modalTitle = isAppeal
+    ? 'Resolve Appeal'
+    : isClosurePending
+      ? 'Close Ticket'
+      : (assignedFilter === 'CDPO' || assignedFilter === 'DPO')
+        ? 'Resolve & Close Ticket'
+        : 'Resolve Ticket';
+
+  const modalPlaceholder = isAppeal
+    ? 'Describe the action taken to resolve this appeal...'
+    : (isClosurePending || assignedFilter === 'CDPO' || assignedFilter === 'DPO')
+      ? 'Describe the action taken and reason for closure...'
+      : 'Describe the action taken to resolve this ticket...';
+
+  const modalSubmitLabel = isAppeal
+    ? 'Submit Resolution'
+    : isClosurePending
+      ? 'Close Ticket'
+      : (assignedFilter === 'CDPO' || assignedFilter === 'DPO')
+        ? 'Resolve & Close Ticket'
+        : 'Submit Resolution';
+
+  const closeActionModal = () => {
+    setActionModalVisible(false);
+    setActionNote('');
+  };
+
+  const handleActionSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (assignedFilter === 'Supervisor' && onResolveTicket) {
+      onResolveTicket(currentCard.id, actionNote);
+      setCurrentCard((prev: any) => ({ ...prev, status: 'CLOSURE_PENDING', actionTaken: actionNote, resolvedDate: prev.resolvedDate || 'Resolved: 30/06/2025' }));
+      setSuccessInfo({
+        title: 'Ticket Resolved!',
+        description: 'The ticket has been marked as resolved and is now waiting for CDPO closure.',
+        viewLabel: 'View Resolved Ticket',
+      });
+      setActionModalVisible(false);
+      setShowSuccess(true);
+    } else if (assignedFilter === 'CDPO') {
+      if (isClosurePending && onCloseTicket) {
+        onCloseTicket(currentCard.id, actionNote);
+        setCurrentCard((prev: any) => ({ ...prev, status: 'CLOSED' }));
+        setSuccessInfo({
+          title: 'Ticket Closed!',
+          description: `Ticket ${currentCard.ticketNumber} has been marked as closed by CDPO.`,
+          viewLabel: 'View Closed Ticket',
+        });
+        setActionModalVisible(false);
+        setShowSuccess(true);
+      } else if (onResolveTicket) {
+        onResolveTicket(currentCard.id, actionNote);
+        setCurrentCard((prev: any) => ({ ...prev, status: 'CLOSED', actionTaken: actionNote, resolvedDate: prev.resolvedDate || 'Resolved: 30/06/2025' }));
+        setSuccessInfo({
+          title: 'Ticket Closed!',
+          description: `Ticket ${currentCard.ticketNumber} has been marked as closed.`,
+          viewLabel: 'View Closed Ticket',
+        });
+        setActionModalVisible(false);
+        setShowSuccess(true);
+      }
+    } else if (assignedFilter === 'DPO') {
+      if (isAppeal && onResolveAppeal) {
+        onResolveAppeal(currentCard.id, actionNote);
+        setCurrentCard((prev: any) => ({ ...prev, status: 'APPEAL_RESOLVED', dpoActionTaken: actionNote }));
+        setActionModalVisible(false);
+        setShowAppealSuccess(true);
+      } else if (onResolveTicket) {
+        onResolveTicket(currentCard.id, actionNote);
+        setCurrentCard((prev: any) => ({ ...prev, status: 'CLOSED', actionTaken: actionNote, resolvedDate: prev.resolvedDate || 'Resolved: 30/06/2025' }));
+        setSuccessInfo({
+          title: 'Ticket Closed!',
+          description: `Ticket ${currentCard.ticketNumber} has been marked as closed.`,
+          viewLabel: 'View Closed Ticket',
+        });
+        setActionModalVisible(false);
+        setShowSuccess(true);
+      }
+    }
+  };
+
+  const isFormValid = actionNote.trim().length > 0;
+
+  // ─── Success screens fill the entire drawer, header included — matching the mobile app's full-screen SuccessScreen/AppealSuccessScreen ───
+  if (showSuccess && successInfo) {
+    return (
+      <div className="drawer-backdrop" onClick={onBack}>
+        <div className="drawer-content" onClick={(e) => e.stopPropagation()} style={{ height: '100%', width: '520px', background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '4px', maxWidth: '360px' }}>
+            <div style={{ width: '72px', height: '72px', borderRadius: '50%', background: '#1a237e', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', boxShadow: '0 4px 8px rgba(26,35,126,0.2)' }}>
+              <Check size={30} color="#ffffff" strokeWidth={3} />
+            </div>
+            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 700, color: '#181818', margin: 0 }}>{successInfo.title}</h3>
+            <p style={{ color: '#757575', fontSize: '13px', lineHeight: '1.5', marginTop: '10px' }}>{successInfo.description}</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', marginTop: '28px' }}>
+              <button
+                className="ux4g-btn ux4g-btn-primary ux4g-btn-md"
+                onClick={onBack}
+                style={{ width: '100%', height: '48px', background: '#1a237e', border: 'none' }}
+              >
+                Back to Ticket List
+              </button>
+              <button
+                className="ux4g-btn ux4g-btn-outline-neutral ux4g-btn-md"
+                onClick={() => setShowSuccess(false)}
+                style={{ width: '100%', height: '48px', border: '1px solid #1a237e', color: '#1a237e' }}
+              >
+                {successInfo.viewLabel}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
-  // Reverse so latest is first
-  timelineItems.reverse();
-
-  const showDpoSection = !isPending && (currentCard.status === 'APPEAL_RAISED' || currentCard.status === 'APPEAL_RESOLVED');
-  const showCloseButton =
-    !isPending &&
-    currentCard.status === 'CLOSURE_PENDING' &&
-    (isCdpoView || assignedFilter === 'CDPO');
-
-  const ticketId = currentCard.ticketNumber.replace('Ticket# ', '#').replace(' ', '');
-
-  const beneficiaryRows: Array<{ label: string; value: string }> = [
-    { label: 'Name',     value: currentCard.beneficiaryName },
-    { label: 'Mobile',   value: currentCard.beneficiaryMobile ?? '98765 00123' },
-    { label: 'Category', value: currentCard.beneficiaryType },
-    ...(currentCard.beneficiaryEmail ? [{ label: 'Email', value: currentCard.beneficiaryEmail }] : []),
-    { label: 'AWC',      value: currentCard.awcCode ?? currentCard.awcName },
-    { label: 'District', value: currentCard.district ?? 'Jaipur' },
-    { label: 'Project',  value: currentCard.project ?? 'Sanganer' },
-    { label: 'Sector',   value: currentCard.sector ?? 'Sector 1' },
-  ];
-
-  const isResolved = !isPending && (currentCard.status === 'CLOSED' || currentCard.status === 'APPEAL_RESOLVED');
-  const showSimulateAppealBtn = isResolved && !isAppealTicket && !!onSimulateAppeal && currentCard.status === 'CLOSED';
-  const hasBottomCTA = (isPending && !hideResolveCTA) || showCloseButton || isAppealTicket || showSimulateAppealBtn;
+  if (showAppealSuccess) {
+    return (
+      <div className="drawer-backdrop" onClick={onBack}>
+        <div className="drawer-content" onClick={(e) => e.stopPropagation()} style={{ height: '100%', width: '520px', background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '4px', maxWidth: '360px' }}>
+            <div style={{ width: '72px', height: '72px', borderRadius: '50%', background: '#2e7d32', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', boxShadow: '0 4px 8px rgba(46,125,50,0.2)' }}>
+              <Check size={30} color="#ffffff" strokeWidth={3} />
+            </div>
+            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 700, color: '#181818', margin: 0 }}>Appeal Resolved!</h3>
+            <p style={{ color: '#757575', fontSize: '13px', lineHeight: '1.5', marginTop: '10px' }}>Appeal for {currentCard.ticketNumber} has been resolved successfully.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', marginTop: '28px' }}>
+              <button
+                className="ux4g-btn ux4g-btn-primary ux4g-btn-md"
+                onClick={onBack}
+                style={{ width: '100%', height: '48px', background: '#1a237e', border: 'none' }}
+              >
+                Back to Ticket List
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <View style={dtStyles.root}>
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
-
-      {/* Status bar */}
-      <View style={dtStyles.statusBar}>
-        <Text style={dtStyles.statusTime}>9:41</Text>
-        <View style={dtStyles.statusIcons}>
-          <Image source={{ uri: imgIcon }}  style={dtStyles.statusIcon16} />
-          <Image source={{ uri: imgIcon1 }} style={dtStyles.statusIcon14} />
-          <Image source={{ uri: imgIcon2 }} style={dtStyles.statusIcon20} />
-        </View>
-      </View>
-
-      {/* Header */}
-      <View style={dtStyles.header}>
-        <TouchableOpacity style={dtStyles.backBtn} onPress={onBack} activeOpacity={0.7}>
-          <Image source={{ uri: imgBackIconWhite }} style={dtStyles.backIcon} />
-        </TouchableOpacity>
-        <Text style={dtStyles.headerTitle}>Ticket Details</Text>
-        <View style={dtStyles.headerSpacer} />
-      </View>
-
-      {/* Content */}
-      <ScrollView
-        style={dtStyles.scroll}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={[
-          dtStyles.scrollContent,
-          hasBottomCTA && { paddingBottom: 100 }
-        ]}
+    <div className="drawer-backdrop" onClick={onBack}>
+      <div
+        className="drawer-content"
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          height: '100%',
+          width: '520px',
+          background: '#ffffff',
+          position: 'relative'
+        }}
       >
-        {/* Ticket # + Status badge */}
-        <View style={dtStyles.ticketTopRow}>
-          <View>
-            <Text style={dtStyles.ticketId}>Ticket {ticketId}</Text>
-          </View>
-          <View style={[dtStyles.statusBadge, { backgroundColor: cfg.bg, borderColor: cfg.border }]}>
-            <Text style={[dtStyles.statusBadgeText, { color: cfg.color }]}>{cfg.label}</Text>
-            {cfg.hasIcon && <Text style={[dtStyles.statusBadgeIcon, { color: cfg.color }]}> ⓘ</Text>}
-          </View>
-        </View>
+        {/* Top Header Row */}
+        <div style={{ background: '#0b3a60', color: '#ffffff', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button onClick={onBack} style={{ color: '#ffffff', display: 'flex', alignItems: 'center' }} title="Go back">
+            <ArrowLeft size={20} />
+          </button>
+          <span style={{ fontSize: '18px', fontWeight: 700, fontFamily: 'var(--font-display)' }}>Ticket Details</span>
+          <button
+            onClick={onBack}
+            style={{ marginLeft: 'auto', color: 'rgba(255,255,255,0.7)', background: 'rgba(255,255,255,0.1)', width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifySelf: 'center', justifyContent: 'center' }}
+            title="Close drawer"
+          >
+            <X size={14} />
+          </button>
+        </div>
 
-        {/* Help Topic / Sub Topic / Description */}
-        <View style={dtStyles.sectionList}>
-          <InfoRow label="Help Topic" value={currentCard.helpTopic ?? currentCard.topic} />
-          <InfoRow label="Sub Topic" value={currentCard.subTopic ?? currentCard.topic} />
-          
-          {currentCard.description && (
-            <View style={dtStyles.descContainer}>
-              <Text style={dtStyles.descLabel}>Description</Text>
-              <Text style={dtStyles.descText}>
-                {currentCard.description.length > 250
-                  ? currentCard.description.substring(0, 247) + '...'
-                  : currentCard.description}
-              </Text>
-            </View>
-          )}
-        </View>
+        {/* Scrollable Body Content */}
+        <div className="drawer-body" style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* Ticket Title & Status Badge */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#0b3a60', fontFamily: 'var(--font-display)' }}>
+              {currentCard.ticketNumber || 'Ticket #787868898972'}
+            </h2>
+            <span style={{ background: statusCfg.bg, color: statusCfg.color, fontSize: '11px', fontWeight: 700, padding: '3px 10px', borderRadius: '100px', border: `1px solid ${statusCfg.border}`, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+              {statusCfg.label}{statusCfg.hasIcon ? ' ⓘ' : ''}
+            </span>
+          </div>
 
-        {/* Beneficiary Information */}
-        <SectionHeader title="Beneficiary Information" />
-        <View style={dtStyles.sectionList}>
-          {beneficiaryRows.map((row) => (
-            <InfoRow
-              key={row.label}
-              label={row.label}
-              value={row.value}
-            />
-          ))}
-        </View>
+          {/* Help & Sub Topics */}
+          <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '8px 16px', fontSize: '14px' }}>
+            <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>Help Topic</span>
+            <span style={{ fontWeight: 600, color: 'var(--text-dark)' }}>{currentCard.helpTopic || currentCard.topic || 'Supplementary Nutrition'}</span>
 
-        {/* Supporting Documents (if documentsCount > 0 or documents is present, and only for Corruption/Urgent) */}
-        {(currentCard.complaintType === 'Corruption' || currentCard.complaintType === 'Urgent') && (currentCard.documentsCount > 0 || currentCard.documents) && (
-          <>
-            <SectionHeader title="Supporting Documents" />
-            <View style={dtStyles.docsSection}>
-              <View style={dtStyles.docItem}>
-                <Image source={{ uri: 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/file-earmark-pdf-fill.svg' }} style={dtStyles.docIcon} />
-                <View style={dtStyles.docInfo}>
-                  <Text style={dtStyles.docName}>
+            <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>Sub Topic</span>
+            <span style={{ fontWeight: 600, color: 'var(--text-dark)' }}>{currentCard.subTopic || 'Take Home Ration'}</span>
+          </div>
+
+          {/* Boxed Description Layout */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Description</span>
+            <div style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '14px 16px', fontSize: '14px', color: '#1e293b', whiteSpace: 'pre-line', lineHeight: '1.4' }}>
+              {currentCard.description || currentCard.originalDescription || 'No description provided.'}
+            </div>
+          </div>
+
+          {/* BENEFICIARY INFORMATION */}
+          <div>
+            <h3 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-dark)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid #cbd5e1', paddingBottom: '8px', marginBottom: '12px' }}>
+              Beneficiary Information
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Name</span>
+                <span style={{ fontWeight: 600, color: 'var(--text-dark)' }}>{currentCard.beneficiaryName || currentCard.byName || 'Kamla Devi'}</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Mobile</span>
+                <span style={{ fontWeight: 600, color: 'var(--text-dark)' }}>{currentCard.beneficiaryMobile || '98765 00412'}</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Category</span>
+                <span style={{ fontWeight: 600, color: 'var(--text-dark)' }}>{currentCard.beneficiaryType || 'Lactating Mother'}</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr' }}>
+                <span style={{ color: 'var(--text-muted)' }}>AWC</span>
+                <span style={{ fontWeight: 600, color: 'var(--text-dark)' }}>{currentCard.awcCode || currentCard.awcName || 'AWC-103'}</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr' }}>
+                <span style={{ color: 'var(--text-muted)' }}>District</span>
+                <span style={{ fontWeight: 600, color: 'var(--text-dark)' }}>{currentCard.district || 'Jaipur'}</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Project</span>
+                <span style={{ fontWeight: 600, color: 'var(--text-dark)' }}>{currentCard.project || 'Sanganer'}</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Sector</span>
+                <span style={{ fontWeight: 600, color: 'var(--text-dark)' }}>{currentCard.sector || 'Sector 3'}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* SUPPORTING DOCUMENTS */}
+          {(currentCard.complaintType === 'Corruption' || currentCard.complaintType === 'Urgent') && ((currentCard.documentsCount ?? 0) > 0 || currentCard.documents) && (
+            <div>
+              <h3 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-dark)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid #cbd5e1', paddingBottom: '8px', marginBottom: '12px' }}>
+                Supporting Documents
+              </h3>
+              <div style={{ background: '#f5f6ff', border: '1px solid #c5cae9', borderRadius: '8px', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#e8eaf6', borderRadius: '50%', width: '40px', height: '40px', flexShrink: 0 }}>
+                  <FileText size={20} style={{ color: '#1a237e' }} />
+                </div>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                  <span style={{ fontSize: '14px', fontWeight: 600, color: '#1a237e' }}>
                     {currentCard.id === '1' ? 'pmmvy_enrollment_form.pdf' :
                      currentCard.id === '2' ? 'thr_ration_card_copy.pdf' :
                      currentCard.id === '3' ? 'aadhaar_card_scan.pdf' :
                      currentCard.id === '4' ? 'ksy_training_registration.pdf' :
                      currentCard.id === '5' ? 'growth_monitoring_report.pdf' : 'supporting_document.pdf'}
-                  </Text>
-                  <Text style={dtStyles.docSize}>2.4 MB</Text>
-                </View>
-                <TouchableOpacity style={dtStyles.viewDocBtn} activeOpacity={0.7}>
-                  <Text style={dtStyles.viewDocBtnText}>View</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </>
-        )}
+                  </span>
+                  <span style={{ fontSize: '12px', color: '#757575' }}>2.4 MB</span>
+                </div>
+                <button
+                  className="ux4g-btn ux4g-btn-primary ux4g-btn-sm"
+                  style={{ background: '#1a237e', border: 'none', borderRadius: '6px', padding: '6px 14px', fontSize: '13px', fontWeight: 600 }}
+                  onClick={() => alert('Opening supporting document PDF viewer...')}
+                >
+                  View
+                </button>
+              </div>
+            </div>
+          )}
 
-        {/* Resolution Details */}
-        {!isPending && (
-          <>
-            <SectionHeader title="Resolution Details" />
-            <ActionBox label="ACTION TAKEN" text={currentCard.actionTaken} />
-          </>
-        )}
+          {/* RESOLUTION DETAILS */}
+          {!isPending && currentCard.actionTaken && (
+            <div>
+              <h3 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-dark)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid #cbd5e1', paddingBottom: '8px', marginBottom: '12px' }}>
+                Resolution Details
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Action Taken</span>
+                <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '6px', padding: '14px 16px', fontSize: '14px', color: '#166534', whiteSpace: 'pre-line', lineHeight: '1.4' }}>
+                  {currentCard.actionTaken}
+                </div>
+              </div>
+            </div>
+          )}
 
-        {/* DPO Appeal Resolution (Appeal Raised / Appeal Resolved) */}
-        {!isPending && showDpoSection && (
-          <>
-            <SectionHeader title="DPO Appeal Resolution" />
-            <ActionBox
-              label="ACTION TAKEN BY DPO"
-              text={
-                currentCard.dpoActionTaken ??
-                (currentCard.status === 'APPEAL_RAISED'
-                  ? 'Appeal under review by DPO. Response expected within 7 working days.'
-                  : 'Appeal resolved in favour of existing resolution.')
-              }
-            />
-          </>
-        )}
+          {/* APPEAL RAISED (Appeal Reason) — shown after the original resolution, before the DPO's appeal resolution.
+              Stays visible once the appeal is resolved too, since it's the record of why the appeal was filed. */}
+          {hasAppealReason && (
+            <div>
+              <h3 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-dark)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid #cbd5e1', paddingBottom: '8px', marginBottom: '12px' }}>
+                Appeal Raised
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Appeal Reason</span>
+                <div style={{ background: '#fff3e0', border: '1px solid #ffcc80', borderRadius: '6px', padding: '14px 16px', fontSize: '14px', color: '#e65100', whiteSpace: 'pre-line', lineHeight: '1.4' }}>
+                  {currentCard.appealReason || 'Beneficiary is unsatisfied with the resolution steps taken by the officer.'}
+                </div>
+              </div>
+            </div>
+          )}
 
-        {/* Timeline */}
-        <SectionHeader title="Timeline" />
-        <View style={dtStyles.timelineContainer}>
-          {timelineItems.map((item, idx) => (
-            <TimelineRow key={item.label} item={item} isLast={idx === timelineItems.length - 1} />
-          ))}
-        </View>
+          {/* APPEAL RESOLUTION — only once the DPO has actually resolved the
+              appeal. While it's merely raised (APPEAL_RAISED) there is no
+              DPO action to show yet, so this section stays hidden. */}
+          {!isPending && currentCard.status === 'APPEAL_RESOLVED' && (
+            <div>
+              <h3 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-dark)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid #cbd5e1', paddingBottom: '8px', marginBottom: '12px' }}>
+                Appeal Resolution
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Action Taken By DPO</span>
+                <div style={{ background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: '6px', padding: '14px 16px', fontSize: '14px', color: '#5b21b6', whiteSpace: 'pre-line', lineHeight: '1.4' }}>
+                  {currentCard.dpoActionTaken || 'Appeal resolved in favour of existing resolution.'}
+                </div>
+              </div>
+            </div>
+          )}
 
-        <View style={{ height: 32 }} />
-      </ScrollView>
+          {/* TIMELINE — mirrors the mobile app: per-event dot colours,
+              a per-row connector segment, and label + date only. */}
+          <div>
+            <h3 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-dark)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid #cbd5e1', paddingBottom: '8px', marginBottom: '14px' }}>
+              Timeline
+            </h3>
+            <div style={{ paddingLeft: '4px', paddingBottom: '4px', width: '100%' }}>
+              {timelineItems.map((item, idx) => {
+                const isLast = idx === timelineItems.length - 1;
+                return (
+                  <div key={item.label + idx} style={{ display: 'flex', flexDirection: 'row', gap: '16px', minHeight: '52px', width: '100%' }}>
+                    {/* Dot + connector column */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '12px' }}>
+                      <div style={{ width: '12px', height: '12px', borderRadius: '50%', marginTop: '4px', background: item.dotColor, flexShrink: 0 }} />
+                      {!isLast && <div style={{ flex: 1, width: '2px', background: '#e0e0e0', marginTop: '4px' }} />}
+                    </div>
+                    {/* Text column */}
+                    <div style={{ flex: 1, paddingBottom: '20px' }}>
+                      <div style={{ fontWeight: 600, fontSize: '13px', color: '#333333', lineHeight: '19.5px' }}>{item.label}</div>
+                      <div style={{ fontWeight: 400, fontSize: '11px', color: '#747474', lineHeight: '16.5px', marginTop: '2px' }}>{item.date}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
 
-      {/* Sticky Bottom Footer CTA */}
-      {hasBottomCTA && (
-        <View style={dtStyles.stickyFooter}>
-          <TouchableOpacity
-            style={[
-              dtStyles.closeBtn,
-              isAppealTicket && { backgroundColor: '#e65100' },
-              showSimulateAppealBtn && { backgroundColor: '#3f51b5' }
-            ]}
-            activeOpacity={0.85}
-            onPress={() => {
-              if (isAppealTicket) {
-                setAppealModalVisible(true);
-              } else if (showSimulateAppealBtn) {
-                setShowAppealFiledSuccess(true);
-              } else {
-                setActionModalVisible(true);
-              }
-            }}
-          >
-            <Text style={dtStyles.closeBtnText}>
-              {isAppealTicket
-                ? 'Resolve Appeal'
-                : showSimulateAppealBtn
-                  ? 'Simulate Beneficiary Appeal'
-                  : isPending
-                    ? (resolveLabel || 'Resolve and Close')
-                    : 'Close Ticket'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      )}
+        {/* CTA Button Block (Anchored at very bottom) */}
+        {!actionModalVisible && (() => {
+          const canAct =
+            (assignedFilter === 'Supervisor' && isPending && currentCard.assignedTo !== 'AWW') ||
+            (assignedFilter === 'CDPO' && isPending) ||
+            (assignedFilter === 'CDPO' && isClosurePending) ||
+            // DPO can resolve & close any ticket assigned to them (Pending or Overdue tab,
+            // regardless of whether it has actually breached SLA yet), plus escalated
+            // overdue tickets from other roles, plus appeals.
+            (assignedFilter === 'DPO' && isPending && (currentCard.assignedTo === 'DPO' || currentCard.isOverdue)) ||
+            (assignedFilter === 'DPO' && isAppeal);
 
-      {/* Action Taken Modal */}
-      <ActionTakenModal
-        visible={actionModalVisible}
-        title={isPending ? (resolveLabel === 'Resolve' ? "Resolve Ticket" : (resolveLabel || "Resolve & Close Ticket")) : "Close Ticket"}
-        buttonText={isPending ? (resolveLabel === 'Resolve' ? "Submit Resolution" : (resolveLabel || "Resolve & Close Ticket")) : "Close Ticket"}
-        placeholder={
-          isPending
-            ? (resolveLabel === 'Resolve' ? "Describe the action taken to resolve this ticket..." : "Describe the action taken and reason for closure...")
-            : "Describe the action taken and reason for closure..."
-        }
-        onClose={() => setActionModalVisible(false)}
-        onSubmit={(note) => {
-          if (onResolveTicket) {
-            onResolveTicket(currentCard.id, note);
-          }
-          setClosureNote(note);
-          setActionModalVisible(false);
-          setShowSuccess(true);
-        }}
-      />
-
-      {/* Appeal Resolution Modal */}
-      <AppealResolutionSheet
-        visible={appealModalVisible}
-        notes={appealNotes}
-        setNotes={setAppealNotes}
-        onClose={() => {
-          setAppealModalVisible(false);
-          setAppealNotes('');
-        }}
-        onSubmit={() => {
-          setAppealModalVisible(false);
-          setShowAppealSuccess(true);
-        }}
-      />
-
-      {/* Success Screen */}
-      {showSuccess && (
-        <SuccessScreen
-          ticketNumber={currentCard.ticketNumber}
-          title={resolveLabel === 'Resolve' ? "Ticket Resolved!" : "Ticket Closed!"}
-          description={
-            resolveLabel === 'Resolve'
-              ? `The ticket has been marked as resolved and is now waiting for CDPO closure.`
-              : `Ticket ${currentCard.ticketNumber} has been marked as closed.`
-          }
-          viewDetailsLabel={resolveLabel === 'Resolve' ? "View Resolved Ticket" : "View Closed Ticket"}
-          onBack={onBack}
-          onViewDetails={() => {
-            setShowSuccess(false);
-            setCurrentCard((prev: any) => ({
-              ...prev,
-              isPendingTicket: false,
-              status: resolveLabel === 'Resolve' ? 'CLOSURE_PENDING' : 'CLOSED',
-              actionTaken: closureNote,
-            }));
-          }}
-        />
-      )}
-
-      {/* Appeal Success Screen */}
-      {showAppealSuccess && (
-        <AppealSuccessScreen
-          ticketNumber={currentCard.ticketNumber}
-          onBack={() => {
-            if (onResolveAppeal) {
-              onResolveAppeal(currentCard.id, appealNotes);
+          const getButtonText = () => {
+            if (isAppeal) return 'Resolve Appeal';
+            if (isPending) {
+              if (assignedFilter === 'Supervisor') return 'Resolve';
+              if (assignedFilter === 'CDPO' || assignedFilter === 'DPO') return 'Resolve & Close';
+              return 'Resolve';
             }
-            onBack();
-          }}
-        />
-      )}
+            if (isClosurePending && assignedFilter === 'CDPO') return 'Close Ticket';
+            return 'Close Ticket';
+          };
 
-      {/* Appeal Filed Success Screen */}
-      {showAppealFiledSuccess && (
-        <AppealFiledSuccessScreen
-          ticketNumber={currentCard.ticketNumber}
-          onBack={() => {
-            setShowAppealFiledSuccess(false);
-            if (onSimulateAppeal) {
-              onSimulateAppeal(currentCard.id);
-            }
-            onBack();
-          }}
-        />
-      )}
-    </View>
+          if (!canAct) return null;
+
+          return (
+            <div style={{ borderTop: '1px solid #e2e8f0' }}>
+              <button
+                className="ux4g-btn ux4g-btn-primary ux4g-btn-lg"
+                style={{
+                  width: '100%',
+                  margin: 0,
+                  padding: '16px 0',
+                  borderRadius: 0,
+                  background: isClosurePending ? 'var(--accent-green)' : 'var(--primary-deep)',
+                  color: '#ffffff',
+                  fontSize: '15px',
+                  fontWeight: 700,
+                  border: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+                onClick={() => setActionModalVisible(true)}
+              >
+                {getButtonText()}
+              </button>
+            </div>
+          );
+        })()}
+
+        {/* Resolve / Close bottom sheet — mirrors the mobile app's ActionTakenModal / AppealResolutionSheet */}
+        {actionModalVisible && (
+          <div style={{ position: 'absolute', inset: 0, zIndex: 20 }}>
+            <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)' }} onClick={closeActionModal} />
+            <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, background: '#ffffff', borderTopLeftRadius: '16px', borderTopRightRadius: '16px', boxShadow: '0 -4px 24px rgba(0,0,0,0.15)', maxHeight: '85%', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', paddingTop: '10px', paddingBottom: '2px' }}>
+                <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: '#e0e0e0' }} />
+              </div>
+              <div style={{ padding: '12px 20px 13px', borderBottom: '1px solid #eeeeee' }}>
+                <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: '#1a237e', fontFamily: 'var(--font-display)' }}>{modalTitle}</h3>
+              </div>
+              <form onSubmit={handleActionSubmit} style={{ overflowY: 'auto', padding: '16px 20px 20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+                    <label style={{ fontSize: '12px', fontWeight: 600, color: '#757575' }}>Action Taken</label>
+                    <span style={{ color: '#d32f2f', marginLeft: '3px' }}>*</span>
+                  </div>
+                  <div style={{ position: 'relative' }}>
+                    <textarea
+                      style={{ height: '120px', width: '100%', border: '1px solid #1a237e', borderRadius: '8px', background: '#fafafa', padding: '12px', fontSize: '14px', color: '#212121', resize: 'vertical', boxSizing: 'border-box' }}
+                      placeholder={modalPlaceholder}
+                      maxLength={250}
+                      value={actionNote}
+                      onChange={(e) => setActionNote(e.target.value)}
+                      required
+                    />
+                    <span style={{ position: 'absolute', bottom: '12px', right: '12px', fontSize: '11px', color: '#9e9e9e' }}>{actionNote.length} / 250</span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '4px' }}>
+                  <button
+                    type="submit"
+                    disabled={!isFormValid}
+                    style={{
+                      height: '44px', borderRadius: '8px', border: 'none', fontWeight: 700, fontSize: '14px', color: '#ffffff',
+                      background: isFormValid ? (isAppeal ? '#2e7d32' : '#1a237e') : '#e0e0e0',
+                      cursor: isFormValid ? 'pointer' : 'not-allowed',
+                    }}
+                  >
+                    {modalSubmitLabel}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={closeActionModal}
+                    style={{ height: '44px', borderRadius: '8px', border: '1px solid #1a237e', background: '#ffffff', color: '#1a237e', fontWeight: 700, fontSize: '14px' }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
-
-// ─── Styles ───────────────────────────────────────────────────────────────────
-
-const dtStyles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-    height: '100%',
-  },
-
-  // Status bar
-  statusBar: {
-    height: 24,
-    backgroundColor: '#ffffff',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-  },
-  statusTime: {
-    fontFamily: 'Inter',
-    fontWeight: '600',
-    fontSize: 14,
-    color: '#333333',
-    lineHeight: 21,
-  },
-  statusIcons: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  statusIcon16: { width: 16, height: 12, tintColor: '#333333' },
-  statusIcon14: { width: 14, height: 12, tintColor: '#333333' },
-  statusIcon20: { width: 20, height: 12, tintColor: '#333333' },
-
-  // Header
-  header: {
-    height: 56,
-    backgroundColor: '#1a237e',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-  },
-  backBtn: { width: 29, height: 24, justifyContent: 'center' },
-  backIcon: { width: 29, height: 24, tintColor: '#ffffff' },
-  headerTitle: {
-    flex: 1,
-    fontFamily: 'Inter',
-    fontWeight: '700',
-    fontSize: 16,
-    color: '#ffffff',
-    textAlign: 'center',
-    lineHeight: 24,
-  },
-  headerSpacer: { width: 29, height: 24 },
-
-  // Scroll
-  scroll: { flex: 1, backgroundColor: '#ffffff' },
-  scrollContent: { paddingHorizontal: 20, paddingVertical: 20, gap: 28 },
-
-  // Ticket top row
-  ticketTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  ticketId: {
-    fontFamily: 'Inter',
-    fontWeight: '700',
-    fontSize: 20,
-    color: '#527cdc',
-    lineHeight: 28,
-  },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 100,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    gap: 4,
-  },
-  statusBadgeText: {
-    fontFamily: 'Inter',
-    fontWeight: '700',
-    fontSize: 10,
-    lineHeight: 15,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-  },
-  statusBadgeIcon: { fontSize: 11, fontWeight: '700' },
-
-  // Section List
-  sectionList: {
-    flexDirection: 'column',
-    gap: 12,
-    width: '100%',
-  },
-  detailsRow: {
-    flexDirection: 'row',
-    gap: 12,
-    alignItems: 'flex-start',
-    width: '100%',
-  },
-  detailsLabel: {
-    fontFamily: 'Inter',
-    fontWeight: '500',
-    fontSize: 11,
-    color: '#747474',
-    width: 120,
-    lineHeight: 18,
-  },
-  detailsValue: {
-    flex: 1,
-    fontFamily: 'Inter',
-    fontWeight: '500',
-    fontSize: 14,
-    color: '#333333',
-    lineHeight: 18,
-  },
-
-  // Section Header
-  sectionHeaderContainer: {
-    flexDirection: 'column',
-    gap: 8,
-    width: '100%',
-    marginTop: 4,
-  },
-  sectionHeaderText: {
-    fontFamily: 'Inter',
-    fontWeight: '700',
-    fontSize: 14,
-    color: '#333333',
-    textTransform: 'uppercase',
-    lineHeight: 18,
-  },
-  sectionLine: {
-    height: 1,
-    backgroundColor: '#e0e0e0',
-    width: '100%',
-  },
-
-  // Action box
-  actionBoxContainer: {
-    width: '100%',
-    gap: 12,
-  },
-  actionLabel: {
-    fontFamily: 'Inter',
-    fontWeight: '600',
-    fontSize: 11,
-    color: '#747474',
-    textTransform: 'uppercase',
-    lineHeight: 15,
-  },
-  greenBox: {
-    backgroundColor: '#f1faf5',
-    borderWidth: 1,
-    borderColor: '#e6f4ea',
-    borderRadius: 8,
-    padding: 16,
-    width: '100%',
-  },
-  greenBoxText: {
-    fontFamily: 'Inter',
-    fontWeight: '400',
-    fontSize: 14,
-    color: '#065f46',
-    lineHeight: 21,
-  },
-
-  // Close Ticket button
-  closeSection: {
-    paddingVertical: 4,
-    width: '100%',
-  },
-  closeBtn: {
-    backgroundColor: '#1a237e',
-    borderRadius: 10,
-    height: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  closeBtnText: {
-    fontFamily: 'Inter',
-    fontWeight: '700',
-    fontSize: 15,
-    color: '#ffffff',
-    lineHeight: 22.5,
-  },
-
-  // Timeline
-  timelineContainer: {
-    paddingLeft: 4,
-    paddingBottom: 4,
-    width: '100%',
-  },
-  timelineRow: {
-    flexDirection: 'row',
-    gap: 16,
-    minHeight: 52,
-    width: '100%',
-  },
-  timelineDotCol: {
-    alignItems: 'center',
-    width: 12,
-  },
-  timelineDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginTop: 4,
-  },
-  timelineLine: {
-    flex: 1,
-    width: 2,
-    backgroundColor: '#e0e0e0',
-    marginTop: 4,
-    marginBottom: 0,
-  },
-  timelineTextCol: {
-    flex: 1,
-    paddingBottom: 20,
-  },
-  timelineLabel: {
-    fontFamily: 'Inter',
-    fontWeight: '600',
-    fontSize: 13,
-    color: '#333333',
-    lineHeight: 19.5,
-  },
-  timelineDate: {
-    fontFamily: 'Inter',
-    fontWeight: '400',
-    fontSize: 11,
-    color: '#747474',
-    lineHeight: 16.5,
-    marginTop: 2,
-  },
-  stickyFooter: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#ffffff',
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 5,
-  },
-  daysLabelText: {
-    fontFamily: 'Inter',
-    fontWeight: '600',
-    fontSize: 12,
-    marginTop: 4,
-  },
-  descContainer: {
-    marginTop: 8,
-    backgroundColor: '#fafafa',
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 8,
-    padding: 12,
-    width: '100%',
-  },
-  descLabel: {
-    fontFamily: 'Inter',
-    fontWeight: '600',
-    fontSize: 10,
-    color: '#747474',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 6,
-  },
-  descText: {
-    fontFamily: 'Inter',
-    fontWeight: '400',
-    fontSize: 13,
-    color: '#333333',
-    lineHeight: 19.5,
-  },
-  docsSection: {
-    width: '100%',
-    backgroundColor: '#f5f6ff',
-    borderWidth: 1,
-    borderColor: '#c5cae9',
-    borderRadius: 8,
-    padding: 12,
-  },
-  docItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  docIcon: {
-    width: 20,
-    height: 20,
-    tintColor: '#1a237e',
-  },
-  docInfo: {
-    flex: 1,
-  },
-  docName: {
-    fontFamily: 'Inter',
-    fontWeight: '600',
-    fontSize: 13,
-    color: '#1a237e',
-  },
-  docSize: {
-    fontFamily: 'Inter',
-    fontWeight: '400',
-    fontSize: 11,
-    color: '#757575',
-    marginTop: 2,
-  },
-  viewDocBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: '#1a237e',
-    borderRadius: 6,
-  },
-  viewDocBtnText: {
-    fontFamily: 'Inter',
-    fontWeight: '600',
-    fontSize: 12,
-    color: '#ffffff',
-  },
-});
-
-
-// ─── Action Taken Modal ───────────────────────────────────────────────────────
-
-const ActionTakenModal = ({
-  visible,
-  title = "Resolve & Close Ticket",
-  buttonText = "Resolve & Close Ticket",
-  placeholder,
-  onClose,
-  onSubmit,
-}: {
-  visible: boolean;
-  title?: string;
-  buttonText?: string;
-  placeholder?: string;
-  onClose: () => void;
-  onSubmit: (note: string) => void;
-}) => {
-  const { slideAnim, fadeAnim, mounted } = useSheetAnim(visible);
-  const [closureNote, setClosureNote] = useState('');
-  const [confirmClosed, setConfirmClosed] = useState(false);
-
-  useEffect(() => {
-    if (visible) {
-      setClosureNote('');
-      setConfirmClosed(false);
-    }
-  }, [visible]);
-
-  if (!mounted) return null;
-
-  const isValid = closureNote.trim().length > 0;
-
-  return (
-    <View pointerEvents={visible ? 'auto' : 'box-none'} style={sheetStyles.inlineOverlayWrapper}>
-      <Animated.View style={[sheetStyles.inlineBackdrop, { opacity: fadeAnim }]} />
-      <TouchableOpacity style={sheetStyles.inlineDismiss} activeOpacity={1} onPress={onClose} />
-
-      <Animated.View
-        style={[
-          sheetStyles.inlineSheet,
-          { height: 350, transform: [{ translateY: slideAnim }] },
-        ]}
-      >
-        {/* Handle */}
-        <View style={sheetStyles.handleRow}>
-          <View style={sheetStyles.handle} />
-        </View>
-
-        {/* Title */}
-        <View style={sheetStyles.titleRow}>
-          <Text style={sheetStyles.sheetTitle}>{title}</Text>
-        </View>
-
-        {/* Body */}
-        <View style={sheetStyles.body}>
-          {/* Label */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-            <Text style={sheetStyles.label}>Action Taken</Text>
-            <Text style={{ color: '#d32f2f', marginLeft: 3 }}>*</Text>
-          </View>
-
-          {/* Text Area Container */}
-          <View style={sheetStyles.textareaWrapper}>
-            <TextInput
-              style={sheetStyles.textarea}
-              placeholder={placeholder || "Describe the action taken and reason for closure..."}
-              placeholderTextColor="#9e9e9e"
-              multiline
-              numberOfLines={4}
-              maxLength={250}
-              value={closureNote}
-              onChangeText={setClosureNote}
-            />
-            <Text style={sheetStyles.counter}>{closureNote.length} / 250</Text>
-          </View>
-        </View>
-
-        {/* Footer Buttons */}
-        <View style={sheetStyles.buttonsContainer}>
-          <TouchableOpacity
-            style={[sheetStyles.applyBtn, !isValid && sheetStyles.applyBtnDisabled]}
-            disabled={!isValid}
-            onPress={() => onSubmit(closureNote)}
-            activeOpacity={0.7}
-          >
-            <Text style={sheetStyles.applyBtnText}>{buttonText}</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={sheetStyles.clearBtn} onPress={onClose} activeOpacity={0.7}>
-            <Text style={sheetStyles.clearBtnText}>Cancel</Text>
-          </TouchableOpacity>
-        </View>
-      </Animated.View>
-    </View>
-  );
-};
-
-
-// ─── Success Screen ───────────────────────────────────────────────────────────
-
-const SuccessScreen = ({
-  ticketNumber,
-  onBack,
-  onViewDetails,
-  title,
-  description,
-  viewDetailsLabel,
-}: {
-  ticketNumber: string;
-  onBack: () => void;
-  onViewDetails: () => void;
-  title?: string;
-  description?: string;
-  viewDetailsLabel?: string;
-}) => {
-  return (
-    <View style={successStyles.container}>
-      <View style={successStyles.content}>
-        {/* Checked Circle */}
-        <View style={successStyles.checkCircle}>
-          <Image
-            source={{ uri: 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/check-circle-fill.svg' }}
-            style={successStyles.checkIcon}
-          />
-        </View>
-
-        {/* Title */}
-        <Text style={successStyles.title}>{title || "Ticket Closed!"}</Text>
-
-        {/* Description */}
-        <Text style={successStyles.description}>
-          {description || `Ticket ${ticketNumber} has been marked as closed by CDPO.`}
-        </Text>
-
-        {/* Buttons */}
-        <View style={successStyles.buttonGroup}>
-          <TouchableOpacity style={successStyles.primaryBtn} onPress={onBack} activeOpacity={0.8}>
-            <Text style={successStyles.primaryBtnText}>Back to Ticket List</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={successStyles.secondaryBtn} onPress={onViewDetails} activeOpacity={0.8}>
-            <Text style={successStyles.secondaryBtnText}>{viewDetailsLabel || "View Closed Ticket"}</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </View>
-  );
-};
-
-
-
-const AppealResolutionSheet = ({
-  visible,
-  notes,
-  setNotes,
-  onClose,
-  onSubmit,
-}: {
-  visible: boolean;
-  notes: string;
-  setNotes: (n: string) => void;
-  onClose: () => void;
-  onSubmit: () => void;
-}) => {
-  const { slideAnim, fadeAnim, mounted } = useSheetAnim(visible);
-  if (!mounted) return null;
-
-  const canSubmit = notes.trim().length > 0;
-
-  return (
-    <View pointerEvents={visible ? 'auto' : 'box-none'} style={sheetStyles.inlineOverlayWrapper}>
-      <Animated.View style={[sheetStyles.inlineBackdrop, { opacity: fadeAnim }]} />
-      <TouchableOpacity style={sheetStyles.inlineDismiss} activeOpacity={1} onPress={onClose} />
-
-      <Animated.View
-        style={[
-          sheetStyles.inlineSheet,
-          { height: 395, transform: [{ translateY: slideAnim }] },
-        ]}
-      >
-        <View style={sheetStyles.handleRow}><View style={sheetStyles.handle} /></View>
-
-        <View style={sheetStyles.titleRow}>
-          <Text style={sheetStyles.sheetTitle}>Resolve Appeal</Text>
-        </View>
-
-        <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-          <View style={sheetStyles.body}>
-            {/* Action Taken */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-              <Text style={sheetStyles.label}>Action Taken</Text>
-              <Text style={{ color: '#d32f2f', marginLeft: 3 }}>*</Text>
-            </View>
-            <View style={sheetStyles.textareaWrapper}>
-              <TextInput
-                style={sheetStyles.textarea}
-                placeholder="Describe the action taken to resolve this appeal..."
-                placeholderTextColor="#9e9e9e"
-                multiline
-                numberOfLines={4}
-                maxLength={250}
-                value={notes}
-                onChangeText={setNotes}
-              />
-              <Text style={sheetStyles.counter}>{notes.length} / 250</Text>
-            </View>
-          </View>
-        </ScrollView>
-
-        {/* Footer Buttons */}
-        <View style={sheetStyles.buttonsContainer}>
-          <TouchableOpacity
-            style={[
-              sheetStyles.applyBtn,
-              { backgroundColor: '#2e7d32' },
-              !canSubmit && sheetStyles.applyBtnDisabled,
-            ]}
-            disabled={!canSubmit}
-            onPress={onSubmit}
-            activeOpacity={0.7}
-          >
-            <Text style={sheetStyles.applyBtnText}>Submit Resolution</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={sheetStyles.clearBtn} onPress={onClose} activeOpacity={0.7}>
-            <Text style={sheetStyles.clearBtnText}>Cancel</Text>
-          </TouchableOpacity>
-        </View>
-      </Animated.View>
-    </View>
-  );
-};
-
-const AppealSuccessScreen = ({
-  ticketNumber,
-  onBack,
-}: {
-  ticketNumber: string;
-  onBack: () => void;
-}) => {
-  return (
-    <View style={successStyles.container}>
-      <View style={successStyles.content}>
-        <View style={[successStyles.checkCircle, { backgroundColor: '#e8f5e9' }]}>
-          <Image
-            source={{ uri: 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/check-circle-fill.svg' }}
-            style={[successStyles.checkIcon, { tintColor: '#2e7d32' }]}
-          />
-        </View>
-
-        <Text style={successStyles.title}>Appeal Resolved!</Text>
-
-        <Text style={successStyles.description}>
-          Appeal for {ticketNumber} has been resolved successfully.
-        </Text>
-
-        <View style={successStyles.buttonGroup}>
-          <TouchableOpacity style={successStyles.primaryBtn} onPress={onBack} activeOpacity={0.8}>
-            <Text style={successStyles.primaryBtnText}>Back to Ticket List</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </View>
-  );
-};
-
-const AppealFiledSuccessScreen = ({
-  ticketNumber,
-  onBack,
-}: {
-  ticketNumber: string;
-  onBack: () => void;
-}) => {
-  return (
-    <View style={successStyles.container}>
-      <View style={successStyles.content}>
-        <View style={[successStyles.checkCircle, { backgroundColor: '#e8eaf6' }]}>
-          <Image
-            source={{ uri: 'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/icons/check-circle-fill.svg' }}
-            style={[successStyles.checkIcon, { tintColor: '#3f51b5' }]}
-          />
-        </View>
-
-        <Text style={successStyles.title}>Appeal Filed!</Text>
-
-        <Text style={successStyles.description}>
-          An appeal has been filed by the beneficiary for ticket {ticketNumber}. The ticket has been moved to the Appeals tab for review.
-        </Text>
-
-        <View style={successStyles.buttonGroup}>
-          <TouchableOpacity style={[successStyles.primaryBtn, { backgroundColor: '#3f51b5' }]} onPress={onBack} activeOpacity={0.8}>
-            <Text style={successStyles.primaryBtnText}>Back to Dashboard</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </View>
-  );
-};
-
-// ─── Style Sheets ─────────────────────────────────────────────────────────────
-
-const sheetStyles = StyleSheet.create({
-  inlineOverlayWrapper: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    width: '100%',
-    zIndex: 999,
-  },
-  inlineBackdrop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  inlineDismiss: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  inlineSheet: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    width: '100%',
-    backgroundColor: '#ffffff',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    overflow: 'hidden',
-  },
-  handleRow: {
-    alignItems: 'center',
-    paddingTop: 10,
-    paddingBottom: 2,
-  },
-  handle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#e0e0e0',
-  },
-  titleRow: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 13,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eeeeee',
-  },
-  sheetTitle: {
-    fontFamily: 'Inter',
-    fontWeight: '700',
-    fontSize: 15,
-    color: '#1a237e',
-    lineHeight: 22.5,
-  },
-  body: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-  },
-  label: {
-    fontFamily: 'Inter',
-    fontWeight: '600',
-    fontSize: 12,
-    color: '#757575',
-  },
-  textareaWrapper: {
-    position: 'relative',
-    width: '100%',
-  },
-  textarea: {
-    height: 120,
-    borderWidth: 1,
-    borderColor: '#1a237e',
-    borderRadius: 8,
-    backgroundColor: '#fafafa',
-    padding: 12,
-    fontFamily: 'Inter',
-    fontSize: 14,
-    color: '#212121',
-    textAlignVertical: 'top',
-  },
-  counter: {
-    position: 'absolute',
-    bottom: 12,
-    right: 12,
-    fontFamily: 'Inter',
-    fontSize: 11,
-    color: '#9e9e9e',
-  },
-  checkboxRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    marginTop: 16,
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
-    borderWidth: 2,
-    borderColor: '#bdbdbd',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 1,
-  },
-  checkIcon: {
-    width: 12,
-    height: 12,
-    tintColor: '#ffffff',
-  },
-  checkboxText: {
-    flex: 1,
-    fontFamily: 'Inter',
-    fontSize: 12,
-    color: '#424242',
-    lineHeight: 18,
-  },
-  buttonsContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 24,
-    gap: 12,
-  },
-  applyBtn: {
-    height: 44,
-    backgroundColor: '#1a237e',
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-  },
-  applyBtnDisabled: {
-    backgroundColor: '#e0e0e0',
-  },
-  applyBtnText: {
-    fontFamily: 'Inter',
-    fontWeight: '700',
-    fontSize: 14,
-    color: '#ffffff',
-  },
-  clearBtn: {
-    height: 44,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#1a237e',
-    backgroundColor: '#ffffff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-  },
-  clearBtnText: {
-    fontFamily: 'Inter',
-    fontWeight: '700',
-    fontSize: 14,
-    color: '#1a237e',
-  },
-});
-
-const successStyles = StyleSheet.create({
-  container: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: '#ffffff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-    zIndex: 9999,
-  },
-  content: {
-    width: '100%',
-    paddingHorizontal: 20,
-    alignItems: 'center',
-  },
-  checkCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: '#1a237e',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#1a237e',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  checkIcon: {
-    width: 28,
-    height: 28,
-    tintColor: '#ffffff',
-  },
-  title: {
-    fontFamily: 'Inter',
-    fontWeight: '700',
-    fontSize: 20,
-    color: '#181818',
-    marginTop: 24,
-    textAlign: 'center',
-  },
-  description: {
-    fontFamily: 'Inter',
-    fontWeight: '400',
-    fontSize: 13,
-    color: '#757575',
-    lineHeight: 19.5,
-    marginTop: 12,
-    textAlign: 'center',
-    paddingHorizontal: 32,
-  },
-  buttonGroup: {
-    width: '100%',
-    marginTop: 32,
-    gap: 12,
-  },
-  primaryBtn: {
-    height: 48,
-    backgroundColor: '#1a237e',
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-  },
-  primaryBtnText: {
-    fontFamily: 'Inter',
-    fontWeight: '700',
-    fontSize: 14,
-    color: '#ffffff',
-  },
-  secondaryBtn: {
-    height: 48,
-    borderWidth: 1,
-    borderColor: '#1a237e',
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-  },
-  secondaryBtnText: {
-    fontFamily: 'Inter',
-    fontWeight: '700',
-    fontSize: 14,
-    color: '#1a237e',
-  },
-});
-
-
