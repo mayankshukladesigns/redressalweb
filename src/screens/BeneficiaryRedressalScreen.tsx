@@ -511,7 +511,7 @@ export default function CDPOView({
       if (!hit) return false;
     }
     return true;
-  });
+  }).sort(byBreachRisk);
 
   // CDPO-only "Pending for Closure" queue: tickets resolved by Supervisor/AWW
   // that are awaiting CDPO's final closure.

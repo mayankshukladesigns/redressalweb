@@ -224,7 +224,7 @@ export default function SupervisorScreen({
 
   const filteredTickets = activeTab === 'Pending'
     ? [...getFilteredTickets()].sort(byBreachRisk)
-    : getFilteredTickets();
+    : [...getFilteredTickets()].sort(byBreachRisk);
 
   // Any change to scope, tab or a filter snaps the batched grid back to page one.
   const gridResetKey = [

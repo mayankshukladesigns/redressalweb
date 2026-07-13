@@ -629,11 +629,11 @@ export default function DPOView({
   // are surfaced here via the "Overdue Only" sidebar filter.
   const displayedPending = sharedPendingCards.filter(t => {
     if (t.assignedTo !== assignedFilter) return false;
-    // Supervisor/AWW tickets only become visible to the DPO once they are escalated,
-    // which happens 14 days after creation. Before that they sit within the block
+    // CDPO/Supervisor/AWW tickets only become visible to the DPO once they are escalated,
+    // which happens 14 days after creation. Before that they sit within the block/sector
     // hierarchy and the district office has no view of them. Ownership never
     // transfers on escalation — the DPO's access stays read-only.
-    if ((assignedFilter === 'Supervisor' || assignedFilter === 'AWW') && getTicketAge(t.submittedDate) < ESCALATION_DAYS) return false;
+    if ((assignedFilter === 'CDPO' || assignedFilter === 'Supervisor' || assignedFilter === 'AWW') && getTicketAge(t.submittedDate) < ESCALATION_DAYS) return false;
     return applyCommonFilters(t);
   })
     // Queue order: the closer a ticket is to breaching the 21-day SLA, the higher it
@@ -681,7 +681,11 @@ export default function DPOView({
     }
 
     return directResolved;
-  })();
+  })().sort((a, b) => {
+    const ageDiff = getTicketAge(b.submittedDate) - getTicketAge(a.submittedDate);
+    if (ageDiff !== 0) return ageDiff;
+    return complaintRank(a.complaintType) - complaintRank(b.complaintType);
+  });
 
   // ─── 3. Appeals Tab List ───
   const displayedAppeals = appealList.filter(appeal => {
@@ -1096,7 +1100,7 @@ export default function DPOView({
           )}
 
           {/* Escalation notice — explains why this list is a subset of the summary count */}
-          {activeTab === 'Pending' && (assignedFilter === 'Supervisor' || assignedFilter === 'AWW') && (
+          {activeTab === 'Pending' && (assignedFilter === 'CDPO' || assignedFilter === 'Supervisor' || assignedFilter === 'AWW') && (
             <div style={{ display: 'flex', gap: 10, background: '#fff3e0', borderRadius: 'var(--radius-md)', padding: '12px 14px', border: '1px solid #ffcc80' }}>
               <Info size={15} style={{ color: '#e65100', flexShrink: 0, marginTop: 1 }} />
               <p style={{ margin: 0, fontSize: 12.5, color: 'var(--text-dark)', lineHeight: 1.5 }}>
