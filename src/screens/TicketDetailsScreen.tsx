@@ -265,8 +265,8 @@ export default function TicketDetailsScreen({
             <div style={{ width: '72px', height: '72px', borderRadius: '50%', background: '#1a237e', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', boxShadow: '0 4px 8px rgba(26,35,126,0.2)' }}>
               <Check size={30} color="#ffffff" strokeWidth={3} />
             </div>
-            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 700, color: '#181818', margin: 0 }}>{successInfo.title}</h3>
-            <p style={{ color: '#757575', fontSize: '13px', lineHeight: '1.5', marginTop: '10px' }}>{successInfo.description}</p>
+            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '22px', fontWeight: 700, color: '#181818', margin: 0 }}>{successInfo.title}</h3>
+            <p style={{ color: '#757575', fontSize: '15px', lineHeight: '1.5', marginTop: '10px' }}>{successInfo.description}</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', marginTop: '28px' }}>
               <button
                 className="ux4g-btn ux4g-btn-primary ux4g-btn-md"
@@ -290,8 +290,8 @@ export default function TicketDetailsScreen({
             <div style={{ width: '72px', height: '72px', borderRadius: '50%', background: '#2e7d32', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', boxShadow: '0 4px 8px rgba(46,125,50,0.2)' }}>
               <Check size={30} color="#ffffff" strokeWidth={3} />
             </div>
-            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 700, color: '#181818', margin: 0 }}>Appeal Resolved!</h3>
-            <p style={{ color: '#757575', fontSize: '13px', lineHeight: '1.5', marginTop: '10px' }}>Your decision has been recorded and the appeal is now resolved.</p>
+            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '22px', fontWeight: 700, color: '#181818', margin: 0 }}>Appeal Resolved!</h3>
+            <p style={{ color: '#757575', fontSize: '15px', lineHeight: '1.5', marginTop: '10px' }}>Your decision has been recorded and the appeal is now resolved.</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', marginTop: '28px' }}>
               <button
                 className="ux4g-btn ux4g-btn-primary ux4g-btn-md"
@@ -327,7 +327,7 @@ export default function TicketDetailsScreen({
           <button onClick={onBack} style={{ color: '#ffffff', display: 'flex', alignItems: 'center' }} title="Go back">
             <ArrowLeft size={20} />
           </button>
-          <span style={{ fontSize: '18px', fontWeight: 700, fontFamily: 'var(--font-display)' }}>Ticket Details</span>
+          <span style={{ fontSize: '20px', fontWeight: 700, fontFamily: 'var(--font-display)' }}>Ticket Details</span>
           <button
             onClick={onBack}
             style={{ marginLeft: 'auto', color: 'rgba(255,255,255,0.7)', background: 'rgba(255,255,255,0.1)', width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifySelf: 'center', justifyContent: 'center' }}
@@ -341,16 +341,16 @@ export default function TicketDetailsScreen({
         <div className="drawer-body" style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {/* Ticket Title & Status Badge */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-            <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#0b3a60', fontFamily: 'var(--font-display)' }}>
+            <h2 style={{ fontSize: '22px', fontWeight: 700, color: '#0b3a60', fontFamily: 'var(--font-display)' }}>
               {currentCard.ticketNumber || 'Ticket #787868898972'}
             </h2>
-            <span style={{ background: statusCfg.bg, color: statusCfg.color, fontSize: '11px', fontWeight: 700, padding: '3px 10px', borderRadius: '100px', border: `1px solid ${statusCfg.border}`, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+            <span style={{ background: statusCfg.bg, color: statusCfg.color, fontSize: '13px', fontWeight: 700, padding: '3px 10px', borderRadius: '100px', border: `1px solid ${statusCfg.border}`, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
               {statusCfg.label}{statusCfg.hasIcon ? ' ⓘ' : ''}
             </span>
           </div>
 
           {/* Help & Sub Topics */}
-          <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '8px 16px', fontSize: '14px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '8px 16px', fontSize: '16px' }}>
             <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>Help Topic</span>
             <span style={{ fontWeight: 600, color: 'var(--text-dark)' }}>{currentCard.helpTopic || currentCard.topic || 'Supplementary Nutrition'}</span>
 
@@ -360,18 +360,18 @@ export default function TicketDetailsScreen({
 
           {/* Boxed Description Layout */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Description</span>
-            <div style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '14px 16px', fontSize: '14px', color: '#1e293b', whiteSpace: 'pre-line', lineHeight: '1.4' }}>
+            <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Description</span>
+            <div style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '14px 16px', fontSize: '16px', color: '#1e293b', whiteSpace: 'pre-line', lineHeight: '1.4' }}>
               {currentCard.description || currentCard.originalDescription || 'No description provided.'}
             </div>
           </div>
 
           {/* BENEFICIARY INFORMATION */}
           <div>
-            <h3 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-dark)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid #cbd5e1', paddingBottom: '8px', marginBottom: '12px' }}>
+            <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-dark)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid #cbd5e1', paddingBottom: '8px', marginBottom: '12px' }}>
               Beneficiary Information
             </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '15px' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Name</span>
                 <span style={{ fontWeight: 600, color: 'var(--text-dark)' }}>{currentCard.beneficiaryName || currentCard.byName || 'Kamla Devi'}</span>
@@ -406,7 +406,7 @@ export default function TicketDetailsScreen({
           {/* SUPPORTING DOCUMENTS */}
           {(currentCard.complaintType === 'Corruption' || currentCard.complaintType === 'Urgent') && ((currentCard.documentsCount ?? 0) > 0 || currentCard.documents) && (
             <div>
-              <h3 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-dark)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid #cbd5e1', paddingBottom: '8px', marginBottom: '12px' }}>
+              <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-dark)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid #cbd5e1', paddingBottom: '8px', marginBottom: '12px' }}>
                 Supporting Documents
               </h3>
               <div style={{ background: '#f5f6ff', border: '1px solid #c5cae9', borderRadius: '8px', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -414,18 +414,18 @@ export default function TicketDetailsScreen({
                   <FileText size={20} style={{ color: '#1a237e' }} />
                 </div>
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                  <span style={{ fontSize: '14px', fontWeight: 600, color: '#1a237e' }}>
+                  <span style={{ fontSize: '16px', fontWeight: 600, color: '#1a237e' }}>
                     {currentCard.id === '1' ? 'pmmvy_enrollment_form.pdf' :
                      currentCard.id === '2' ? 'thr_ration_card_copy.pdf' :
                      currentCard.id === '3' ? 'aadhaar_card_scan.pdf' :
                      currentCard.id === '4' ? 'ksy_training_registration.pdf' :
                      currentCard.id === '5' ? 'growth_monitoring_report.pdf' : 'supporting_document.pdf'}
                   </span>
-                  <span style={{ fontSize: '12px', color: '#757575' }}>2.4 MB</span>
+                  <span style={{ fontSize: '14px', color: '#757575' }}>2.4 MB</span>
                 </div>
                 <button
                   className="ux4g-btn ux4g-btn-primary ux4g-btn-sm"
-                  style={{ background: '#1a237e', border: 'none', borderRadius: '6px', padding: '6px 14px', fontSize: '13px', fontWeight: 600 }}
+                  style={{ background: '#1a237e', border: 'none', borderRadius: '6px', padding: '6px 14px', fontSize: '15px', fontWeight: 600 }}
                   onClick={() => alert('Opening supporting document PDF viewer...')}
                 >
                   View
@@ -437,12 +437,12 @@ export default function TicketDetailsScreen({
           {/* RESOLUTION DETAILS */}
           {!isPending && currentCard.actionTaken && (
             <div>
-              <h3 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-dark)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid #cbd5e1', paddingBottom: '8px', marginBottom: '12px' }}>
+              <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-dark)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid #cbd5e1', paddingBottom: '8px', marginBottom: '12px' }}>
                 Resolution Details
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Action Taken Report (ATR)</span>
-                <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '6px', padding: '14px 16px', fontSize: '14px', color: '#166534', whiteSpace: 'pre-line', lineHeight: '1.4' }}>
+                <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Action Taken Report (ATR)</span>
+                <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '6px', padding: '14px 16px', fontSize: '16px', color: '#166534', whiteSpace: 'pre-line', lineHeight: '1.4' }}>
                   {currentCard.actionTaken}
                 </div>
               </div>
@@ -453,12 +453,12 @@ export default function TicketDetailsScreen({
               Stays visible once the appeal is resolved too, since it's the record of why the appeal was filed. */}
           {hasAppealReason && (
             <div>
-              <h3 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-dark)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid #cbd5e1', paddingBottom: '8px', marginBottom: '12px' }}>
+              <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-dark)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid #cbd5e1', paddingBottom: '8px', marginBottom: '12px' }}>
                 Appeal Raised
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Appeal Reason</span>
-                <div style={{ background: '#fff3e0', border: '1px solid #ffcc80', borderRadius: '6px', padding: '14px 16px', fontSize: '14px', color: '#e65100', whiteSpace: 'pre-line', lineHeight: '1.4' }}>
+                <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Appeal Reason</span>
+                <div style={{ background: '#fff3e0', border: '1px solid #ffcc80', borderRadius: '6px', padding: '14px 16px', fontSize: '16px', color: '#e65100', whiteSpace: 'pre-line', lineHeight: '1.4' }}>
                   {currentCard.appealReason || 'Beneficiary is unsatisfied with the resolution steps taken by the officer.'}
                 </div>
               </div>
@@ -470,12 +470,12 @@ export default function TicketDetailsScreen({
               DPO action to show yet, so this section stays hidden. */}
           {!isPending && currentCard.status === 'APPEAL_RESOLVED' && (
             <div>
-              <h3 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-dark)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid #cbd5e1', paddingBottom: '8px', marginBottom: '12px' }}>
+              <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-dark)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid #cbd5e1', paddingBottom: '8px', marginBottom: '12px' }}>
                 Appeal Resolution
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Action Taken By DPO</span>
-                <div style={{ background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: '6px', padding: '14px 16px', fontSize: '14px', color: '#5b21b6', whiteSpace: 'pre-line', lineHeight: '1.4' }}>
+                <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Action Taken By DPO</span>
+                <div style={{ background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: '6px', padding: '14px 16px', fontSize: '16px', color: '#5b21b6', whiteSpace: 'pre-line', lineHeight: '1.4' }}>
                   {currentCard.dpoActionTaken || 'Appeal resolved in favour of existing resolution.'}
                 </div>
               </div>
@@ -485,7 +485,7 @@ export default function TicketDetailsScreen({
           {/* TIMELINE — mirrors the mobile app: per-event dot colours,
               a per-row connector segment, and label + date only. */}
           <div>
-            <h3 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-dark)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid #cbd5e1', paddingBottom: '8px', marginBottom: '14px' }}>
+            <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-dark)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid #cbd5e1', paddingBottom: '8px', marginBottom: '14px' }}>
               Timeline
             </h3>
             <div style={{ paddingLeft: '4px', paddingBottom: '4px', width: '100%' }}>
@@ -500,8 +500,8 @@ export default function TicketDetailsScreen({
                     </div>
                     {/* Text column */}
                     <div style={{ flex: 1, paddingBottom: '20px' }}>
-                      <div style={{ fontWeight: 600, fontSize: '13px', color: '#333333', lineHeight: '19.5px' }}>{item.label}</div>
-                      <div style={{ fontWeight: 400, fontSize: '11px', color: '#747474', lineHeight: '16.5px', marginTop: '2px' }}>{item.date}</div>
+                      <div style={{ fontWeight: 600, fontSize: '15px', color: '#333333', lineHeight: '19.5px' }}>{item.label}</div>
+                      <div style={{ fontWeight: 400, fontSize: '13px', color: '#747474', lineHeight: '16.5px', marginTop: '2px' }}>{item.date}</div>
                     </div>
                   </div>
                 );
@@ -546,7 +546,7 @@ export default function TicketDetailsScreen({
                   borderRadius: 0,
                   background: isClosurePending ? 'var(--accent-green)' : 'var(--primary-deep)',
                   color: '#ffffff',
-                  fontSize: '15px',
+                  fontSize: '17px',
                   fontWeight: 700,
                   border: 'none',
                   display: 'flex',
@@ -570,24 +570,24 @@ export default function TicketDetailsScreen({
                 <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: '#e0e0e0' }} />
               </div>
               <div style={{ padding: '12px 20px 13px', borderBottom: '1px solid #eeeeee' }}>
-                <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: '#1a237e', fontFamily: 'var(--font-display)' }}>{modalTitle}</h3>
+                <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#1a237e', fontFamily: 'var(--font-display)' }}>{modalTitle}</h3>
               </div>
               <form onSubmit={handleActionSubmit} style={{ overflowY: 'auto', padding: '16px 20px 20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-                    <label style={{ fontSize: '12px', fontWeight: 600, color: '#757575' }}>Action Taken Report (ATR)</label>
+                    <label style={{ fontSize: '14px', fontWeight: 600, color: '#757575' }}>Action Taken Report (ATR)</label>
                     <span style={{ color: '#d32f2f', marginLeft: '3px' }}>*</span>
                   </div>
                   <div style={{ position: 'relative' }}>
                     <textarea
-                      style={{ height: '120px', width: '100%', border: '1px solid #1a237e', borderRadius: '8px', background: '#fafafa', padding: '12px', fontSize: '14px', color: '#212121', resize: 'vertical', boxSizing: 'border-box' }}
+                      style={{ height: '120px', width: '100%', border: '1px solid #1a237e', borderRadius: '8px', background: '#fafafa', padding: '12px', fontSize: '16px', color: '#212121', resize: 'vertical', boxSizing: 'border-box' }}
                       placeholder={modalPlaceholder}
                       maxLength={250}
                       value={actionNote}
                       onChange={(e) => setActionNote(e.target.value)}
                       required
                     />
-                    <span style={{ position: 'absolute', bottom: '12px', right: '12px', fontSize: '11px', color: '#9e9e9e' }}>{actionNote.length} / 250</span>
+                    <span style={{ position: 'absolute', bottom: '12px', right: '12px', fontSize: '13px', color: '#9e9e9e' }}>{actionNote.length} / 250</span>
                   </div>
                 </div>
 
@@ -596,7 +596,7 @@ export default function TicketDetailsScreen({
                     type="submit"
                     disabled={!isFormValid}
                     style={{
-                      height: '44px', borderRadius: '8px', border: 'none', fontWeight: 700, fontSize: '14px', color: '#ffffff',
+                      height: '44px', borderRadius: '8px', border: 'none', fontWeight: 700, fontSize: '16px', color: '#ffffff',
                       background: isFormValid ? (isAppeal ? '#2e7d32' : '#1a237e') : '#e0e0e0',
                       cursor: isFormValid ? 'pointer' : 'not-allowed',
                     }}
@@ -606,7 +606,7 @@ export default function TicketDetailsScreen({
                   <button
                     type="button"
                     onClick={closeActionModal}
-                    style={{ height: '44px', borderRadius: '8px', border: '1px solid #1a237e', background: '#ffffff', color: '#1a237e', fontWeight: 700, fontSize: '14px' }}
+                    style={{ height: '44px', borderRadius: '8px', border: '1px solid #1a237e', background: '#ffffff', color: '#1a237e', fontWeight: 700, fontSize: '16px' }}
                   >
                     Cancel
                   </button>

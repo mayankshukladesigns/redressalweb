@@ -27,12 +27,12 @@ const RESOLVED_STATUS_OPTIONS = [
 
 const AWC_OPTIONS = [
   'All Centres',
-  'Anganwadi Centre 1',
-  'Anganwadi Centre 2',
-  'Anganwadi Centre 3',
-  'Anganwadi Centre 4',
-  'Anganwadi Centre 5',
-  'Anganwadi Centre 6',
+  'AWC 27305060101',
+  'AWC 27305060102',
+  'AWC 27305060103',
+  'AWC 27305060104',
+  'AWC 27305060105',
+  'AWC 27305060106',
 ];
 
 const CATEGORY_OPTIONS: { value: string; label: string }[] = [
@@ -59,11 +59,25 @@ const REFERENCE_TODAY = new Date(2025, 5, 30);
 
 function parseSubmittedDate(value: string | undefined): Date | null {
   if (!value) return null;
-  const match = value.match(/(\d{2})\/(\d{2})\/(\d{4})/);
-  if (!match) return null;
-  const [, dd, mm, yyyy] = match;
-  return new Date(Number(yyyy), Number(mm) - 1, Number(dd));
+  const clean = value.replace('Submitted:', '').trim();
+  const m = clean.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+  if (!m) return null;
+  return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
 }
+
+const formatAwcName = (name: string | undefined): string => {
+  if (!name) return '';
+  let clean = name.split('(')[0].trim();
+  const matchCentre = clean.match(/(?:Anganwadi\s+Centr?e)\s+(\d+)/i);
+  if (matchCentre) {
+    return `AWC 2730506010${matchCentre[1]}`;
+  }
+  const matchAwcDash = clean.match(/AWC-10(\d+)/i);
+  if (matchAwcDash) {
+    return `AWC 2730506010${matchAwcDash[1]}`;
+  }
+  return clean;
+};
 
 const COMPLAINT_PRIORITY: Record<string, number> = { Urgent: 0, Corruption: 1, General: 2 };
 const complaintRank = (t?: string) => COMPLAINT_PRIORITY[t ?? ''] ?? 3;
@@ -82,6 +96,23 @@ function byBreachRisk(a: TicketCard, b: TicketCard): number {
   const ageDiff = ticketAge(b.submittedDate) - ticketAge(a.submittedDate);
   if (ageDiff !== 0) return ageDiff;
   return complaintRank(a.complaintType) - complaintRank(b.complaintType);
+}
+
+function parseResolvedDate(value: string | undefined): Date | null {
+  if (!value) return null;
+  const clean = value.replace('Resolved:', '').trim();
+  const m = clean.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+  if (!m) return null;
+  return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+}
+
+function byLatestResolutionDate(a: TicketCard, b: TicketCard): number {
+  const dateA = parseResolvedDate((a as any).resolvedDate);
+  const dateB = parseResolvedDate((b as any).resolvedDate);
+  if (!dateA && !dateB) return 0;
+  if (!dateA) return 1;
+  if (!dateB) return -1;
+  return dateB.getTime() - dateA.getTime();
 }
 
 export default function SupervisorScreen({
@@ -224,7 +255,7 @@ export default function SupervisorScreen({
 
   const filteredTickets = activeTab === 'Pending'
     ? [...getFilteredTickets()].sort(byBreachRisk)
-    : [...getFilteredTickets()].sort(byBreachRisk);
+    : [...getFilteredTickets()].sort(byLatestResolutionDate);
 
   // Any change to scope, tab or a filter snaps the batched grid back to page one.
   const gridResetKey = [
@@ -260,72 +291,75 @@ export default function SupervisorScreen({
       {/* Title & jurisdiction banner */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '28px', fontWeight: 700, color: 'var(--primary-deep)' }}>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '30px', fontWeight: 700, color: 'var(--primary-deep)' }}>
             Beneficiary Redressal
           </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginTop: '4px' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '16px', marginTop: '4px' }}>
             Track and resolve grievances raised by beneficiaries within your jurisdiction.
           </p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 16px', background: '#ffffff', border: '1px solid var(--border-color)', borderRadius: '8px', fontSize: '13px', fontWeight: 600 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 16px', background: '#ffffff', border: '1px solid var(--border-color)', borderRadius: '8px', fontSize: '15px', fontWeight: 600 }}>
           <span>Sector 1</span>
           <span style={{ color: '#cbd5e1' }}>|</span>
           <span>AWC 6</span>
-          <span style={{ marginLeft: '4px', fontSize: '11px', color: 'var(--text-muted)', letterSpacing: '0.5px' }}>JURISDICTION</span>
+          <span style={{ marginLeft: '4px', fontSize: '13px', color: 'var(--text-muted)', letterSpacing: '0.5px' }}>JURISDICTION</span>
         </div>
       </div>
 
       {/* SUMMARY Table */}
       <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-color)', padding: '24px', boxShadow: 'var(--shadow-sm)' }}>
-        <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--primary-deep)', letterSpacing: '0.5px', textTransform: 'uppercase', display: 'block', marginBottom: '16px' }}>
+        <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--primary-deep)', letterSpacing: '0.5px', display: 'block' }}>
           Summary
         </span>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+        <p style={{ fontSize: '15px', color: 'var(--text-muted)', marginTop: '4px', marginBottom: '16px' }}>
+          Overview of pending grievances and resolved cases.
+        </p>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '16px' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
-              <th style={{ textAlign: 'left', paddingBottom: '10px', fontWeight: 600 }}></th>
-              <th style={{ textAlign: 'right', paddingBottom: '10px', fontWeight: 600 }}>
-                <button onClick={() => setBreakdownView('pending')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--accent-saffron)', fontSize: '13px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+              <th style={{ textAlign: 'left', paddingBottom: '10px', fontWeight: 600, paddingLeft: '24px' }}></th>
+              <th style={{ textAlign: 'right', paddingBottom: '10px', fontWeight: 600, width: '180px' }}>
+                <button onClick={() => setBreakdownView('pending')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--accent-saffron)', fontSize: '15px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: '2px', width: '100%' }}>
                   PENDING ▼
                 </button>
               </th>
-              <th style={{ textAlign: 'right', paddingBottom: '10px', fontWeight: 600 }}>
-                <button onClick={() => setBreakdownView('resolved')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--accent-green)', fontSize: '13px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+              <th style={{ textAlign: 'right', paddingBottom: '10px', fontWeight: 600, width: '180px' }}>
+                <button onClick={() => setBreakdownView('resolved')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--accent-green)', fontSize: '15px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: '2px', width: '100%' }}>
                   RESOLVED ▼
                 </button>
               </th>
-              <th style={{ textAlign: 'right', paddingBottom: '10px', fontWeight: 700, color: 'var(--primary-deep)', fontSize: '13px' }}>TOTAL</th>
+              <th style={{ textAlign: 'right', paddingBottom: '10px', fontWeight: 700, color: 'var(--primary-deep)', fontSize: '15px', paddingRight: '24px', width: '180px' }}>TOTAL</th>
             </tr>
           </thead>
           <tbody>
             <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-              <td style={{ padding: '12px 0', fontWeight: 500, color: 'var(--text-muted)' }}>Supervisor</td>
-              <td style={{ textAlign: 'right', padding: '12px 0', fontWeight: 700, color: 'var(--accent-saffron)', fontSize: '16px' }}>{supervisorPending}</td>
-              <td style={{ textAlign: 'right', padding: '12px 0', fontWeight: 700, color: 'var(--accent-green)', fontSize: '16px' }}>{supervisorResolved}</td>
-              <td style={{ textAlign: 'right', padding: '12px 0', fontWeight: 700, color: 'var(--primary-deep)', fontSize: '16px' }}>{supervisorTotal}</td>
+              <td style={{ padding: '12px 0', paddingLeft: '24px', fontWeight: 500, color: 'var(--text-muted)' }}>Supervisor</td>
+              <td style={{ textAlign: 'right', padding: '12px 0', fontWeight: 700, color: 'var(--accent-saffron)', fontSize: '18px' }}>{supervisorPending}</td>
+              <td style={{ textAlign: 'right', padding: '12px 0', fontWeight: 700, color: 'var(--accent-green)', fontSize: '18px' }}>{supervisorResolved}</td>
+              <td style={{ textAlign: 'right', padding: '12px 0', paddingRight: '24px', fontWeight: 700, color: 'var(--primary-deep)', fontSize: '18px' }}>{supervisorTotal}</td>
             </tr>
             <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-              <td style={{ padding: '12px 0', fontWeight: 500, color: 'var(--text-muted)' }}>AWW</td>
-              <td style={{ textAlign: 'right', padding: '12px 0', fontWeight: 700, color: 'var(--accent-saffron)', fontSize: '16px' }}>{awwPending}</td>
-              <td style={{ textAlign: 'right', padding: '12px 0', fontWeight: 700, color: 'var(--accent-green)', fontSize: '16px' }}>{awwResolved}</td>
-              <td style={{ textAlign: 'right', padding: '12px 0', fontWeight: 700, color: 'var(--primary-deep)', fontSize: '16px' }}>{awwTotal}</td>
+              <td style={{ padding: '12px 0', paddingLeft: '24px', fontWeight: 500, color: 'var(--text-muted)' }}>AWW</td>
+              <td style={{ textAlign: 'right', padding: '12px 0', fontWeight: 700, color: 'var(--accent-saffron)', fontSize: '18px' }}>{awwPending}</td>
+              <td style={{ textAlign: 'right', padding: '12px 0', fontWeight: 700, color: 'var(--accent-green)', fontSize: '18px' }}>{awwResolved}</td>
+              <td style={{ textAlign: 'right', padding: '12px 0', paddingRight: '24px', fontWeight: 700, color: 'var(--primary-deep)', fontSize: '18px' }}>{awwTotal}</td>
             </tr>
             <tr style={{ background: 'var(--primary-light)', fontWeight: 700 }}>
-              <td style={{ padding: '14px 10px', color: 'var(--primary-deep)', borderRadius: '6px 0 0 6px' }}>Total</td>
-              <td style={{ textAlign: 'right', padding: '14px 10px', color: 'var(--accent-saffron)', fontSize: '18px' }}>{totalPending}</td>
-              <td style={{ textAlign: 'right', padding: '14px 10px', color: 'var(--accent-green)', fontSize: '18px' }}>{totalResolved}</td>
-              <td style={{ textAlign: 'right', padding: '14px 10px', color: 'var(--primary-deep)', fontSize: '18px', borderRadius: '0 6px 6px 0' }}>{totalAll}</td>
+              <td style={{ padding: '14px 10px', paddingLeft: '24px', color: 'var(--primary-deep)', borderRadius: '6px 0 0 6px' }}>Total</td>
+              <td style={{ textAlign: 'right', padding: '14px 10px', color: 'var(--accent-saffron)', fontSize: '20px' }}>{totalPending}</td>
+              <td style={{ textAlign: 'right', padding: '14px 10px', color: 'var(--accent-green)', fontSize: '20px' }}>{totalResolved}</td>
+              <td style={{ textAlign: 'right', padding: '14px 10px', paddingRight: '24px', color: 'var(--primary-deep)', fontSize: '20px', borderRadius: '0 6px 6px 0' }}>{totalAll}</td>
             </tr>
           </tbody>
         </table>
-        <span style={{ display: 'block', textAlign: 'center', fontSize: '11px', color: 'var(--text-muted)', marginTop: '14px' }}>
+        <span style={{ display: 'block', textAlign: 'center', fontSize: '13px', color: 'var(--text-muted)', marginTop: '14px' }}>
           Tap PENDING or RESOLVED column for detailed breakdown
         </span>
       </div>
 
       {/* ── Assigned To — uniform position, full-width row above main content ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-        <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', flexShrink: 0 }}>Assigned To</span>
+        <span style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-muted)', flexShrink: 0 }}>Assigned To</span>
         <div style={{ display: 'flex', gap: '8px' }}>
           <button
             onClick={() => { setScopeFilter('me'); setSelectedAWC('All Centres'); }}
@@ -334,7 +368,7 @@ export default function SupervisorScreen({
               border: `1.5px solid ${scopeFilter === 'me' ? 'var(--primary-deep)' : 'var(--border-color)'}`,
               background: scopeFilter === 'me' ? 'var(--primary-deep)' : '#ffffff',
               color: scopeFilter === 'me' ? '#ffffff' : 'var(--text-dark)',
-              fontSize: '13px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
+              fontSize: '15px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
             }}
           >
             Me
@@ -346,7 +380,7 @@ export default function SupervisorScreen({
               border: `1.5px solid ${scopeFilter === 'aww' ? 'var(--primary-deep)' : 'var(--border-color)'}`,
               background: scopeFilter === 'aww' ? 'var(--primary-deep)' : '#ffffff',
               color: scopeFilter === 'aww' ? '#ffffff' : 'var(--text-dark)',
-              fontSize: '13px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
+              fontSize: '15px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
             }}
           >
             AWW
@@ -358,7 +392,7 @@ export default function SupervisorScreen({
             className="form-select"
             value={selectedAWC}
             onChange={(e) => setSelectedAWC(e.target.value)}
-            style={{ height: '38px', padding: '0 32px 0 12px', fontSize: '13px', fontWeight: 500, maxWidth: '220px' }}
+            style={{ height: '38px', padding: '0 32px 0 12px', fontSize: '15px', fontWeight: 500, maxWidth: '220px' }}
           >
             {AWC_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
           </select>
@@ -371,11 +405,11 @@ export default function SupervisorScreen({
         {/* Left Filter Sidebar */}
         <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-lg)', padding: '20px 20px', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: 'var(--shadow-sm)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px' }}>
-            <h3 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--primary-deep)' }}>
+            <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--primary-deep)' }}>
               Filter Options
             </h3>
             {activeFilterCount > 0 && (
-              <span style={{ background: 'var(--primary-deep)', color: '#fff', borderRadius: '99px', padding: '2px 8px', fontSize: '11px', fontWeight: 700 }}>
+              <span style={{ background: 'var(--primary-deep)', color: '#fff', borderRadius: '99px', padding: '2px 8px', fontSize: '13px', fontWeight: 700 }}>
                 {activeFilterCount}
               </span>
             )}
@@ -384,11 +418,11 @@ export default function SupervisorScreen({
           {/* Overdue Toggle — SLA breach only applies to open (Pending) tickets */}
           {activeTab === 'Pending' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Urgency</label>
+              <label style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Urgency</label>
               <button
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  padding: '8px 16px', borderRadius: '20px', fontSize: '13px', fontWeight: 600,
+                  padding: '8px 16px', borderRadius: '20px', fontSize: '15px', fontWeight: 600,
                   cursor: 'pointer', transition: 'all 0.2s',
                   background: isOverdueOnly ? 'var(--color-danger)' : 'var(--bg-main)',
                   color: isOverdueOnly ? '#fff' : 'var(--text-dark)',
@@ -404,10 +438,10 @@ export default function SupervisorScreen({
           {/* Status — Resolved tab only */}
           {activeTab === 'Resolved' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Status</label>
+              <label style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Status</label>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 {RESOLVED_STATUS_OPTIONS.map((s) => (
-                  <label key={s.value} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer', padding: '4px 0' }}>
+                  <label key={s.value} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', cursor: 'pointer', padding: '4px 0' }}>
                     <input
                       type="checkbox"
                       checked={appliedStatuses.includes(s.value)}
@@ -424,12 +458,12 @@ export default function SupervisorScreen({
 
           {/* Beneficiary Category */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Beneficiary Category</label>
+            <label style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Beneficiary Category</label>
             <select
               className="form-select"
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              style={{ width: '100%', height: '40px', padding: '0 32px 0 12px', fontSize: '13px' }}
+              style={{ width: '100%', height: '40px', padding: '0 32px 0 12px', fontSize: '15px' }}
             >
               {CATEGORY_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -439,7 +473,7 @@ export default function SupervisorScreen({
 
           {/* Date Range */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', position: 'relative' }}>
-            <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Submission Date</label>
+            <label style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Submission Date</label>
             <button
               ref={dateButtonRef}
               className="ux4g-btn ux4g-btn-outline-neutral ux4g-btn-md"
@@ -467,12 +501,12 @@ export default function SupervisorScreen({
                   background: '#ffffff', border: '1px solid var(--border-color)',
                   borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', padding: '20px', zIndex: 50,
                 }}>
-                  <h4 style={{ fontFamily: 'var(--font-display)', fontSize: '15px', fontWeight: 700, color: 'var(--primary-deep)', marginBottom: '14px' }}>
+                  <h4 style={{ fontFamily: 'var(--font-display)', fontSize: '17px', fontWeight: 700, color: 'var(--primary-deep)', marginBottom: '14px' }}>
                     Filter by Date Range
                   </h4>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     {([['7','Last 7 Days'],['14','Last 14 Days'],['21','Last 21 Days'],['21+','More than 21 Days']] as [DateRangeOption, string][]).map(([value, label]) => (
-                      <label key={value} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 4px', cursor: 'pointer', fontSize: '13px', fontWeight: 600, color: draftDateOption === value ? 'var(--primary-deep)' : 'var(--text-dark)' }}>
+                      <label key={value} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 4px', cursor: 'pointer', fontSize: '15px', fontWeight: 600, color: draftDateOption === value ? 'var(--primary-deep)' : 'var(--text-dark)' }}>
                         <input type="radio" name="dateRange" checked={draftDateOption === value} onChange={() => setDraftDateOption(value)}
                           style={{ accentColor: 'var(--primary-deep)', width: '16px', height: '16px' }} />
                         {label}
@@ -492,7 +526,7 @@ export default function SupervisorScreen({
           {activeFilterCount > 0 && (
             <button
               className="ux4g-btn ux4g-btn-outline-neutral ux4g-btn-sm"
-              style={{ borderRadius: '20px', fontSize: '12px' }}
+              style={{ borderRadius: '20px', fontSize: '14px' }}
               onClick={() => { setIsOverdueOnly(false); setSelectedCategory('All'); setAppliedStatuses([]); setAppliedDateOption('All'); }}
             >
               Reset Filters
@@ -530,7 +564,7 @@ export default function SupervisorScreen({
 
           {/* Closure Banner */}
           {activeTab === 'Resolved' && awaitingClosureCount > 0 && (
-            <div style={{ background: '#fff8e1', border: '1px solid #ffe082', borderRadius: 'var(--radius-md)', padding: '10px 16px', fontSize: '13px', fontWeight: 600, color: '#f57f17', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ background: '#fff8e1', border: '1px solid #ffe082', borderRadius: 'var(--radius-md)', padding: '10px 16px', fontSize: '15px', fontWeight: 600, color: '#f57f17', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span>⚠</span>
               {awaitingClosureCount} ticket{awaitingClosureCount > 1 ? 's' : ''} awaiting CDPO closure
             </div>
@@ -540,8 +574,8 @@ export default function SupervisorScreen({
           {filteredTickets.length === 0 ? (
             <div style={{ padding: '64px 32px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-lg)', textAlign: 'center', color: 'var(--text-muted)' }}>
               <RefreshCw size={40} style={{ opacity: 0.5, marginBottom: '16px' }} />
-              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 600, color: 'var(--primary-deep)' }}>No matching tickets</h3>
-              <p style={{ fontSize: '13px', marginTop: '4px' }}>Try switching scope or adjusting the filters.</p>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 600, color: 'var(--primary-deep)' }}>No matching tickets</h3>
+              <p style={{ fontSize: '15px', marginTop: '4px' }}>Try switching scope or adjusting the filters.</p>
             </div>
           ) : (
             <BatchedTicketGrid items={filteredTickets} resetKey={gridResetKey}
@@ -562,20 +596,24 @@ export default function SupervisorScreen({
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <h4 className="ticket-title" style={{ margin: 0 }}>{ticket.beneficiaryName}</h4>
                       {ticket.beneficiaryType && (
-                        <span style={{ fontSize: '11px', background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: '4px', fontWeight: 600 }}>
+                        <span style={{ fontSize: '13px', background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: '4px', fontWeight: 600 }}>
                           {ticket.beneficiaryType}
                         </span>
                       )}
                     </div>
-                    <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--primary-deep)' }}>{ticket.topic}</div>
+                    <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--primary-deep)' }}>{ticket.topic}</div>
                     <p className="ticket-desc">{ticket.description}</p>
                     <div className="ticket-metadata">
-                      <span className="ticket-date">Submitted: {ticket.submittedDate?.replace('Submitted: ', '')}</span>
+                      {activeTab === 'Resolved' ? (
+                        <span className="ticket-date">{(ticket as any).resolvedDate}</span>
+                      ) : (
+                        <span className="ticket-date">Submitted: {ticket.submittedDate?.replace('Submitted: ', '')}</span>
+                      )}
                       {activeTab === 'Pending' && (
                         <span style={{ fontWeight: 700, color: overdue ? 'var(--color-danger)' : 'var(--accent-ashoka)' }}>{ticket.daysLabel}</span>
                       )}
                     </div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 500 }}>AWC: {ticket.awcName}</div>
+                    <div style={{ fontSize: '14px', color: 'var(--text-muted)', fontWeight: 500 }}>AWC: {formatAwcName(ticket.awcName)}</div>
                     <button className="ux4g-btn ux4g-btn-secondary ux4g-btn-md" style={{ width: '100%', marginTop: '4px', display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'center' }}
                       onClick={(e) => { e.stopPropagation(); setSelectedTicket(ticket); }}>
                       <Eye size={14} /> View Details
@@ -602,22 +640,22 @@ export default function SupervisorScreen({
         <div className="modal-backdrop" onClick={() => setBreakdownView(null)}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ padding: '28px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '19px', fontWeight: 700, color: 'var(--primary-deep)' }}>Pending Breakdown</h3>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '21px', fontWeight: 700, color: 'var(--primary-deep)' }}>Pending Breakdown</h3>
               <button onClick={() => setBreakdownView(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '4px', display: 'flex', borderRadius: '6px' }}>
                 <X size={20} />
               </button>
             </div>
             <div style={{ background: 'var(--primary-light)', borderRadius: 'var(--radius-lg)', padding: '18px 24px', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--primary-deep)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Total Pending</span>
-              <span style={{ fontFamily: 'var(--font-display)', fontSize: '30px', fontWeight: 800, color: 'var(--primary-deep)', lineHeight: 1 }}>{totalPending.toLocaleString()}</span>
+              <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--primary-deep)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Total Pending</span>
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: '32px', fontWeight: 800, color: 'var(--primary-deep)', lineHeight: 1 }}>{totalPending.toLocaleString()}</span>
             </div>
             <div style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', overflow: 'hidden', marginBottom: '20px' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '16px' }}>
                 <thead>
                   <tr style={{ background: 'var(--bg-main)' }}>
-                    <th style={{ textAlign: 'left', padding: '11px 16px', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Role</th>
-                    <th style={{ textAlign: 'right', padding: '11px 16px', fontSize: '11px', fontWeight: 700, color: 'var(--accent-saffron)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Pending</th>
-                    <th style={{ textAlign: 'right', padding: '11px 16px', fontSize: '11px', fontWeight: 700, color: 'var(--color-danger)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Overdue</th>
+                    <th style={{ textAlign: 'left', padding: '11px 16px', fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Role</th>
+                    <th style={{ textAlign: 'right', padding: '11px 16px', fontSize: '13px', fontWeight: 700, color: 'var(--accent-saffron)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Pending</th>
+                    <th style={{ textAlign: 'right', padding: '11px 16px', fontSize: '13px', fontWeight: 700, color: 'var(--color-danger)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Overdue</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -654,21 +692,21 @@ export default function SupervisorScreen({
         <div className="modal-backdrop" onClick={() => setBreakdownView(null)}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ padding: '28px', maxWidth: '560px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '19px', fontWeight: 700, color: 'var(--primary-deep)' }}>Resolved Breakdown</h3>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '21px', fontWeight: 700, color: 'var(--primary-deep)' }}>Resolved Breakdown</h3>
               <button onClick={() => setBreakdownView(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '4px', display: 'flex', borderRadius: '6px' }}>
                 <X size={20} />
               </button>
             </div>
             <div style={{ background: 'var(--accent-green-light)', borderRadius: 'var(--radius-lg)', padding: '18px 24px', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--accent-green)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Total Resolved</span>
-                <span style={{ fontFamily: 'var(--font-display)', fontSize: '30px', fontWeight: 800, color: 'var(--accent-green)', lineHeight: 1 }}>{totalResolved.toLocaleString()}</span>
+                <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--accent-green)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Total Resolved</span>
+                <span style={{ fontFamily: 'var(--font-display)', fontSize: '32px', fontWeight: 800, color: 'var(--accent-green)', lineHeight: 1 }}>{totalResolved.toLocaleString()}</span>
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
-                <span style={{ background: 'rgba(255,255,255,0.7)', borderRadius: '999px', padding: '5px 12px', fontSize: '12px', fontWeight: 600, color: 'var(--text-dark)' }}>
+                <span style={{ background: 'rgba(255,255,255,0.7)', borderRadius: '999px', padding: '5px 12px', fontSize: '14px', fontWeight: 600, color: 'var(--text-dark)' }}>
                   Supervisor <strong style={{ color: 'var(--accent-green)' }}>{supervisorResolved}</strong>
                 </span>
-                <span style={{ background: 'rgba(255,255,255,0.7)', borderRadius: '999px', padding: '5px 12px', fontSize: '12px', fontWeight: 600, color: 'var(--text-dark)' }}>
+                <span style={{ background: 'rgba(255,255,255,0.7)', borderRadius: '999px', padding: '5px 12px', fontSize: '14px', fontWeight: 600, color: 'var(--text-dark)' }}>
                   AWW <strong style={{ color: 'var(--accent-green)' }}>{awwResolved}</strong>
                 </span>
               </div>
@@ -683,9 +721,9 @@ export default function SupervisorScreen({
                 <div key={stat.label} style={{ background: stat.bg, borderRadius: 'var(--radius-lg)', padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <stat.icon size={14} style={{ color: stat.fg }} />
-                    <span style={{ fontSize: '11px', fontWeight: 700, color: stat.fg, textTransform: 'uppercase', letterSpacing: '0.4px' }}>{stat.label}</span>
+                    <span style={{ fontSize: '13px', fontWeight: 700, color: stat.fg, textTransform: 'uppercase', letterSpacing: '0.4px' }}>{stat.label}</span>
                   </div>
-                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '26px', fontWeight: 800, color: stat.fg, lineHeight: 1 }}>{stat.total}</div>
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '28px', fontWeight: 800, color: stat.fg, lineHeight: 1 }}>{stat.total}</div>
                   <div style={{ display: 'flex', gap: '6px' }}>
                     <span style={{ background: 'rgba(255,255,255,0.7)', borderRadius: '999px', padding: '3px 9px', fontSize: '10.5px', fontWeight: 600, color: 'var(--text-dark)' }}>Supervisor <strong>{stat.sup}</strong></span>
                     <span style={{ background: 'rgba(255,255,255,0.7)', borderRadius: '999px', padding: '3px 9px', fontSize: '10.5px', fontWeight: 600, color: 'var(--text-dark)' }}>AWW <strong>{stat.aww}</strong></span>

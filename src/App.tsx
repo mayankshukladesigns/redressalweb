@@ -17,7 +17,7 @@ export default function App() {
   return (
     <div
       className="app-container"
-      style={{ fontSize: `${16 + fontSizeOffset}px` }}
+      style={{ fontSize: `${18 + fontSizeOffset}px` }}
     >
       <Header
         activeRole={activeRole}

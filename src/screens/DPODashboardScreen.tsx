@@ -35,8 +35,8 @@ const PROJECT_OPTIONS = ['All Projects', 'Sanganer', 'Jotwara', 'Amer', 'Sangane
 const SECTOR_OPTIONS = ['All Sectors', 'Sector 1', 'Sector 2', 'Sector 3', 'Sector 4'];
 const AWC_OPTIONS = [
   'All Centres',
-  'Anganwadi Centre 1', 'Anganwadi Centre 2', 'Anganwadi Centre 3',
-  'Anganwadi Centre 4', 'Anganwadi Centre 5', 'Anganwadi Centre 6',
+  'AWC 27305060101', 'AWC 27305060102', 'AWC 27305060103',
+  'AWC 27305060104', 'AWC 27305060105', 'AWC 27305060106',
 ];
 const COMPLAINT_TYPES = ['Urgent', 'Corruption', 'General'];
 const COMPLAINT_PRIORITY: Record<string, number> = { Urgent: 0, Corruption: 1, General: 2 };
@@ -57,6 +57,20 @@ function parseDateStr(str: string): Date | null {
   if (!m) return null;
   return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
 }
+
+const formatAwcName = (name: string | undefined): string => {
+  if (!name) return '';
+  let clean = name.split('(')[0].trim();
+  const matchCentre = clean.match(/(?:Anganwadi\s+Centr?e)\s+(\d+)/i);
+  if (matchCentre) {
+    return `AWC 2730506010${matchCentre[1]}`;
+  }
+  const matchAwcDash = clean.match(/AWC-10(\d+)/i);
+  if (matchAwcDash) {
+    return `AWC 2730506010${matchAwcDash[1]}`;
+  }
+  return clean;
+};
 
 function passesDateFilter(
   dateStr: string,
@@ -121,12 +135,12 @@ const DateRangePopover = ({
         width: 280, background: '#ffffff', border: '1px solid var(--border-color)',
         borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', padding: '18px 20px',
       }}>
-        <h4 style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, color: 'var(--primary-deep)', marginBottom: 12 }}>
+        <h4 style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: 'var(--primary-deep)', marginBottom: 12 }}>
           Filter by Date Range
         </h4>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {([['7', 'Last 7 Days'], ['14', 'Last 14 Days'], ['21', 'Last 21 Days'], ['21+', 'More than 21 Days']] as [DateRangeOption, string][]).map(([val, lbl]) => (
-            <label key={val} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 4px', cursor: 'pointer', fontSize: 13, fontWeight: draft === val ? 600 : 400, color: draft === val ? 'var(--primary-deep)' : 'var(--text-dark)' }}>
+            <label key={val} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 4px', cursor: 'pointer', fontSize: 15, fontWeight: draft === val ? 600 : 400, color: draft === val ? 'var(--primary-deep)' : 'var(--text-dark)' }}>
               <input type="radio" name="dateRangeDPO" checked={draft === val} onChange={() => setDraft(val)} style={{ accentColor: 'var(--primary-deep)', width: 16, height: 16 }} />
               {lbl}
             </label>
@@ -158,20 +172,20 @@ const PendingBreakdownModal = ({
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-card" onClick={e => e.stopPropagation()} style={{ padding: 28, maxWidth: 480 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 19, fontWeight: 700, color: 'var(--primary-deep)' }}>Pending Breakdown</h3>
+          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 21, fontWeight: 700, color: 'var(--primary-deep)' }}>Pending Breakdown</h3>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4, display: 'flex', borderRadius: 6 }}><X size={20} /></button>
         </div>
         <div style={{ background: '#e8eaf6', borderRadius: 'var(--radius-lg)', padding: '16px 24px', marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: '#5c67b5', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Total Pending</span>
-          <span style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 800, color: '#1a237e', lineHeight: 1 }}>{totalP.toLocaleString()}</span>
+          <span style={{ fontSize: 15, fontWeight: 700, color: '#5c67b5', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Total Pending</span>
+          <span style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 800, color: '#1a237e', lineHeight: 1 }}>{totalP.toLocaleString()}</span>
         </div>
         <div style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', overflow: 'hidden', marginBottom: 18 }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 16 }}>
             <thead>
               <tr style={{ background: 'var(--bg-main)' }}>
-                <th style={{ textAlign: 'left', padding: '10px 16px', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Role</th>
-                <th style={{ textAlign: 'right', padding: '10px 16px', fontSize: 11, fontWeight: 700, color: '#e65100', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Pending</th>
-                <th style={{ textAlign: 'right', padding: '10px 16px', fontSize: 11, fontWeight: 700, color: '#d32f2f', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Overdue</th>
+                <th style={{ textAlign: 'left', padding: '10px 16px', fontSize: 13, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Role</th>
+                <th style={{ textAlign: 'right', padding: '10px 16px', fontSize: 13, fontWeight: 700, color: '#e65100', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Pending</th>
+                <th style={{ textAlign: 'right', padding: '10px 16px', fontSize: 13, fontWeight: 700, color: '#d32f2f', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Overdue</th>
               </tr>
             </thead>
             <tbody>
@@ -183,21 +197,21 @@ const PendingBreakdownModal = ({
               ].map(row => (
                 <tr key={row.r} style={{ borderTop: '1px solid var(--border-color)' }}>
                   <td style={{ padding: '12px 16px', color: 'var(--text-dark)', fontWeight: 500 }}>{row.r}</td>
-                  <td style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 700, color: '#e65100', fontSize: 15 }}>{row.p}</td>
-                  <td style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 700, color: '#d32f2f', fontSize: 15 }}>{row.o}</td>
+                  <td style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 700, color: '#e65100', fontSize: 17 }}>{row.p}</td>
+                  <td style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 700, color: '#d32f2f', fontSize: 17 }}>{row.o}</td>
                 </tr>
               ))}
               <tr style={{ background: '#e8eaf6', borderTop: '2px solid var(--border-color)' }}>
                 <td style={{ padding: '12px 16px', color: '#1a237e', fontWeight: 700 }}>Total</td>
-                <td style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 800, color: '#e65100', fontSize: 16 }}>{totalP}</td>
-                <td style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 800, color: '#d32f2f', fontSize: 16 }}>{totalO}</td>
+                <td style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 800, color: '#e65100', fontSize: 18 }}>{totalP}</td>
+                <td style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 800, color: '#d32f2f', fontSize: 18 }}>{totalO}</td>
               </tr>
             </tbody>
           </table>
         </div>
         <div style={{ display: 'flex', gap: 10, background: 'var(--color-info-light)', borderRadius: 'var(--radius-md)', padding: '12px 14px' }}>
           <Info size={15} style={{ color: 'var(--color-info)', flexShrink: 0, marginTop: 1 }} />
-          <p style={{ margin: 0, fontSize: 12.5, color: 'var(--text-dark)', lineHeight: 1.55 }}>
+          <p style={{ margin: 0, fontSize: 14.5, color: 'var(--text-dark)', lineHeight: 1.55 }}>
             <strong>Pending</strong> is the count of tickets still awaiting action. <strong>Overdue</strong> tickets are grievances pending for more than 21 days and need immediate attention.
           </p>
         </div>
@@ -231,17 +245,17 @@ const ResolvedBreakdownModal = ({
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-card" onClick={e => e.stopPropagation()} style={{ padding: 28, maxWidth: 580 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 19, fontWeight: 700, color: 'var(--primary-deep)' }}>Resolved Breakdown</h3>
+          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 21, fontWeight: 700, color: 'var(--primary-deep)' }}>Resolved Breakdown</h3>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4, display: 'flex', borderRadius: 6 }}><X size={20} /></button>
         </div>
         <div style={{ background: 'var(--accent-green-light)', borderRadius: 'var(--radius-lg)', padding: '16px 24px', marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent-green)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Total Resolved</span>
-            <span style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 800, color: 'var(--accent-green)', lineHeight: 1 }}>{totalResolved.toLocaleString()}</span>
+            <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--accent-green)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Total Resolved</span>
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 800, color: 'var(--accent-green)', lineHeight: 1 }}>{totalResolved.toLocaleString()}</span>
           </div>
           <div style={{ display: 'flex', gap: 6 }}>
             {[{l:'DPO',v:byRole.dpo},{l:'CDPO',v:byRole.cdpo},{l:'Supervisor',v:byRole.sup},{l:'AWW',v:byRole.aww}].map(r => (
-              <span key={r.l} style={{ background: 'rgba(255,255,255,0.75)', borderRadius: 999, padding: '4px 10px', fontSize: 11, fontWeight: 600, color: 'var(--text-dark)' }}>
+              <span key={r.l} style={{ background: 'rgba(255,255,255,0.75)', borderRadius: 999, padding: '4px 10px', fontSize: 13, fontWeight: 600, color: 'var(--text-dark)' }}>
                 {r.l} <strong style={{ color: 'var(--accent-green)' }}>{r.v}</strong>
               </span>
             ))}
@@ -254,12 +268,12 @@ const ResolvedBreakdownModal = ({
               <div key={card.label} style={{ background: card.bg, border: `1px solid ${card.border}`, borderRadius: 'var(--radius-lg)', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <Icon size={13} style={{ color: card.color }} />
-                  <span style={{ fontSize: 11, fontWeight: 700, color: card.color, textTransform: 'uppercase', letterSpacing: '0.4px' }}>{card.label}</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: card.color, textTransform: 'uppercase', letterSpacing: '0.4px' }}>{card.label}</span>
                 </div>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 800, color: card.color, lineHeight: 1 }}>{card.total}</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 800, color: card.color, lineHeight: 1 }}>{card.total}</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4, borderTop: `1px solid ${card.border}`, paddingTop: 8 }}>
                   {card.rows.map(r => (
-                    <div key={r.r} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: card.color }}>
+                    <div key={r.r} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13.5, color: card.color }}>
                       <span>{r.r}</span><strong>{r.v}</strong>
                     </div>
                   ))}
@@ -304,30 +318,30 @@ const TicketCardComponent = ({ card, onView }: { card: TicketCard; onView: () =>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', margin: '4px 0 8px 0' }}>
-        <h4 className="ticket-title" style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>{card.beneficiaryName || card.byName}</h4>
+        <h4 className="ticket-title" style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>{card.beneficiaryName || card.byName}</h4>
         {card.beneficiaryType && (
-          <span style={{ fontSize: 11, background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: 4, fontWeight: 600, flexShrink: 0 }}>
+          <span style={{ fontSize: 13, background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: 4, fontWeight: 600, flexShrink: 0 }}>
             {card.beneficiaryType}
           </span>
         )}
       </div>
 
-      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--primary-deep)', marginBottom: 2 }}>{card.topic || card.title}</div>
-      <p className="ticket-desc" style={{ fontSize: 13, color: 'var(--text-muted)', margin: '6px 0 10px 0', lineHeight: 1.4 }}>
+      <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--primary-deep)', marginBottom: 2 }}>{card.topic || card.title}</div>
+      <p className="ticket-desc" style={{ fontSize: 15, color: 'var(--text-muted)', margin: '6px 0 10px 0', lineHeight: 1.4 }}>
         {card.description}
       </p>
 
       <div className="ticket-metadata" style={{ marginTop: 4, borderTop: 'none', paddingTop: 0 }}>
-        <span className="ticket-date" style={{ fontSize: 12 }}>{card.submittedDate?.replace('Submitted:', '')}</span>
-        <span style={{ fontWeight: 700, fontSize: 12, color: accent }}>
+        <span className="ticket-date" style={{ fontSize: 14 }}>{card.submittedDate?.includes('Submitted') ? card.submittedDate : `Submitted: ${card.submittedDate}`}</span>
+        <span style={{ fontWeight: 700, fontSize: 14, color: accent }}>
           {card.daysLabel || (isTicketOverdue ? `Overdue by ${age - 20} Days` : 'Urgent')}
         </span>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, color: 'var(--text-muted)', borderTop: '1px solid #f1f5f9', paddingTop: 8, marginTop: 8 }}>
-        <span>AWC: <strong style={{ color: 'var(--primary-deep)' }}>{card.awcName} ({card.sector || 'Sector 1'})</strong></span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 14, color: 'var(--text-muted)', borderTop: '1px solid #f1f5f9', paddingTop: 8, marginTop: 8 }}>
+        <span>AWC: <strong style={{ color: 'var(--primary-deep)' }}>{formatAwcName(card.awcName)}</strong></span>
         {isCorruptionOrUrgent && (card.documentsCount ?? 0) > 0 && (
-          <span style={{ background: '#e8eaf6', color: '#1565c0', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600, border: '1px solid #90caf9' }}>
+          <span style={{ background: '#e8eaf6', color: '#1565c0', padding: '2px 8px', borderRadius: 4, fontSize: 13, fontWeight: 600, border: '1px solid #90caf9' }}>
             Doc Uploaded
           </span>
         )}
@@ -354,44 +368,44 @@ const ResolvedCard = ({ card, onView }: { card: ResolvedTicketCard; onView: () =
   return (
     <div className="ticket-card" style={{ cursor: 'pointer', padding: 0, overflow: 'hidden' }} onClick={onView}>
       {card.awaitingCdpoClosure && (
-        <div style={{ background: '#fff8e1', borderBottom: '1px solid #ffe082', padding: '7px 18px', fontSize: 12, fontWeight: 700, color: '#f57f17' }}>
+        <div style={{ background: '#fff8e1', borderBottom: '1px solid #ffe082', padding: '7px 18px', fontSize: 14, fontWeight: 700, color: '#f57f17' }}>
           Awaiting CDPO Closure
         </div>
       )}
       <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 10 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span className="ticket-id">{card.ticketNumber}</span>
-          <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 10.5, fontWeight: 700, background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}>
+          <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 12.5, fontWeight: 700, background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}>
             {cfg.label}
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          <h4 className="ticket-title" style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>{card.beneficiaryName}</h4>
+          <h4 className="ticket-title" style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>{card.beneficiaryName}</h4>
           {card.beneficiaryType && (
-            <span style={{ fontSize: 11, background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: 4, fontWeight: 600, flexShrink: 0 }}>
+            <span style={{ fontSize: 13, background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: 4, fontWeight: 600, flexShrink: 0 }}>
               {card.beneficiaryType}
             </span>
           )}
         </div>
         <div>
-          {card.topic && <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--primary-deep)', marginBottom: 2 }}>{card.topic}</div>}
-          <p className="ticket-desc" style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>{card.description}</p>
+          {card.topic && <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--primary-deep)', marginBottom: 2 }}>{card.topic}</div>}
+          <p className="ticket-desc" style={{ fontSize: 15, color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>{card.description}</p>
         </div>
-        <div style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 500 }}>
+        <div style={{ fontSize: 14, color: 'var(--text-muted)', fontWeight: 500 }}>
           {card.resolvedDate}
         </div>
         {card.actionTaken && (
           <div style={{ background: '#f8fafc', border: '1px solid var(--border-color)', borderRadius: 6, padding: '8px 12px' }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>
               Action Taken Report (ATR)
             </div>
-            <p style={{ fontSize: 12.5, color: 'var(--text-dark)', margin: 0, lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' } as any}>
+            <p style={{ fontSize: 14.5, color: 'var(--text-dark)', margin: 0, lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' } as any}>
               {card.actionTaken}
             </p>
           </div>
         )}
-        <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-          AWC: <strong style={{ color: 'var(--primary-deep)' }}>{card.awcName} ({card.sector || 'Sector 1'})</strong>
+        <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>
+          AWC: <strong style={{ color: 'var(--primary-deep)' }}>{formatAwcName(card.awcName)}</strong>
         </div>
         <button className="ux4g-btn ux4g-btn-secondary ux4g-btn-md" style={{ width: '100%', display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center' }}
           onClick={e => { e.stopPropagation(); onView(); }}>
@@ -411,31 +425,31 @@ const AppealCard = ({ card, onResolve, onViewDetails }: { card: AppealTicket; on
     <div className="ticket-card" style={{ borderColor: isResolved ? 'var(--accent-green)' : 'var(--accent-saffron)' }} onClick={isResolved ? onViewDetails : onResolve}>
       <div className="ticket-card-header">
         <span className="ticket-id">{card.ticketNumber}</span>
-        <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 10.5, fontWeight: 700, background: roleStyle.bg, color: roleStyle.color, border: `1px solid ${roleStyle.border}` }}>
+        <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 12.5, fontWeight: 700, background: roleStyle.bg, color: roleStyle.color, border: `1px solid ${roleStyle.border}` }}>
           {card.roleLabel?.toUpperCase()}
         </span>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', margin: '4px 0 8px 0' }}>
-        <h4 className="ticket-title" style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>{card.byName}</h4>
-        <span style={{ fontSize: 11, background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: 4, fontWeight: 600, flexShrink: 0 }}>
+        <h4 className="ticket-title" style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>{card.byName}</h4>
+        <span style={{ fontSize: 13, background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: 4, fontWeight: 600, flexShrink: 0 }}>
           Beneficiary
         </span>
       </div>
 
-      <h4 className="ticket-title" style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>{card.title}</h4>
+      <h4 className="ticket-title" style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>{card.title}</h4>
       
       <div style={{ background: '#f8fafc', border: '1px solid var(--border-color)', borderRadius: 6, padding: '8px 12px', margin: '8px 0 10px 0' }}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 }}>Appeal Reason</div>
-        <p style={{ fontSize: 12.5, color: 'var(--text-dark)', margin: 0, lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' } as any}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 }}>Appeal Reason</div>
+        <p style={{ fontSize: 14.5, color: 'var(--text-dark)', margin: 0, lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' } as any}>
           {card.appealReason}
         </p>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: 'var(--text-muted)', marginBottom: 8, borderTop: '1px solid #f1f5f9', paddingTop: 8, marginTop: 8 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13.5, color: 'var(--text-muted)', marginBottom: 8, borderTop: '1px solid #f1f5f9', paddingTop: 8, marginTop: 8 }}>
         <span>Filed: <strong>{card.appealDate?.replace('Appeal Filed:', '') || '28 Jun 2025'}</strong></span>
         {card.documents && (card.complaintType === 'Corruption' || card.complaintType === 'Urgent') && (
-          <span style={{ background: '#e8eaf6', color: '#1565c0', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600, border: '1px solid #90caf9' }}>
+          <span style={{ background: '#e8eaf6', color: '#1565c0', padding: '2px 8px', borderRadius: 4, fontSize: 13, fontWeight: 600, border: '1px solid #90caf9' }}>
             Doc Uploaded
           </span>
         )}
@@ -444,7 +458,7 @@ const AppealCard = ({ card, onResolve, onViewDetails }: { card: AppealTicket; on
       {isResolved ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--accent-green-light)', padding: '8px 12px', borderRadius: 6, marginTop: 4, border: '1px solid var(--accent-green)' }}>
           <CheckCircle2 size={14} style={{ color: 'var(--accent-green)' }} />
-          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-green)' }}>
+          <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--accent-green)' }}>
             Appeal Resolved
           </span>
         </div>
@@ -669,7 +683,7 @@ export default function DPOView({
             daysLabel: 'Resolved',
             daysType: 'resolved' as any,
             isOverdue: false,
-            awcName: 'Anganwadi Centre 1',
+            awcName: 'AWC 27305060101',
             status: 'APPEAL_RESOLVED',
             actionTaken: t.resolutionNotes || 'Appeal resolved successfully by DPO.',
             assignedTo: t.roleLabel as AssignedFilter,
@@ -822,38 +836,41 @@ export default function DPOView({
       {/* Title & jurisdiction banner */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '28px', fontWeight: 700, color: 'var(--primary-deep)' }}>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '30px', fontWeight: 700, color: 'var(--primary-deep)' }}>
             Beneficiary Redressal
           </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginTop: '4px' }}>
-            Review project complaints, audit Supervisor resolutions, and manage escalations.
+          <p style={{ color: 'var(--text-muted)', fontSize: '16px', marginTop: '4px' }}>
+            Review district complaints, audit Supervisor and Anganwadi Worker ticket resolutions, and resolve active appeals.
           </p>
         </div>
-        <div style={{ padding: '8px 16px', background: '#ffffff', border: '1px solid var(--border-color)', borderRadius: '8px', fontSize: '13px', fontWeight: 600 }}>
+        <div style={{ padding: '8px 16px', background: '#ffffff', border: '1px solid var(--border-color)', borderRadius: '8px', fontSize: '15px', fontWeight: 600 }}>
           District: <span style={{ color: 'var(--accent-saffron)' }}>Jaipur District</span>
         </div>
       </div>
 
       {/* SUMMARY Table */}
       <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-color)', padding: '24px', boxShadow: 'var(--shadow-sm)' }}>
-        <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--primary-deep)', letterSpacing: '0.5px', textTransform: 'uppercase', display: 'block', marginBottom: '16px' }}>
+        <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--primary-deep)', letterSpacing: '0.5px', display: 'block' }}>
           Summary
         </span>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+        <p style={{ fontSize: '15px', color: 'var(--text-muted)', marginTop: '4px', marginBottom: '16px' }}>
+          Overview of pending grievances and resolved cases.
+        </p>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '16px' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
-              <th style={{ textAlign: 'left', paddingBottom: '10px', fontWeight: 600 }}></th>
-              <th style={{ textAlign: 'right', paddingBottom: '10px', fontWeight: 600 }}>
-                <button onClick={() => setPendingModal(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--accent-saffron)', fontSize: '13px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+              <th style={{ textAlign: 'left', paddingBottom: '10px', fontWeight: 600, paddingLeft: '24px' }}></th>
+              <th style={{ textAlign: 'right', paddingBottom: '10px', fontWeight: 600, width: '180px' }}>
+                <button onClick={() => setPendingModal(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--accent-saffron)', fontSize: '15px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: '2px', width: '100%' }}>
                   PENDING ▼
                 </button>
               </th>
-              <th style={{ textAlign: 'right', paddingBottom: '10px', fontWeight: 600 }}>
-                <button onClick={() => setResolvedModal(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--accent-green)', fontSize: '13px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+              <th style={{ textAlign: 'right', paddingBottom: '10px', fontWeight: 600, width: '180px' }}>
+                <button onClick={() => setResolvedModal(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--accent-green)', fontSize: '15px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: '2px', width: '100%' }}>
                   RESOLVED ▼
                 </button>
               </th>
-              <th style={{ textAlign: 'right', paddingBottom: '10px', fontWeight: 700, color: 'var(--primary-deep)', fontSize: '13px' }}>TOTAL</th>
+              <th style={{ textAlign: 'right', paddingBottom: '10px', fontWeight: 700, color: 'var(--primary-deep)', fontSize: '15px', paddingRight: '24px', width: '180px' }}>TOTAL</th>
             </tr>
           </thead>
           <tbody>
@@ -864,28 +881,28 @@ export default function DPOView({
               { label: 'AWW', p: awwP, r: awwR }
             ].map(row => (
               <tr key={row.label} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                <td style={{ padding: '12px 0', fontWeight: 500, color: 'var(--text-muted)' }}>{row.label}</td>
-                <td style={{ textAlign: 'right', padding: '12px 0', fontWeight: 700, color: 'var(--accent-saffron)', fontSize: '16px' }}>{row.p}</td>
-                <td style={{ textAlign: 'right', padding: '12px 0', fontWeight: 700, color: 'var(--accent-green)', fontSize: '16px' }}>{row.r}</td>
-                <td style={{ textAlign: 'right', padding: '12px 0', fontWeight: 700, color: 'var(--primary-deep)', fontSize: '16px' }}>{row.p + row.r}</td>
+                <td style={{ padding: '12px 0', paddingLeft: '24px', fontWeight: 500, color: 'var(--text-muted)' }}>{row.label}</td>
+                <td style={{ textAlign: 'right', padding: '12px 0', fontWeight: 700, color: 'var(--accent-saffron)', fontSize: '18px' }}>{row.p}</td>
+                <td style={{ textAlign: 'right', padding: '12px 0', fontWeight: 700, color: 'var(--accent-green)', fontSize: '18px' }}>{row.r}</td>
+                <td style={{ textAlign: 'right', padding: '12px 0', paddingRight: '24px', fontWeight: 700, color: 'var(--primary-deep)', fontSize: '18px' }}>{row.p + row.r}</td>
               </tr>
             ))}
             <tr style={{ background: 'var(--primary-light)', fontWeight: 700 }}>
-              <td style={{ padding: '14px 10px', color: 'var(--primary-deep)', borderRadius: '6px 0 0 6px' }}>Total</td>
-              <td style={{ textAlign: 'right', padding: '14px 10px', color: 'var(--accent-saffron)', fontSize: '18px' }}>{dpoP + cdpoP + supP + awwP}</td>
-              <td style={{ textAlign: 'right', padding: '14px 10px', color: 'var(--accent-green)', fontSize: 18 }}>{dpoR + cdpoR + supR + awwR}</td>
-              <td style={{ textAlign: 'right', padding: '14px 10px', color: 'var(--primary-deep)', fontSize: 18, borderRadius: '0 6px 6px 0' }}>{dpoP + cdpoP + supP + awwP + dpoR + cdpoR + supR + awwR}</td>
+              <td style={{ padding: '14px 10px', paddingLeft: '24px', color: 'var(--primary-deep)', borderRadius: '6px 0 0 6px' }}>Total</td>
+              <td style={{ textAlign: 'right', padding: '14px 10px', color: 'var(--accent-saffron)', fontSize: '20px' }}>{dpoP + cdpoP + supP + awwP}</td>
+              <td style={{ textAlign: 'right', padding: '14px 10px', color: 'var(--accent-green)', fontSize: 20 }}>{dpoR + cdpoR + supR + awwR}</td>
+              <td style={{ textAlign: 'right', padding: '14px 10px', paddingRight: '24px', color: 'var(--primary-deep)', fontSize: 20, borderRadius: '0 6px 6px 0' }}>{dpoP + cdpoP + supP + awwP + dpoR + cdpoR + supR + awwR}</td>
             </tr>
           </tbody>
         </table>
-        <span style={{ display: 'block', textAlign: 'center', fontSize: '11px', color: 'var(--text-muted)', marginTop: '14px' }}>
+        <span style={{ display: 'block', textAlign: 'center', fontSize: '13px', color: 'var(--text-muted)', marginTop: '14px' }}>
           Tap PENDING or RESOLVED column for detailed breakdown
         </span>
       </div>
 
       {/* ── Assigned To Scope Switcher — Uniform row above main content area ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-        <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', flexShrink: 0 }}>Assigned To</span>
+        <span style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-muted)', flexShrink: 0 }}>Assigned To</span>
         <div style={{ display: 'flex', gap: 8 }}>
           {(['DPO', 'CDPO', 'Supervisor', 'AWW'] as AssignedFilter[]).map(role => (
             <button
@@ -896,7 +913,7 @@ export default function DPOView({
                 border: `1.5px solid ${assignedFilter === role ? 'var(--primary-deep)' : 'var(--border-color)'}`,
                 background: assignedFilter === role ? 'var(--primary-deep)' : '#ffffff',
                 color: assignedFilter === role ? '#ffffff' : 'var(--text-dark)',
-                fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
+                fontSize: 15, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
               }}
             >
               {role === 'DPO' ? 'me' : role}
@@ -907,7 +924,7 @@ export default function DPOView({
         {/* CDPO Project filter */}
         {assignedFilter === 'CDPO' && (
           <select className="form-select" value={selectedProject} onChange={e => setSelectedProject(e.target.value)}
-            style={{ height: 38, padding: '0 32px 0 12px', fontSize: 13, fontWeight: 500, maxWidth: 180 }}>
+            style={{ height: 38, padding: '0 32px 0 12px', fontSize: 15, fontWeight: 500, maxWidth: 180 }}>
             {PROJECT_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
           </select>
         )}
@@ -916,11 +933,11 @@ export default function DPOView({
         {assignedFilter === 'Supervisor' && (
           <>
             <select className="form-select" value={selectedProject} onChange={e => setSelectedProject(e.target.value)}
-              style={{ height: 38, padding: '0 32px 0 12px', fontSize: 13, fontWeight: 500, maxWidth: 180 }}>
+              style={{ height: 38, padding: '0 32px 0 12px', fontSize: 15, fontWeight: 500, maxWidth: 180 }}>
               {PROJECT_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
             </select>
             <select className="form-select" value={selectedSector} onChange={e => setSelectedSector(e.target.value)}
-              style={{ height: 38, padding: '0 32px 0 12px', fontSize: 13, fontWeight: 500, maxWidth: 180 }}>
+              style={{ height: 38, padding: '0 32px 0 12px', fontSize: 15, fontWeight: 500, maxWidth: 180 }}>
               {SECTOR_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
             </select>
           </>
@@ -930,15 +947,15 @@ export default function DPOView({
         {assignedFilter === 'AWW' && (
           <>
             <select className="form-select" value={selectedProject} onChange={e => setSelectedProject(e.target.value)}
-              style={{ height: 38, padding: '0 32px 0 12px', fontSize: 13, fontWeight: 500, maxWidth: 180 }}>
+              style={{ height: 38, padding: '0 32px 0 12px', fontSize: 15, fontWeight: 500, maxWidth: 180 }}>
               {PROJECT_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
             </select>
             <select className="form-select" value={selectedSector} onChange={e => setSelectedSector(e.target.value)}
-              style={{ height: 38, padding: '0 32px 0 12px', fontSize: 13, fontWeight: 500, maxWidth: 180 }}>
+              style={{ height: 38, padding: '0 32px 0 12px', fontSize: 15, fontWeight: 500, maxWidth: 180 }}>
               {SECTOR_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
             </select>
             <select className="form-select" value={selectedAWC} onChange={e => setSelectedAWC(e.target.value)}
-              style={{ height: 38, padding: '0 32px 0 12px', fontSize: 13, fontWeight: 500, maxWidth: 210 }}>
+              style={{ height: 38, padding: '0 32px 0 12px', fontSize: 15, fontWeight: 500, maxWidth: 210 }}>
               {AWC_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
             </select>
           </>
@@ -951,9 +968,9 @@ export default function DPOView({
         {/* Left Filter Sidebar */}
         <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-lg)', padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: 'var(--shadow-sm)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px' }}>
-            <h3 style={{ fontSize: 13, fontWeight: 700, color: 'var(--primary-deep)' }}>Filter Options</h3>
+            <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--primary-deep)' }}>Filter Options</h3>
             {activeFilterCount > 0 && (
-              <span style={{ background: 'var(--primary-deep)', color: '#fff', borderRadius: '99px', padding: '2px 8px', fontSize: 11, fontWeight: 700 }}>
+              <span style={{ background: 'var(--primary-deep)', color: '#fff', borderRadius: '99px', padding: '2px 8px', fontSize: 13, fontWeight: 700 }}>
                 {activeFilterCount}
               </span>
             )}
@@ -964,12 +981,12 @@ export default function DPOView({
               Resolved/Appeals carry no SLA state. */}
           {activeTab === 'Pending' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Urgency</label>
+              <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Urgency</label>
               <button
                 onClick={() => setIsOverdueOnly(v => !v)}
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  padding: '8px 16px', borderRadius: '20px', fontSize: '13px', fontWeight: 600,
+                  padding: '8px 16px', borderRadius: '20px', fontSize: '15px', fontWeight: 600,
                   cursor: 'pointer', transition: 'all 0.2s',
                   background: isOverdueOnly ? 'var(--color-danger)' : 'var(--bg-main)',
                   color: isOverdueOnly ? '#fff' : 'var(--text-dark)',
@@ -983,9 +1000,9 @@ export default function DPOView({
 
           {/* Beneficiary Category */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Beneficiary Category</label>
+            <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Beneficiary Category</label>
             <select className="form-select" value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}
-              style={{ width: '100%', height: 40, padding: '0 32px 0 12px', fontSize: 13 }}>
+              style={{ width: '100%', height: 40, padding: '0 32px 0 12px', fontSize: 15 }}>
               <option value="All">Category: All</option>
               {BENEFICIARY_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
@@ -994,10 +1011,10 @@ export default function DPOView({
           {/* Complaint Type checkboxes (Urgent / Corruption / General) */}
           {activeTab !== 'Appeals' ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Complaint Type</label>
+              <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Complaint Type</label>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {COMPLAINT_TYPES.map(t => (
-                  <label key={t} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer', padding: '4px 0' }}>
+                  <label key={t} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 15, cursor: 'pointer', padding: '4px 0' }}>
                     <input type="checkbox" checked={appliedTypes.includes(t)} onChange={() => setAppliedTypes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}
                       style={{ accentColor: 'var(--primary-deep)', width: 15, height: 15 }} />
                     <span style={{ color: appliedTypes.includes(t) ? 'var(--primary-deep)' : 'var(--text-dark)', fontWeight: appliedTypes.includes(t) ? 600 : 400 }}>{t}</span>
@@ -1007,10 +1024,10 @@ export default function DPOView({
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Complaint Type</label>
+              <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Complaint Type</label>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {['Urgent', 'Corruption', 'General'].map(t => (
-                  <label key={t} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer', padding: '4px 0' }}>
+                  <label key={t} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 15, cursor: 'pointer', padding: '4px 0' }}>
                     <input type="checkbox" checked={appliedTypes.includes(t)} onChange={() => setAppliedTypes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}
                       style={{ accentColor: 'var(--primary-deep)', width: 15, height: 15 }} />
                     <span style={{ color: appliedTypes.includes(t) ? 'var(--primary-deep)' : 'var(--text-dark)', fontWeight: appliedTypes.includes(t) ? 600 : 400 }}>{t}</span>
@@ -1022,7 +1039,7 @@ export default function DPOView({
 
           {/* Submission / Resolution Date */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, position: 'relative' }}>
-            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+            <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
               {activeTab === 'Resolved' ? 'Resolution Date' : 'Submission Date'}
             </label>
             <button
@@ -1050,7 +1067,7 @@ export default function DPOView({
 
           {/* Reset Filters */}
           {activeFilterCount > 0 && (
-            <button className="ux4g-btn ux4g-btn-outline-neutral ux4g-btn-sm" style={{ borderRadius: 20, fontSize: 12 }} onClick={clearAllFilters}>
+            <button className="ux4g-btn ux4g-btn-outline-neutral ux4g-btn-sm" style={{ borderRadius: 20, fontSize: 14 }} onClick={clearAllFilters}>
               Reset Filters
             </button>
           )}
@@ -1093,7 +1110,7 @@ export default function DPOView({
           {activeTab === 'Appeals' && (
             <div style={{ display: 'flex', gap: 10, background: 'var(--color-info-light)', borderRadius: 'var(--radius-md)', padding: '12px 14px', border: '1px solid var(--border-color)' }}>
               <Info size={15} style={{ color: 'var(--color-info)', flexShrink: 0, marginTop: 1 }} />
-              <p style={{ margin: 0, fontSize: 12.5, color: 'var(--text-dark)', lineHeight: 1.5 }}>
+              <p style={{ margin: 0, fontSize: 14.5, color: 'var(--text-dark)', lineHeight: 1.5 }}>
                 <strong>Appeals</strong> are grievances escalated by beneficiaries who are unsatisfied with the resolution. DPO acts as the Senior Redressal Authority to audit and resolve them.
               </p>
             </div>
@@ -1103,7 +1120,7 @@ export default function DPOView({
           {activeTab === 'Pending' && (assignedFilter === 'CDPO' || assignedFilter === 'Supervisor' || assignedFilter === 'AWW') && (
             <div style={{ display: 'flex', gap: 10, background: '#fff3e0', borderRadius: 'var(--radius-md)', padding: '12px 14px', border: '1px solid #ffcc80' }}>
               <Info size={15} style={{ color: '#e65100', flexShrink: 0, marginTop: 1 }} />
-              <p style={{ margin: 0, fontSize: 12.5, color: 'var(--text-dark)', lineHeight: 1.5 }}>
+              <p style={{ margin: 0, fontSize: 14.5, color: 'var(--text-dark)', lineHeight: 1.5 }}>
                 Showing only {assignedFilter} tickets <strong>escalated to DPO</strong> — those open for {ESCALATION_DAYS} days or more. These are <strong>view-only</strong>; the ticket stays with its original assignee.
               </p>
             </div>
@@ -1114,8 +1131,8 @@ export default function DPOView({
             displayedPending.length === 0 ? (
               <div style={{ padding: '64px 32px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-lg)', textAlign: 'center', color: 'var(--text-muted)' }}>
                 <Inbox size={48} style={{ opacity: 0.4, marginBottom: 16 }} />
-                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 600, color: 'var(--primary-deep)' }}>No Pending Grievances</h3>
-                <p style={{ fontSize: 13, marginTop: 4 }}>No pending tickets match the current filters.</p>
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600, color: 'var(--primary-deep)' }}>No Pending Grievances</h3>
+                <p style={{ fontSize: 15, marginTop: 4 }}>No pending tickets match the current filters.</p>
               </div>
             ) : (
               <BatchedTicketGrid items={displayedPending} resetKey={gridResetKey}
@@ -1137,8 +1154,8 @@ export default function DPOView({
             displayedResolved.length === 0 ? (
               <div style={{ padding: '64px 32px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-lg)', textAlign: 'center', color: 'var(--text-muted)' }}>
                 <Inbox size={48} style={{ opacity: 0.4, marginBottom: 16 }} />
-                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 600, color: 'var(--primary-deep)' }}>No Resolved Tickets</h3>
-                <p style={{ fontSize: 13, marginTop: 4 }}>No resolved tickets match the current filters.</p>
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600, color: 'var(--primary-deep)' }}>No Resolved Tickets</h3>
+                <p style={{ fontSize: 15, marginTop: 4 }}>No resolved tickets match the current filters.</p>
               </div>
             ) : (
               <BatchedTicketGrid items={displayedResolved} resetKey={gridResetKey}
@@ -1156,8 +1173,8 @@ export default function DPOView({
             displayedAppeals.length === 0 ? (
               <div style={{ padding: '64px 32px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-lg)', textAlign: 'center', color: 'var(--text-muted)' }}>
                 <Inbox size={48} style={{ opacity: 0.4, marginBottom: 16 }} />
-                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 600, color: 'var(--primary-deep)' }}>No Appeal Grievances</h3>
-                <p style={{ fontSize: 13, marginTop: 4 }}>No active appeals match the current filters.</p>
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600, color: 'var(--primary-deep)' }}>No Appeal Grievances</h3>
+                <p style={{ fontSize: 15, marginTop: 4 }}>No active appeals match the current filters.</p>
               </div>
             ) : (
               <BatchedTicketGrid items={displayedAppeals} resetKey={gridResetKey} itemNoun="appeals"
