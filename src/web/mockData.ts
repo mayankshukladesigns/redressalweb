@@ -51,7 +51,7 @@ const rawPendingCards: TicketCard[] = [
     documentsCount: 0,
     isOverdue: true,
     borderColor: '#e0e0e0',
-    complaintType: 'Others',
+    complaintType: 'General',
     helpTopic: 'Supplementary Nutrition',
     subTopic: 'Take Home Ration',
     beneficiaryMobile: '98765 00201',
@@ -75,7 +75,7 @@ const rawPendingCards: TicketCard[] = [
     documentsCount: 1,
     isOverdue: false,
     borderColor: '#e0e0e0',
-    complaintType: 'Others',
+    complaintType: 'General',
     helpTopic: 'Growth Monitoring',
     subTopic: 'Poshan Tracker Update',
     beneficiaryMobile: '98765 00202',
@@ -99,7 +99,7 @@ const rawPendingCards: TicketCard[] = [
     documentsCount: 0,
     isOverdue: false,
     borderColor: '#e0e0e0',
-    complaintType: 'Others',
+    complaintType: 'General',
     helpTopic: 'Immunization Services',
     subTopic: 'Referral Services',
     beneficiaryMobile: '98765 00203',
@@ -123,7 +123,7 @@ const rawPendingCards: TicketCard[] = [
     documentsCount: 1,
     isOverdue: false,
     borderColor: '#e0e0e0',
-    complaintType: 'Others',
+    complaintType: 'General',
     helpTopic: 'Health Services',
     subTopic: 'WIFS Distribution',
     beneficiaryMobile: '98765 00204',
@@ -147,7 +147,7 @@ const rawPendingCards: TicketCard[] = [
     documentsCount: 0,
     isOverdue: false,
     borderColor: '#e0e0e0',
-    complaintType: 'Others',
+    complaintType: 'General',
     helpTopic: 'Maternity Benefit',
     subTopic: 'Tracker Verification',
     beneficiaryMobile: '98765 00205',
@@ -171,7 +171,7 @@ const rawPendingCards: TicketCard[] = [
     documentsCount: 0,
     isOverdue: false,
     borderColor: '#e0e0e0',
-    complaintType: 'Others',
+    complaintType: 'General',
     helpTopic: 'Maternity Benefit',
     subTopic: 'PMMVY Enrollment',
     beneficiaryMobile: '98765 00123',
@@ -268,7 +268,7 @@ const rawPendingCards: TicketCard[] = [
     documentsCount: 0,
     isOverdue: false,
     borderColor: '#e0e0e0',
-    complaintType: 'Others',
+    complaintType: 'General',
     helpTopic: 'Growth Monitoring',
     subTopic: 'Weight Recording',
     beneficiaryMobile: '98765 00127',
@@ -292,7 +292,7 @@ const rawPendingCards: TicketCard[] = [
     documentsCount: 0,
     isOverdue: false,
     borderColor: '#e0e0e0',
-    complaintType: 'Others',
+    complaintType: 'General',
     helpTopic: 'Supplementary Nutrition',
     subTopic: 'Take Home Ration',
     beneficiaryMobile: '98765 00128',
@@ -388,7 +388,7 @@ const rawPendingCards: TicketCard[] = [
     documentsCount: 0,
     isOverdue: false,
     borderColor: '#e0e0e0',
-    complaintType: 'Others',
+    complaintType: 'General',
     helpTopic: 'Growth Monitoring',
     subTopic: 'Weight Recording',
     beneficiaryMobile: '98765 00210',
@@ -412,7 +412,7 @@ const rawPendingCards: TicketCard[] = [
     documentsCount: 0,
     isOverdue: false,
     borderColor: '#e0e0e0',
-    complaintType: 'Others',
+    complaintType: 'General',
     helpTopic: 'Supplementary Nutrition',
     subTopic: 'Take Home Ration',
     beneficiaryMobile: '98765 00211',
@@ -484,7 +484,7 @@ const rawPendingCards: TicketCard[] = [
     documentsCount: 0,
     isOverdue: false,
     borderColor: '#e0e0e0',
-    complaintType: 'Others',
+    complaintType: 'General',
     helpTopic: 'Immunisation Pending',
     subTopic: 'System Update',
     beneficiaryMobile: '98765 00214',
@@ -532,7 +532,7 @@ const rawPendingCards: TicketCard[] = [
     documentsCount: 0,
     isOverdue: true,
     borderColor: '#ffcdd2',
-    complaintType: 'Others',
+    complaintType: 'General',
     helpTopic: 'Maternity Benefit',
     subTopic: 'Treasury Delay',
     beneficiaryMobile: '98765 00216',
@@ -580,7 +580,7 @@ const rawPendingCards: TicketCard[] = [
     documentsCount: 0,
     isOverdue: true,
     borderColor: '#ffcdd2',
-    complaintType: 'Others',
+    complaintType: 'General',
     helpTopic: 'Growth Monitoring',
     subTopic: 'Device Failure',
     beneficiaryMobile: '98765 00218',
@@ -628,7 +628,7 @@ const rawPendingCards: TicketCard[] = [
     documentsCount: 0,
     isOverdue: false,
     borderColor: '#e0e0e0',
-    complaintType: 'Others',
+    complaintType: 'General',
     helpTopic: 'Growth Monitoring',
     subTopic: 'Growth Recording',
     beneficiaryMobile: '98765 00410',
@@ -652,7 +652,7 @@ const rawPendingCards: TicketCard[] = [
     documentsCount: 0,
     isOverdue: false,
     borderColor: '#e0e0e0',
-    complaintType: 'Others',
+    complaintType: 'General',
     helpTopic: 'Supplementary Nutrition',
     subTopic: 'Take Home Ration',
     beneficiaryMobile: '98765 00411',
@@ -676,7 +676,7 @@ const rawPendingCards: TicketCard[] = [
     documentsCount: 0,
     isOverdue: true,
     borderColor: '#ffcdd2',
-    complaintType: 'Others',
+    complaintType: 'General',
     helpTopic: 'Immunisation Pending',
     subTopic: 'AWC Timing',
     beneficiaryMobile: '98765 00412',
@@ -700,7 +700,7 @@ const rawPendingCards: TicketCard[] = [
     documentsCount: 0,
     isOverdue: true,
     borderColor: '#ffcdd2',
-    complaintType: 'Others',
+    complaintType: 'General',
     helpTopic: 'Supplementary Nutrition',
     subTopic: 'Dry Ration',
     beneficiaryMobile: '98765 00413',
@@ -820,7 +820,7 @@ const rawPendingCards: TicketCard[] = [
     documentsCount: 0,
     isOverdue: false,
     borderColor: '#e0e0e0',
-    complaintType: 'Others',
+    complaintType: 'General',
     helpTopic: 'Pre-school Education',
     subTopic: 'ECCE Session Hours',
     beneficiaryMobile: '98765 00220',
@@ -844,7 +844,7 @@ const rawPendingCards: TicketCard[] = [
     documentsCount: 0,
     isOverdue: true,
     borderColor: '#ffcdd2',
-    complaintType: 'Others',
+    complaintType: 'General',
     helpTopic: 'Maternity Benefit',
     subTopic: 'PMMVY Verification',
     beneficiaryMobile: '98765 00221',
@@ -868,7 +868,7 @@ const rawPendingCards: TicketCard[] = [
     documentsCount: 0,
     isOverdue: true,
     borderColor: '#ffcdd2',
-    complaintType: 'Others',
+    complaintType: 'General',
     helpTopic: 'SABLA Scheme',
     subTopic: 'IFA Distribution',
     beneficiaryMobile: '98765 00222',
@@ -892,7 +892,7 @@ const rawPendingCards: TicketCard[] = [
     documentsCount: 0,
     isOverdue: false,
     borderColor: '#e0e0e0',
-    complaintType: 'Others',
+    complaintType: 'General',
     helpTopic: 'Growth Monitoring',
     subTopic: 'Birth Weight Recording',
     beneficiaryMobile: '98765 00223',
@@ -904,8 +904,8 @@ const rawPendingCards: TicketCard[] = [
   },
   // Corruption complaints ABOUT an AWW / Supervisor. Per the routing rules these
   // are handled by the CDPO (never assigned to AWW/Supervisor, who only receive
-  // general "Others" beneficiary grievances). Overdue ones also surface in the
-  // DPO "Overdue Escalations" view, which filters pending cards by overdue state.
+  // "General" beneficiary grievances). Overdue ones also surface in the
+  // DPO's CDPO-scoped Pending tab via the Overdue Only filter.
   {
     id: 'o1',
     ticketNumber: 'Ticket# AWW 001243',
@@ -971,6 +971,111 @@ const rawPendingCards: TicketCard[] = [
 // Overdue/remaining labels are computed from submittedDate (21-day SLA) rather
 // than the hand-authored values, keeping every screen aligned with the timeline.
 export const initialPendingCards: TicketCard[] = rawPendingCards.map(deriveSlaFields);
+
+// ─── PAN-India scale simulation: generated closure queue ───────────────────────
+// Generates `count` Supervisor/AWW-resolved tickets awaiting CDPO closure, split
+// evenly between the two roles. A seeded PRNG keeps the data identical on every
+// reload, so behaviour (sorting, filters, batching) is reproducible while testing.
+
+const FIRST_NAMES = [
+  'Aarti', 'Anju', 'Asha', 'Babita', 'Chanda', 'Deepa', 'Durga', 'Ganga', 'Gita',
+  'Hansa', 'Indira', 'Jyoti', 'Kajal', 'Kamini', 'Kanta', 'Kaushalya', 'Komal',
+  'Lalita', 'Leela', 'Madhu', 'Mamta', 'Manju', 'Meera', 'Mohini', 'Nirmala',
+  'Pushpa', 'Rajni', 'Rambha', 'Rani', 'Rekha', 'Renu', 'Sarita', 'Savitri',
+  'Shanti', 'Sharda', 'Sheela', 'Shobha', 'Sudha', 'Suman', 'Usha', 'Vimla',
+];
+const LAST_NAMES = [
+  'Devi', 'Sharma', 'Verma', 'Meena', 'Gurjar', 'Jat', 'Choudhary', 'Saini',
+  'Yadav', 'Kumawat', 'Prajapat', 'Bairwa', 'Regar', 'Nagar', 'Khatik', 'Sen',
+];
+// topic → [helpTopic, subTopic, description, ATR, eligible beneficiary categories]
+const CLOSURE_TOPICS: [string, string, string, string, string, string[]][] = [
+  ['THR Distribution', 'Supplementary Nutrition', 'Take Home Ration',
+    'Take Home Ration packets not distributed for the current month at the centre',
+    'THR stock reconciled with sector store and pending packets distributed. Register updated and verified.',
+    ['Pregnant Woman', 'Lactating Mother', 'Children 0-6 months', 'Children (6m-3y)']],
+  ['Hot Cooked Meal', 'Supplementary Nutrition', 'Hot Cooked Meal',
+    'Hot cooked meal quality and quantity below prescribed norms at the centre',
+    'Menu chart reinstated as per norms. Cook-cum-helper briefed and surprise inspection scheduled.',
+    ['Children (3-6y)']],
+  ['Growth Monitoring', 'Growth Monitoring', 'Weight Recording',
+    'Monthly weight and height measurement not recorded for the child',
+    'Growth monitoring session conducted and entries updated on the POSHAN tracker. Mother counselled on follow-up.',
+    ['Children 0-6 months', 'Children (6m-3y)', 'Children (3-6y)']],
+  ['Immunization', 'Health Services', 'Vaccination Schedule',
+    'Vaccination due date missed and no follow-up visit made by the worker',
+    'Coordinated with ANM and missed dose administered in the catch-up session. Due list corrected.',
+    ['Pregnant Woman', 'Children 0-6 months', 'Children (6m-3y)']],
+  ['Maternity Benefit', 'Maternity Benefit', 'PMMVY Installment',
+    'PMMVY installment stuck due to pending verification at the centre level',
+    'Bank and Aadhaar details re-verified and claim resubmitted on the PMMVY portal. Beneficiary informed.',
+    ['Pregnant Woman', 'Lactating Mother']],
+  ['Pre-school Education', 'Early Childhood Education', 'ECCE Sessions',
+    'Pre-school education sessions not being held regularly at the centre',
+    'ECCE session timetable restored and attendance verified for two consecutive weeks.',
+    ['Children (3-6y)']],
+  ['Registration', 'Registration & Enrollment', 'New Beneficiary Registration',
+    'New registration request pending at the centre despite complete documents',
+    'Registration completed on the POSHAN tracker and enrollment ID shared with the beneficiary.',
+    ['Pregnant Woman', 'Lactating Mother', 'Adolescent Girl']],
+  ['Aadhar verification', 'Registration & Enrollment', 'Aadhaar Linkage',
+    'Aadhaar linkage failing for the beneficiary profile on the tracker',
+    'Biometric details re-submitted at the Aadhaar centre and profile linked successfully.',
+    ['Pregnant Woman', 'Lactating Mother', 'Adolescent Girl']],
+];
+
+function generateClosureQueue(count: number): ResolvedTicketCard[] {
+  // Small deterministic LCG — Math.random would reshuffle the queue every reload.
+  let seed = 20250630;
+  const rand = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+  const pick = <T,>(arr: T[]): T => arr[Math.floor(rand() * arr.length)];
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const fmt = (d: Date) => `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
+  const today = new Date(2025, 5, 30);
+
+  return Array.from({ length: count }, (_, i) => {
+    const assignedTo = (i % 2 === 0 ? 'Supervisor' : 'AWW') as 'Supervisor' | 'AWW';
+    const [topic, helpTopic, subTopic, description, actionTaken, categories] = pick(CLOSURE_TOPICS);
+
+    // Resolved 1–40 days ago, submitted 4–12 days before that: yields a queue
+    // with a realistic aging spread and always resolution-after-submission.
+    const waitingDays = 1 + Math.floor(rand() * 40);
+    const resolved = new Date(today);
+    resolved.setDate(resolved.getDate() - waitingDays);
+    const submitted = new Date(resolved);
+    submitted.setDate(submitted.getDate() - (4 + Math.floor(rand() * 9)));
+
+    const awcNum = 1 + Math.floor(rand() * 6);
+    const beneficiaryName = `${pick(FIRST_NAMES)} ${pick(LAST_NAMES)}`;
+    // Every ATR is case-specific — the CDPO has to read each one, which is exactly
+    // why closure is a per-ticket decision and cannot be batched.
+    const atr = `${actionTaken} Verified at Anganwadi Centre ${awcNum} on ${fmt(resolved)} in the presence of ${beneficiaryName}. Resolved by ${assignedTo} and referred to CDPO for closure.`;
+    return {
+      id: `sim-pc-${i + 1}`,
+      ticketNumber: `Ticket# 787869 ${String(900001 + i)}`,
+      beneficiaryName,
+      beneficiaryType: pick(categories),
+      topic,
+      description,
+      submittedDate: `Submitted: ${fmt(submitted)}`,
+      daysLabel: 'Resolved',
+      daysType: 'remaining' as const,
+      resolvedDate: `Resolved: ${fmt(resolved)}`,
+      status: 'CLOSURE_PENDING' as const,
+      awaitingCdpoClosure: true,
+      actionTaken: atr,
+      awcName: `Anganwadi Centre ${awcNum}`,
+      helpTopic,
+      subTopic,
+      beneficiaryMobile: `98765 ${String(10000 + Math.floor(rand() * 89999))}`,
+      awcCode: `AWC-10${awcNum}`,
+      district: 'Jaipur',
+      project: 'Sanganer',
+      sector: `Sector ${1 + Math.floor(rand() * 4)}`,
+      assignedTo,
+    };
+  });
+}
 
 export const initialResolvedCards: ResolvedTicketCard[] = [
   {
@@ -1464,7 +1569,99 @@ export const initialResolvedCards: ResolvedTicketCard[] = [
     sector: 'Sector 4',
     assignedTo: 'AWW',
   },
+  // PAN-India scale simulation: ~300 additional Supervisor/AWW resolutions
+  // awaiting CDPO closure, generated deterministically below.
+  ...generateClosureQueue(300),
 ];
+
+// ─── PAN-India scale simulation: generated appeals ─────────────────────────────
+// Appeals filed by beneficiaries who are unsatisfied with a CDPO/Supervisor/AWW
+// resolution. These land in the DPO's Appeals tab, which is their own workload.
+
+const APPEAL_CASES: [string, string, string, string, string[]][] = [
+  ['Denial of Maternity Benefit Payment',
+    'PMMVY installment not credited despite complete documentation submitted at the centre.',
+    'Marked resolved without the payment actually reaching my account. No installment has been credited to date.',
+    'Bank details verified and claim resubmitted on the PMMVY portal. Payment shown as processed at our end.',
+    ['General', 'Urgent']],
+  ['Improper Handling of Nutrition Complaint',
+    'Take Home Ration not supplied for three consecutive months at the Anganwadi Centre.',
+    'Complaint marked resolved without any visit to the centre. Rations are still not being supplied to us.',
+    'Sector store stock verified and THR reported as issued to the centre. Register found in order.',
+    ['General', 'Corruption']],
+  ['Delay in Growth Monitoring Device Supply',
+    'Weighing scale at the centre is broken, so no growth monitoring has been recorded for months.',
+    'Officer closed the ticket saying devices were ordered, but no device has actually been delivered.',
+    'Requisition for weighing scale raised with the block office. Delivery expected in the next dispatch cycle.',
+    ['General']],
+  ['THR Quality Not Addressed',
+    'Take Home Ration supplied is stale and unfit for consumption by children.',
+    'Ticket closed claiming the ration is of standard quality. No sample was ever collected or tested.',
+    'Batch inspected at the centre and found within shelf life. Quality reported as per FSSAI norms.',
+    ['Urgent', 'General']],
+  ['Bribe Demanded for Registration',
+    'Money demanded at the centre for completing new beneficiary registration on the tracker.',
+    'The officer dismissed my complaint without any enquiry. The same person is still demanding money.',
+    'Statement recorded from the concerned worker. Allegation denied and no supporting evidence found on record.',
+    ['Corruption']],
+  ['Child Denied Pre-school Admission',
+    'Child not enrolled in ECCE programme despite being of eligible age and having all documents.',
+    'Marked resolved but my child is still not attending any pre-school session at the centre.',
+    'Enrollment completed on the POSHAN tracker. Child reported as attending ECCE sessions regularly.',
+    ['General']],
+  ['Immunization Session Repeatedly Missed',
+    'Vaccination due for the child but no session has been held at the centre for over a month.',
+    'The ticket was closed saying the dose was given, but my child has still not been vaccinated.',
+    'Coordinated with the ANM and the missed dose was administered in the catch-up session.',
+    ['Urgent']],
+  ['Hot Cooked Meal Not Served',
+    'Hot cooked meal has not been served at the centre for several weeks running.',
+    'Officer says meals have resumed but nothing is being served. The kitchen remains shut.',
+    'Menu chart reinstated as per norms and the cook-cum-helper was briefed. Meals reported as resumed.',
+    ['General', 'Corruption']],
+];
+
+function generateAppeals(count: number): AppealTicket[] {
+  // Separate seed from the closure queue so the two datasets stay independent.
+  let seed = 19082025;
+  const rand = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+  const pick = <T,>(arr: T[]): T => arr[Math.floor(rand() * arr.length)];
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const fmt = (d: Date) => `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
+  const today = new Date(2025, 5, 30);
+  const roles: ('CDPO' | 'Supervisor' | 'AWW')[] = ['CDPO', 'Supervisor', 'AWW'];
+
+  return Array.from({ length: count }, (_, i) => {
+    const roleLabel = roles[i % 3];
+    const [title, originalDescription, appealReason, originalActionTaken, types] = pick(APPEAL_CASES);
+    const complaintType = pick(types) as 'Corruption' | 'Urgent' | 'General';
+
+    // Appeal filed 1–30 days ago; the original grievance was submitted 10–30 days
+    // before that, so submission always precedes resolution and the appeal.
+    const appealAge = 1 + Math.floor(rand() * 30);
+    const appealFiled = new Date(today);
+    appealFiled.setDate(appealFiled.getDate() - appealAge);
+    const submitted = new Date(appealFiled);
+    submitted.setDate(submitted.getDate() - (10 + Math.floor(rand() * 21)));
+
+    const prefix = roleLabel === 'Supervisor' ? 'SUP' : roleLabel;
+    return {
+      id: `sim-ap-${i + 1}`,
+      ticketNumber: `Ticket# ${prefix} ${String(2001 + i)}`,
+      roleLabel,
+      title,
+      originalDescription,
+      appealReason,
+      submittedDate: `Submitted: ${fmt(submitted)}`,
+      appealDate: `Appeal Filed: ${fmt(appealFiled)}`,
+      documents: complaintType === 'Corruption' || complaintType === 'Urgent' ? '2 documents' : undefined,
+      byName: `${pick(FIRST_NAMES)} ${pick(LAST_NAMES)}`,
+      complaintType,
+      originalActionTaken,
+      status: 'raised' as const,
+    };
+  });
+}
 
 export const initialAppealTickets: AppealTicket[] = [
   {
@@ -1492,7 +1689,7 @@ export const initialAppealTickets: AppealTicket[] = [
     submittedDate: 'Submitted: 20/06/2025',
     appealDate: 'Appeal Filed: 25/06/2025',
     byName: 'Rekha Sharma',
-    complaintType: 'Others',
+    complaintType: 'General',
     originalActionTaken: 'Application rejected due to mismatch of name in Aadhaar card and Bank passbook. Beneficiary advised to correct document first.',
     status: 'raised',
   },
@@ -1507,7 +1704,7 @@ export const initialAppealTickets: AppealTicket[] = [
     appealDate: 'Appeal Filed: 22/06/2025',
     documents: '4 documents',
     byName: 'Dr. Suresh Mehta (PHC)',
-    complaintType: 'Others',
+    complaintType: 'General',
     originalActionTaken: 'Visited AWC and checked growth registers. Nutrition distribution was verified with local beneficiaries.',
     status: 'raised',
   },
@@ -1524,7 +1721,7 @@ export const initialAppealTickets: AppealTicket[] = [
     status: 'resolved',
     decision: 'dismiss',
     resolutionNotes: 'Appeal reviewed on 12 Jun 2025. Vaccination records verified at PHC — DPT booster and OPV confirmed administered on 11 Jun 2025. Immunisation card entries are accurate and complete. Resolution by Supervisor upheld. Appeal resolved in favour of existing resolution.',
-    complaintType: 'Others',
+    complaintType: 'General',
     originalActionTaken: 'Vaccination rescheduled with PHC medical officer. Child vaccinated on 11 Jun 2025.',
   },
   {
@@ -1537,8 +1734,10 @@ export const initialAppealTickets: AppealTicket[] = [
     submittedDate: 'Submitted: 12/06/2025',
     appealDate: 'Appeal Filed: 18/06/2025',
     byName: 'Sita Devi',
-    complaintType: 'Others',
+    complaintType: 'General',
     originalActionTaken: 'Placed procurement order for weighing scales and height boards with central stores.',
     status: 'raised',
   },
+  // PAN-India scale simulation: 100 additional appeals awaiting DPO adjudication.
+  ...generateAppeals(100),
 ];

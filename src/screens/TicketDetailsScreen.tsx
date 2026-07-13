@@ -15,7 +15,7 @@ const STATUS_CFG: Record<string, { label: string; color: string; bg: string; bor
   PENDING:         { label: 'PENDING',         color: '#e65100', bg: '#fff3e0', border: '#ffcc80', hasIcon: false },
   OVERDUE:         { label: 'OVERDUE',         color: '#d32f2f', bg: '#ffebee', border: '#ffcdd2', hasIcon: true  },
   CLOSED:          { label: 'CLOSED',          color: '#2e7d32', bg: '#e8f5e9', border: '#a5d6a7', hasIcon: false },
-  CLOSURE_PENDING: { label: 'CLOSURE PENDING', color: '#f57f17', bg: '#fff8e1', border: '#ffe082', hasIcon: true  },
+  CLOSURE_PENDING: { label: 'PENDING FOR CLOSURE', color: '#f57f17', bg: '#fff8e1', border: '#ffe082', hasIcon: true  },
   APPEAL_RAISED:   { label: 'APPEAL RAISED',   color: '#e65100', bg: '#fff3e0', border: '#ffcc80', hasIcon: true  },
   APPEAL_RESOLVED: { label: 'APPEAL RESOLVED', color: '#ffffff', bg: '#4f46e5', border: '#4f46e5', hasIcon: true  },
 };
@@ -38,9 +38,12 @@ export default function TicketDetailsScreen({
   const [actionModalVisible, setActionModalVisible] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showAppealSuccess, setShowAppealSuccess] = useState(false);
-  const [successInfo, setSuccessInfo] = useState<{ title: string; description: string; viewLabel: string } | null>(null);
+  // Success screens are intentionally static — no ticket numbers — so the
+  // confirmation reads the same everywhere and needs no per-ticket wording.
+  const [successInfo, setSuccessInfo] = useState<{ title: string; description: string } | null>(null);
 
-  const isPending = !currentCard.resolvedDate && currentCard.status !== 'CLOSED' && currentCard.status !== 'APPEAL_RESOLVED' && currentCard.status !== 'CLOSURE_PENDING';
+  const RESOLVED_FAMILY_STATUSES = ['CLOSED', 'CLOSURE_PENDING', 'APPEAL_RAISED', 'APPEAL_RESOLVED'];
+  const isPending = !RESOLVED_FAMILY_STATUSES.includes(currentCard.status);
   const isClosurePending = currentCard.status === 'CLOSURE_PENDING';
   const isAppeal = currentCard.status === 'APPEAL_RAISED' || currentCard._isAppeal;
   const hasAppealReason = isAppeal || currentCard.status === 'APPEAL_RESOLVED';
@@ -70,105 +73,98 @@ export default function TicketDetailsScreen({
       subYear = parseInt(subDateParts[2], 10);
     }
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const monthName = months[subMonth - 1] || 'Jun';
     const pad = (n: number) => (n < 10 ? '0' + n : '' + n);
-
-    // Base assignment
-    items.push({
-      label: `Assigned to ${assignedRole}`,
-      date: `${pad(subDay)} ${monthName} ${subYear}, 09:00 AM`,
-      dotColor: '#1a237e',
-    });
 
     // Age relative to the app's fixed "today" (30/06/2025)
     const submissionDate = new Date(subYear, subMonth - 1, subDay);
     const currentDate = new Date(2025, 5, 30);
-    const diffDays = Math.floor((currentDate.getTime() - submissionDate.getTime()) / (1000 * 60 * 60 * 24));
+    const dayMs = 1000 * 60 * 60 * 24;
+    const diffDays = Math.floor((currentDate.getTime() - submissionDate.getTime()) / dayMs);
 
-    // Reminder Sent (after 7 days)
-    if (diffDays >= 7) {
-      const d = new Date(subYear, subMonth - 1, subDay + 7);
-      items.push({
-        label: `Reminder Sent to ${assignedRole}`,
-        date: `${pad(d.getDate())} ${months[d.getMonth()]} ${d.getFullYear()}, 10:30 AM`,
-        dotColor: '#f57f17',
-      });
+    // Monotonic date cursor: every milestone is placed at its nominal offset from
+    // submission, but never on or before the previous milestone. This guarantees
+    // the timeline is always chronologically valid — a ticket can never be
+    // resolved before it was created, and a later stage never predates an earlier one.
+    let lastMs = submissionDate.getTime() - dayMs;
+    const eventDate = (offsetDays: number) => {
+      let t = submissionDate.getTime() + offsetDays * dayMs;
+      if (t <= lastMs) t = lastMs + dayMs;
+      lastMs = t;
+      return new Date(t);
+    };
+    const fmt = (d: Date, time: string) => `${pad(d.getDate())} ${months[d.getMonth()]} ${d.getFullYear()}, ${time}`;
+
+    // Resolution day, taken from the ticket's real resolvedDate so the timeline
+    // agrees with the date shown on the card. Falls back to a synthetic offset only
+    // when the ticket carries no resolution date.
+    const resolvedMatch = (currentCard.resolvedDate || '').match(/(\d{2})\/(\d{2})\/(\d{4})/);
+    let resolvedOffset = Math.min(Math.max(diffDays, 1), 9);
+    if (resolvedMatch) {
+      const rd = new Date(Number(resolvedMatch[3]), Number(resolvedMatch[2]) - 1, Number(resolvedMatch[1]));
+      const off = Math.round((rd.getTime() - submissionDate.getTime()) / dayMs);
+      if (off >= 1) resolvedOffset = off;
+    }
+
+    // SLA milestones only fire while the ticket was still open. A ticket resolved on
+    // day 16 was never overdue, so the day-21 breach event must not appear for it.
+    const milestoneFired = (day: number) => (isPending ? diffDays >= day : resolvedOffset > day);
+
+    // Base assignment (day 0)
+    items.push({ label: `Assigned to ${assignedRole}`, date: fmt(eventDate(0), '09:00 AM'), dotColor: '#1a237e' });
+
+    // Reminder Sent. Urgent complaints are chased at 3 days; Corruption and General
+    // follow the standard 7-day reminder.
+    const reminderDays = currentCard.complaintType === 'Urgent' ? 3 : 7;
+    if (milestoneFired(reminderDays)) {
+      items.push({ label: `Reminder Sent to ${assignedRole}`, date: fmt(eventDate(reminderDays), '10:30 AM'), dotColor: '#f57f17' });
     }
 
     // DPO Escalation (after 14 days)
-    if (diffDays >= 14) {
-      const d = new Date(subYear, subMonth - 1, subDay + 14);
-      items.push({
-        label: 'Ticket Escalated to DPO (View Only)',
-        date: `${pad(d.getDate())} ${months[d.getMonth()]} ${d.getFullYear()}, 02:00 PM`,
-        dotColor: '#e65100',
-      });
+    if (milestoneFired(14)) {
+      items.push({ label: 'Ticket Escalated to DPO (View Only)', date: fmt(eventDate(14), '02:00 PM'), dotColor: '#e65100' });
     }
 
-    // Ticket Overdue (after 21 days)
-    if (diffDays >= 21) {
-      const d = new Date(subYear, subMonth - 1, subDay + 21);
-      const od = pad(d.getDate()), om = months[d.getMonth()], oy = d.getFullYear();
-      items.push({ label: 'Ticket Overdue', date: `${od} ${om} ${oy}, 05:00 PM`, dotColor: '#d32f2f' });
-
-      const isEscalatedFromOther = currentCard.ticketNumber.includes('CDPO') || currentCard.ticketNumber.includes('SUP') || currentCard.ticketNumber.includes('AWW') || (assignedRole !== 'DPO');
-      if (isEscalatedFromOther) {
-        items.push({
-          label: 'Reassigned to DPO (Overdue Escalation)',
-          date: `${od} ${om} ${oy}, 05:01 PM`,
-          dotColor: '#1a237e',
-        });
-      }
+    // Ticket Overdue (after 21 days). Tickets are never reassigned to DPO on
+    // breach — DPO only gets view-only visibility via the "Escalated to DPO"
+    // step above; ownership stays with the original assignee.
+    if (milestoneFired(21)) {
+      items.push({ label: 'Ticket Overdue', date: fmt(eventDate(21), '05:00 PM'), dotColor: '#d32f2f' });
     }
 
-    // Resolution & closure steps once the ticket is no longer pending
+    // Resolution & closure steps once the ticket is no longer pending. Offsets are
+    // clamped by eventDate so they always fall after the milestones above.
     if (!isPending) {
-      const resolvedDayVal = new Date(subYear, subMonth - 1, subDay + Math.min(diffDays, 9));
-      const resDay = pad(resolvedDayVal.getDate()), resMonth = months[resolvedDayVal.getMonth()], resYear = resolvedDayVal.getFullYear();
-
-      const closedDayVal = new Date(subYear, subMonth - 1, subDay + Math.min(diffDays, 12));
-      const clsDay = pad(closedDayVal.getDate()), clsMonth = months[closedDayVal.getMonth()], clsYear = closedDayVal.getFullYear();
-
-      const appealDayVal = new Date(subYear, subMonth - 1, subDay + Math.min(diffDays, 14));
-      const appDay = appealDayVal.getDate(), appMonth = months[appealDayVal.getMonth()], appYear = appealDayVal.getFullYear();
+      const closedOffset = resolvedOffset + 2;
+      const appealOffset = resolvedOffset + 4;
 
       if (currentCard.status === 'CLOSURE_PENDING') {
-        items.push({ label: `Ticket Resolved by ${assignedRole}`, date: `${resDay} ${resMonth} ${resYear}, 03:00 PM`, dotColor: '#2e7d32' });
+        items.push({ label: `Ticket Resolved by ${assignedRole}`, date: fmt(eventDate(resolvedOffset), '03:00 PM'), dotColor: '#2e7d32' });
       } else if (currentCard.status === 'CLOSED') {
         if (assignedRole === 'DPO') {
-          const isOverdueEscalation = currentCard.ticketNumber.includes('CDPO') || currentCard.ticketNumber.includes('SUP') || currentCard.ticketNumber.includes('AWW');
-          items.push({
-            label: isOverdueEscalation ? 'Ticket Resolved & Closed by DPO (Overdue Escalation)' : 'Ticket Resolved & Closed by DPO',
-            date: `${clsDay} ${clsMonth} ${clsYear}, 10:00 AM`,
-            dotColor: '#2e7d32',
-          });
+          items.push({ label: 'Ticket Resolved & Closed by DPO', date: fmt(eventDate(closedOffset), '10:00 AM'), dotColor: '#2e7d32' });
         } else if (assignedRole === 'CDPO') {
-          items.push({ label: 'Ticket Resolved & Closed by CDPO', date: `${clsDay} ${clsMonth} ${clsYear}, 10:00 AM`, dotColor: '#2e7d32' });
+          items.push({ label: 'Ticket Resolved & Closed by CDPO', date: fmt(eventDate(closedOffset), '10:00 AM'), dotColor: '#2e7d32' });
         } else {
-          items.push({ label: `Ticket Resolved by ${assignedRole}`, date: `${resDay} ${resMonth} ${resYear}, 03:00 PM`, dotColor: '#2e7d32' });
-          items.push({ label: 'Ticket Closed by CDPO', date: `${clsDay} ${clsMonth} ${clsYear}, 10:00 AM`, dotColor: '#2e7d32' });
+          items.push({ label: `Ticket Resolved by ${assignedRole}`, date: fmt(eventDate(resolvedOffset), '03:00 PM'), dotColor: '#2e7d32' });
+          items.push({ label: 'Ticket Closed by CDPO', date: fmt(eventDate(closedOffset), '10:00 AM'), dotColor: '#2e7d32' });
         }
       } else if (currentCard.status === 'APPEAL_RAISED') {
         if (assignedRole === 'CDPO') {
-          items.push({ label: 'Ticket Resolved & Closed by CDPO', date: `${clsDay} ${clsMonth} ${clsYear}, 10:00 AM`, dotColor: '#2e7d32' });
+          items.push({ label: 'Ticket Resolved & Closed by CDPO', date: fmt(eventDate(closedOffset), '10:00 AM'), dotColor: '#2e7d32' });
         } else {
-          items.push({ label: `Ticket Resolved by ${assignedRole}`, date: `${resDay} ${resMonth} ${resYear}, 03:00 PM`, dotColor: '#2e7d32' });
-          items.push({ label: 'Ticket Closed by CDPO', date: `${clsDay} ${clsMonth} ${clsYear}, 10:00 AM`, dotColor: '#2e7d32' });
+          items.push({ label: `Ticket Resolved by ${assignedRole}`, date: fmt(eventDate(resolvedOffset), '03:00 PM'), dotColor: '#2e7d32' });
+          items.push({ label: 'Ticket Closed by CDPO', date: fmt(eventDate(closedOffset), '10:00 AM'), dotColor: '#2e7d32' });
         }
-        items.push({ label: 'Appeal Raised by Beneficiary', date: `${pad(appDay)} ${appMonth} ${appYear}, 02:00 PM`, dotColor: '#f57f17' });
+        items.push({ label: 'Appeal Raised by Beneficiary', date: fmt(eventDate(appealOffset), '02:00 PM'), dotColor: '#f57f17' });
       } else if (currentCard.status === 'APPEAL_RESOLVED') {
         if (assignedRole === 'CDPO') {
-          items.push({ label: 'Ticket Resolved & Closed by CDPO', date: `${clsDay} ${clsMonth} ${clsYear}, 10:00 AM`, dotColor: '#2e7d32' });
+          items.push({ label: 'Ticket Resolved & Closed by CDPO', date: fmt(eventDate(closedOffset), '10:00 AM'), dotColor: '#2e7d32' });
         } else {
-          items.push({ label: `Ticket Resolved by ${assignedRole}`, date: `${resDay} ${resMonth} ${resYear}, 03:00 PM`, dotColor: '#2e7d32' });
-          items.push({ label: 'Ticket Closed by CDPO', date: `${clsDay} ${clsMonth} ${clsYear}, 10:00 AM`, dotColor: '#2e7d32' });
+          items.push({ label: `Ticket Resolved by ${assignedRole}`, date: fmt(eventDate(resolvedOffset), '03:00 PM'), dotColor: '#2e7d32' });
+          items.push({ label: 'Ticket Closed by CDPO', date: fmt(eventDate(closedOffset), '10:00 AM'), dotColor: '#2e7d32' });
         }
-        items.push({ label: 'Appeal Raised by Beneficiary', date: `${pad(appDay)} ${appMonth} ${appYear}, 02:00 PM`, dotColor: '#f57f17' });
-        items.push({
-          label: 'Appeal Resolved by DPO',
-          date: `${appDay < 10 ? '0' + (appDay + 5) : (appDay + 5)} ${appMonth} ${appYear}, 11:00 AM`,
-          dotColor: '#1a237e',
-        });
+        items.push({ label: 'Appeal Raised by Beneficiary', date: fmt(eventDate(appealOffset), '02:00 PM'), dotColor: '#f57f17' });
+        items.push({ label: 'Appeal Resolved by DPO', date: fmt(eventDate(appealOffset + 5), '11:00 AM'), dotColor: '#1a237e' });
       }
     }
 
@@ -215,8 +211,7 @@ export default function TicketDetailsScreen({
       setCurrentCard((prev: any) => ({ ...prev, status: 'CLOSURE_PENDING', actionTaken: actionNote, resolvedDate: prev.resolvedDate || 'Resolved: 30/06/2025' }));
       setSuccessInfo({
         title: 'Ticket Resolved!',
-        description: 'The ticket has been marked as resolved and is now waiting for CDPO closure.',
-        viewLabel: 'View Resolved Ticket',
+        description: 'Your resolution has been submitted. The CDPO will review it and close the ticket.',
       });
       setActionModalVisible(false);
       setShowSuccess(true);
@@ -226,8 +221,7 @@ export default function TicketDetailsScreen({
         setCurrentCard((prev: any) => ({ ...prev, status: 'CLOSED' }));
         setSuccessInfo({
           title: 'Ticket Closed!',
-          description: `Ticket ${currentCard.ticketNumber} has been marked as closed by CDPO.`,
-          viewLabel: 'View Closed Ticket',
+          description: 'The resolution has been accepted and the ticket is now closed.',
         });
         setActionModalVisible(false);
         setShowSuccess(true);
@@ -236,8 +230,7 @@ export default function TicketDetailsScreen({
         setCurrentCard((prev: any) => ({ ...prev, status: 'CLOSED', actionTaken: actionNote, resolvedDate: prev.resolvedDate || 'Resolved: 30/06/2025' }));
         setSuccessInfo({
           title: 'Ticket Closed!',
-          description: `Ticket ${currentCard.ticketNumber} has been marked as closed.`,
-          viewLabel: 'View Closed Ticket',
+          description: 'The ticket has been resolved and closed. No further action is required.',
         });
         setActionModalVisible(false);
         setShowSuccess(true);
@@ -253,8 +246,7 @@ export default function TicketDetailsScreen({
         setCurrentCard((prev: any) => ({ ...prev, status: 'CLOSED', actionTaken: actionNote, resolvedDate: prev.resolvedDate || 'Resolved: 30/06/2025' }));
         setSuccessInfo({
           title: 'Ticket Closed!',
-          description: `Ticket ${currentCard.ticketNumber} has been marked as closed.`,
-          viewLabel: 'View Closed Ticket',
+          description: 'The ticket has been resolved and closed. No further action is required.',
         });
         setActionModalVisible(false);
         setShowSuccess(true);
@@ -283,13 +275,6 @@ export default function TicketDetailsScreen({
               >
                 Back to Ticket List
               </button>
-              <button
-                className="ux4g-btn ux4g-btn-outline-neutral ux4g-btn-md"
-                onClick={() => setShowSuccess(false)}
-                style={{ width: '100%', height: '48px', border: '1px solid #1a237e', color: '#1a237e' }}
-              >
-                {successInfo.viewLabel}
-              </button>
             </div>
           </div>
         </div>
@@ -306,7 +291,7 @@ export default function TicketDetailsScreen({
               <Check size={30} color="#ffffff" strokeWidth={3} />
             </div>
             <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 700, color: '#181818', margin: 0 }}>Appeal Resolved!</h3>
-            <p style={{ color: '#757575', fontSize: '13px', lineHeight: '1.5', marginTop: '10px' }}>Appeal for {currentCard.ticketNumber} has been resolved successfully.</p>
+            <p style={{ color: '#757575', fontSize: '13px', lineHeight: '1.5', marginTop: '10px' }}>Your decision has been recorded and the appeal is now resolved.</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', marginTop: '28px' }}>
               <button
                 className="ux4g-btn ux4g-btn-primary ux4g-btn-md"
@@ -456,7 +441,7 @@ export default function TicketDetailsScreen({
                 Resolution Details
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Action Taken</span>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Action Taken Report (ATR)</span>
                 <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '6px', padding: '14px 16px', fontSize: '14px', color: '#166534', whiteSpace: 'pre-line', lineHeight: '1.4' }}>
                   {currentCard.actionTaken}
                 </div>
@@ -531,10 +516,10 @@ export default function TicketDetailsScreen({
             (assignedFilter === 'Supervisor' && isPending && currentCard.assignedTo !== 'AWW') ||
             (assignedFilter === 'CDPO' && isPending) ||
             (assignedFilter === 'CDPO' && isClosurePending) ||
-            // DPO can resolve & close any ticket assigned to them (Pending or Overdue tab,
-            // regardless of whether it has actually breached SLA yet), plus escalated
-            // overdue tickets from other roles, plus appeals.
-            (assignedFilter === 'DPO' && isPending && (currentCard.assignedTo === 'DPO' || currentCard.isOverdue)) ||
+            // DPO can only resolve & close tickets actually assigned to them, plus
+            // appeals. Overdue tickets escalated from CDPO/Supervisor/AWW are
+            // view-only for DPO — ownership never transfers on SLA breach.
+            (assignedFilter === 'DPO' && isPending && currentCard.assignedTo === 'DPO') ||
             (assignedFilter === 'DPO' && isAppeal);
 
           const getButtonText = () => {
@@ -590,7 +575,7 @@ export default function TicketDetailsScreen({
               <form onSubmit={handleActionSubmit} style={{ overflowY: 'auto', padding: '16px 20px 20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-                    <label style={{ fontSize: '12px', fontWeight: 600, color: '#757575' }}>Action Taken</label>
+                    <label style={{ fontSize: '12px', fontWeight: 600, color: '#757575' }}>Action Taken Report (ATR)</label>
                     <span style={{ color: '#d32f2f', marginLeft: '3px' }}>*</span>
                   </div>
                   <div style={{ position: 'relative' }}>

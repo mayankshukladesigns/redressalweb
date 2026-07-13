@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { TicketCard, ResolvedTicketCard } from '../web/types';
 import TicketDetailsScreen from './TicketDetailsScreen';
+import BatchedTicketGrid from '../components/BatchedTicketGrid';
 import {
   Eye, X, Info, Clock, CheckCircle2, AlertTriangle, ShieldCheck,
   Calendar, ChevronDown, Inbox, Search,
@@ -9,7 +10,7 @@ import {
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
 type AssignedFilter = 'CDPO' | 'Supervisor' | 'AWW';
-type DateRangeOption = '7' | '14' | '21' | 'custom';
+type DateRangeOption = '7' | '14' | '21' | '21+';
 
 interface CDPOViewProps {
   sharedPendingCards: TicketCard[];
@@ -26,26 +27,61 @@ const AWC_OPTIONS = [
   'Anganwadi Centre 1', 'Anganwadi Centre 2', 'Anganwadi Centre 3',
   'Anganwadi Centre 4', 'Anganwadi Centre 5', 'Anganwadi Centre 6',
 ];
-const COMPLAINT_TYPES = ['Corruption', 'Urgent', 'Others'];
+// Listed in priority order: Urgent outranks Corruption, which outranks General.
+const COMPLAINT_TYPES = ['Urgent', 'Corruption', 'General'];
+const COMPLAINT_PRIORITY: Record<string, number> = { Urgent: 0, Corruption: 1, General: 2 };
+const complaintRank = (t?: string) => COMPLAINT_PRIORITY[t ?? ''] ?? 3;
 const BENEFICIARY_CATEGORIES = [
   'Pregnant Woman', 'Lactating Mother', 'Children 0-6 months',
   'Children (6m-3y)', 'Children (3-6y)', 'Adolescent Girl',
 ];
 const RESOLVED_STATUSES = [
   { value: 'CLOSED',          label: 'Closed',          color: '#2e7d32' },
-  { value: 'CLOSURE_PENDING', label: 'Closure Pending', color: '#f57f17' },
+  { value: 'CLOSURE_PENDING', label: 'Pending for Closure', color: '#f57f17' },
   { value: 'APPEAL_RAISED',   label: 'Appeal Raised',   color: '#e65100' },
   { value: 'APPEAL_RESOLVED', label: 'Appeal Resolved', color: '#1565c0' },
 ];
 const STATUS_CFG: Record<string, { label: string; color: string; bg: string; border: string }> = {
   CLOSED:          { label: 'CLOSED',          color: '#2e7d32', bg: '#e8f5e9', border: '#a5d6a7' },
-  CLOSURE_PENDING: { label: 'CLOSURE PENDING', color: '#f57f17', bg: '#fff8e1', border: '#ffe082' },
+  CLOSURE_PENDING: { label: 'PENDING FOR CLOSURE', color: '#f57f17', bg: '#fff8e1', border: '#ffe082' },
   APPEAL_RAISED:   { label: 'APPEAL RAISED',   color: '#e65100', bg: '#fff3e0', border: '#ffcc80' },
   APPEAL_RESOLVED: { label: 'APPEAL RESOLVED', color: '#1565c0', bg: '#e8eaf6', border: '#90caf9' },
 };
 const REFERENCE_TODAY = new Date(2025, 5, 30);
 
+// Owner chip — identifies which officer resolved a ticket that is now waiting on
+// the CDPO. Colours match the role chips used in the DPO view.
+const ROLE_CHIP: Record<string, { bg: string; color: string; border: string }> = {
+  Supervisor: { bg: '#f3e5f5', color: '#7b1fa2', border: '#ce93d8' },
+  AWW:        { bg: '#e8f5e9', color: '#2e7d32', border: '#a5d6a7' },
+  CDPO:       { bg: '#e3f2fd', color: '#1565c0', border: '#90caf9' },
+  DPO:        { bg: '#e0e0f8', color: '#1a237e', border: '#b8c1ec' },
+};
+
 // ─── Helpers ───────────────────────────────────────────────────────────────────
+
+// Resolution timestamp, used to order the closure queue oldest-first.
+function resolutionTime(resolvedDate?: string): number {
+  const d = parseDateStr(resolvedDate ?? '');
+  return d ? d.getTime() : Number.MAX_SAFE_INTEGER;
+}
+
+// Age of a pending ticket in days, against the app's fixed "today".
+function ticketAge(submittedDate?: string): number {
+  const d = parseDateStr(submittedDate ?? '');
+  if (!d) return 0;
+  return Math.floor((REFERENCE_TODAY.getTime() - d.getTime()) / 86400000);
+}
+
+// Queue order for pending tickets: the closer a ticket is to breaching the 21-day
+// SLA, the higher it sits — so already-overdue tickets lead (most overdue first),
+// followed by those nearest the deadline. Oldest-first achieves exactly that.
+// Complaint severity only breaks ties between tickets of the same age.
+function byBreachRisk(a: TicketCard, b: TicketCard): number {
+  const ageDiff = ticketAge(b.submittedDate) - ticketAge(a.submittedDate);
+  if (ageDiff !== 0) return ageDiff;
+  return complaintRank(a.complaintType) - complaintRank(b.complaintType);
+}
 
 function parseDateStr(str: string): Date | null {
   if (!str) return null;
@@ -54,18 +90,15 @@ function parseDateStr(str: string): Date | null {
   return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
 }
 
-function toInputDate(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
-
-function passesDateFilter(dateStr: string, option: DateRangeOption | null, fromStr: string, toStr: string): boolean {
+function passesDateFilter(dateStr: string, option: DateRangeOption | null): boolean {
   if (!option) return true;
   const d = parseDateStr(dateStr);
   if (!d) return false;
-  if (option === 'custom') {
-    const from = fromStr ? new Date(fromStr) : null;
-    const to   = toStr   ? new Date(toStr)   : null;
-    return (!from || d >= from) && (!to || d <= to);
+  if (option === '21+') {
+    // Equivalent to the Overdue definition used elsewhere (age >= 21 days).
+    const cutoff = new Date(REFERENCE_TODAY);
+    cutoff.setDate(cutoff.getDate() - 21);
+    return d <= cutoff;
   }
   const days = Number(option);
   const windowStart = new Date(REFERENCE_TODAY);
@@ -76,20 +109,18 @@ function passesDateFilter(dateStr: string, option: DateRangeOption | null, fromS
 // ─── Date Range Popover ────────────────────────────────────────────────────────
 
 const DateRangePopover = ({
-  open, onClose, applied, appliedFrom, appliedTo, onApply, placement = 'below',
+  open, onClose, applied, onApply, placement = 'below',
 }: {
   open: boolean; onClose: () => void;
-  applied: DateRangeOption | null; appliedFrom: string; appliedTo: string;
-  onApply: (opt: DateRangeOption | null, from: string, to: string) => void;
+  applied: DateRangeOption | null;
+  onApply: (opt: DateRangeOption | null) => void;
   placement?: 'below' | 'above';
 }) => {
   const [draft, setDraft] = useState<DateRangeOption | null>(applied);
-  const [from, setFrom]   = useState(appliedFrom);
-  const [to, setTo]       = useState(appliedTo);
 
   if (!open) return null;
 
-  const handleCancel = () => { setDraft(applied); setFrom(appliedFrom); setTo(appliedTo); onClose(); };
+  const handleCancel = () => { setDraft(applied); onClose(); };
 
   return (
     <>
@@ -105,30 +136,18 @@ const DateRangePopover = ({
           Filter by Date Range
         </h4>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {([['7','Last 7 Days'],['14','Last 14 Days'],['21','Last 21 Days'],['custom','Custom Range']] as [DateRangeOption, string][]).map(([val, lbl]) => (
+          {([['7','Last 7 Days'],['14','Last 14 Days'],['21','Last 21 Days'],['21+','More than 21 Days']] as [DateRangeOption, string][]).map(([val, lbl]) => (
             <label key={val} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 4px', cursor: 'pointer', fontSize: 13, fontWeight: draft === val ? 600 : 400, color: draft === val ? 'var(--primary-deep)' : 'var(--text-dark)' }}>
               <input type="radio" name="dateRangeCDPO" checked={draft === val} onChange={() => setDraft(val)} style={{ accentColor: 'var(--primary-deep)', width: 16, height: 16 }} />
               {lbl}
             </label>
           ))}
         </div>
-        {draft === 'custom' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10, paddingLeft: 4 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>From Date</label>
-              <input type="date" className="form-control" value={from} max={toInputDate(REFERENCE_TODAY)} onChange={e => setFrom(e.target.value)} style={{ height: 36, fontSize: 13 }} />
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>To Date</label>
-              <input type="date" className="form-control" value={to} max={toInputDate(REFERENCE_TODAY)} onChange={e => setTo(e.target.value)} style={{ height: 36, fontSize: 13 }} />
-            </div>
-          </div>
-        )}
         <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
           <button className="ux4g-btn ux4g-btn-outline-neutral ux4g-btn-sm" style={{ flex: 1 }}
-            onClick={() => { setDraft(null); setFrom(''); setTo(''); onApply(null,'',''); }}>Clear</button>
+            onClick={() => { setDraft(null); onApply(null); }}>Clear</button>
           <button className="ux4g-btn ux4g-btn-primary ux4g-btn-sm" style={{ flex: 1 }}
-            onClick={() => { onApply(draft, from, to); onClose(); }}>Apply</button>
+            onClick={() => { onApply(draft); onClose(); }}>Apply</button>
         </div>
       </div>
     </>
@@ -202,7 +221,7 @@ const ResolvedBreakdownModal = ({
   if (!open) return null;
   const totalResolved = byRole.cdpo + byRole.sup + byRole.aww;
   const subCards = [
-    { label: 'Closure Pending', icon: Clock,         color: '#f57f17', bg: '#fff8e1', border: '#ffe082', total: byStatus.closurePending.cdpo + byStatus.closurePending.sup + byStatus.closurePending.aww, rows: [{r:'CDPO',v:byStatus.closurePending.cdpo},{r:'Supervisor',v:byStatus.closurePending.sup},{r:'AWW',v:byStatus.closurePending.aww}] },
+    { label: 'Pending for Closure', icon: Clock,         color: '#f57f17', bg: '#fff8e1', border: '#ffe082', total: byStatus.closurePending.cdpo + byStatus.closurePending.sup + byStatus.closurePending.aww, rows: [{r:'CDPO',v:byStatus.closurePending.cdpo},{r:'Supervisor',v:byStatus.closurePending.sup},{r:'AWW',v:byStatus.closurePending.aww}] },
     { label: 'Closed',          icon: CheckCircle2,  color: '#2e7d32', bg: '#e8f5e9', border: '#a5d6a7', total: byStatus.closed.cdpo         + byStatus.closed.sup         + byStatus.closed.aww,         rows: [{r:'CDPO',v:byStatus.closed.cdpo},        {r:'Supervisor',v:byStatus.closed.sup},        {r:'AWW',v:byStatus.closed.aww}]         },
     { label: 'Appeal Raised',   icon: AlertTriangle, color: '#e65100', bg: '#fff3e0', border: '#ffcc80', total: byStatus.appealRaised.cdpo    + byStatus.appealRaised.sup    + byStatus.appealRaised.aww,   rows: [{r:'CDPO',v:byStatus.appealRaised.cdpo},  {r:'Supervisor',v:byStatus.appealRaised.sup},  {r:'AWW',v:byStatus.appealRaised.aww}]   },
     { label: 'Appeal Resolved', icon: ShieldCheck,   color: '#1565c0', bg: '#e8eaf6', border: '#90caf9', total: byStatus.appealResolved.cdpo  + byStatus.appealResolved.sup  + byStatus.appealResolved.aww, rows: [{r:'CDPO',v:byStatus.appealResolved.cdpo},{r:'Supervisor',v:byStatus.appealResolved.sup},{r:'AWW',v:byStatus.appealResolved.aww}] },
@@ -300,19 +319,35 @@ const PendingCard = ({ card, showDocs, onView }: { card: TicketCard; showDocs: b
 
 // ─── Resolved Ticket Card ──────────────────────────────────────────────────────
 
-const ResolvedCard = ({ card, onView }: { card: ResolvedTicketCard; onView: () => void }) => {
+const ResolvedCard = ({ card, onView, showOwnerChip }: {
+  card: ResolvedTicketCard;
+  onView: () => void;
+  showOwnerChip?: boolean;
+}) => {
   const cfg = STATUS_CFG[card.status] ?? STATUS_CFG.CLOSED;
+  // In the CDPO's "Pending for Closure" queue every card has the same status, so
+  // the status chip carries no information. Show who resolved it instead — that's
+  // the one thing that differs card to card and drives who the CDPO follows up with.
+  const owner = card.assignedTo ?? '';
+  const ownerCfg = ROLE_CHIP[owner];
+  const useOwnerChip = showOwnerChip && !!ownerCfg;
   return (
     <div className="ticket-card" style={{ cursor: 'pointer', padding: 0, overflow: 'hidden' }} onClick={onView}>
-      {card.awaitingCdpoClosure && (
+      {card.awaitingCdpoClosure && !showOwnerChip && (
         <div style={{ background: '#fff8e1', borderBottom: '1px solid #ffe082', padding: '7px 18px', fontSize: 12, fontWeight: 700, color: '#f57f17' }}>
           Awaiting CDPO Closure
         </div>
       )}
       <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
           <span className="ticket-id">{card.ticketNumber}</span>
-          <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 10.5, fontWeight: 700, background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}>{cfg.label}</span>
+          {useOwnerChip ? (
+            <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 10.5, fontWeight: 700, background: ownerCfg.bg, color: ownerCfg.color, border: `1px solid ${ownerCfg.border}`, textTransform: 'uppercase', letterSpacing: '0.4px', flexShrink: 0 }}>
+              {owner}
+            </span>
+          ) : (
+            <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 10.5, fontWeight: 700, background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}>{cfg.label}</span>
+          )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <h4 className="ticket-title" style={{ margin: 0 }}>{card.beneficiaryName}</h4>
@@ -327,7 +362,7 @@ const ResolvedCard = ({ card, onView }: { card: ResolvedTicketCard; onView: () =
         <div style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 500 }}>{card.resolvedDate}</div>
         {card.actionTaken && (
           <div style={{ background: '#f8fafc', border: '1px solid var(--border-color)', borderRadius: 6, padding: '8px 12px' }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>Action Taken</div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>Action Taken Report (ATR)</div>
             <p style={{ fontSize: 12.5, color: 'var(--text-dark)', margin: 0, lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' } as any}>{card.actionTaken}</p>
           </div>
         )}
@@ -352,7 +387,9 @@ export default function CDPOView({
 
   // ── Core state ────────────────────────────────────────────────────────────────
   const [assignedFilter, setAssignedFilter] = useState<AssignedFilter>('CDPO');
-  const [activeTab,      setActiveTab]      = useState<'Pending' | 'Resolved'>('Pending');
+  // CDPO is the default scope and closing out Supervisor/AWW resolutions is their
+  // primary duty, so they land on the "Pending for Closure" queue first.
+  const [activeTab,      setActiveTab]      = useState<'Pending' | 'PendingClosure' | 'Resolved'>('PendingClosure');
   const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
   const [pendingModal,   setPendingModal]   = useState(false);
   const [resolvedModal,  setResolvedModal]  = useState(false);
@@ -365,8 +402,6 @@ export default function CDPOView({
   const [searchQuery,     setSearchQuery]     = useState('');
   const [isOverdueOnly,   setIsOverdueOnly]   = useState(false);
   const [appliedDateOption, setAppliedDateOption] = useState<DateRangeOption | null>(null);
-  const [appliedFrom,     setAppliedFrom]     = useState('');
-  const [appliedTo,       setAppliedTo]       = useState('');
   const [dateOpen,        setDateOpen]        = useState(false);
   const dateButtonRef = useRef<HTMLButtonElement>(null);
   const [datePanelPlacement, setDatePanelPlacement] = useState<'below' | 'above'>('below');
@@ -386,21 +421,28 @@ export default function CDPOView({
   // Resolved-only: Status filter
   const [appliedStatuses, setAppliedStatuses] = useState<string[]>([]);
 
+  // Pending-for-Closure only: which official resolved the ticket
+  const [resolvedByFilter, setResolvedByFilter] = useState<'All' | 'Supervisor' | 'AWW'>('All');
+
+
   // ── Handle role/tab switch ────────────────────────────────────────────────────
   const clearAllFilters = () => {
     setSearchQuery(''); setIsOverdueOnly(false);
-    setAppliedDateOption(null); setAppliedFrom(''); setAppliedTo('');
+    setAppliedDateOption(null);
     setAppliedTypes([]); setAppliedCategories([]); setAppliedStatuses([]);
+    setResolvedByFilter('All');
   };
 
   const handleRoleSwitch = (role: AssignedFilter) => {
     setAssignedFilter(role);
     setSelectedSector('All Sectors');
     setSelectedAWC('All Centres');
+    // "Pending for Closure" is a CDPO-only queue — fall back to Pending for other roles.
+    if (role !== 'CDPO' && activeTab === 'PendingClosure') setActiveTab('Pending');
     clearAllFilters();
   };
 
-  const handleTabChange = (tab: 'Pending' | 'Resolved') => {
+  const handleTabChange = (tab: 'Pending' | 'PendingClosure' | 'Resolved') => {
     setActiveTab(tab);
     clearAllFilters();
   };
@@ -435,7 +477,7 @@ export default function CDPOView({
       if (!card.awcName || card.awcName !== selectedAWC) return false;
     }
     if (isOverdueOnly && !(card.isOverdue || card.daysType === 'overdue')) return false;
-    if (!passesDateFilter(card.submittedDate ?? '', appliedDateOption, appliedFrom, appliedTo)) return false;
+    if (!passesDateFilter(card.submittedDate ?? '', appliedDateOption)) return false;
     if (assignedFilter === 'CDPO') {
       if (appliedTypes.length > 0 && (!card.complaintType || !appliedTypes.includes(card.complaintType))) return false;
     } else {
@@ -448,7 +490,7 @@ export default function CDPOView({
       if (!hit) return false;
     }
     return true;
-  });
+  }).sort(byBreachRisk);
 
   const displayedResolved = allResolved.filter(card => {
     if (card.assignedTo && card.assignedTo !== assignedFilter) return false;
@@ -460,7 +502,7 @@ export default function CDPOView({
     }
     if (assignedFilter === 'CDPO' && card.status === 'CLOSURE_PENDING') return false;
     if (appliedStatuses.length > 0 && (!card.status || !appliedStatuses.includes(card.status))) return false;
-    if (!passesDateFilter(card.resolvedDate ?? '', appliedDateOption, appliedFrom, appliedTo)) return false;
+    if (!passesDateFilter(card.resolvedDate ?? '', appliedDateOption)) return false;
     if (appliedCategories.length > 0 && (!card.beneficiaryType || !appliedCategories.includes(card.beneficiaryType))) return false;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -471,13 +513,41 @@ export default function CDPOView({
     return true;
   });
 
+  // CDPO-only "Pending for Closure" queue: tickets resolved by Supervisor/AWW
+  // that are awaiting CDPO's final closure.
+  const displayedPendingClosure = allResolved.filter(card => {
+    if (!card.awaitingCdpoClosure) return false;
+    if (card.assignedTo !== 'Supervisor' && card.assignedTo !== 'AWW') return false;
+    if (resolvedByFilter !== 'All' && card.assignedTo !== resolvedByFilter) return false;
+    if (!passesDateFilter(card.resolvedDate ?? '', appliedDateOption)) return false;
+    if (appliedCategories.length > 0 && (!card.beneficiaryType || !appliedCategories.includes(card.beneficiaryType))) return false;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      const hit = card.ticketNumber.toLowerCase().includes(q) || card.beneficiaryName.toLowerCase().includes(q) ||
+        (card.description && card.description.toLowerCase().includes(q));
+      if (!hit) return false;
+    }
+    return true;
+  })
+    // Oldest resolution date on top, newest last — the CDPO works the backlog down
+    // in the order the officers filed their resolutions.
+    .sort((a, b) => resolutionTime(a.resolvedDate) - resolutionTime(b.resolvedDate));
+
   const awaitingClosureCount = allResolved.filter(c => c.awaitingCdpoClosure && c.assignedTo === 'Supervisor').length;
   const showDocs = assignedFilter === 'CDPO';
   const isCdpoPending = assignedFilter === 'CDPO' && activeTab === 'Pending';
 
+  // Any change to scope, tab or a filter snaps the batched grids back to page one.
+  const gridResetKey = [
+    assignedFilter, activeTab, selectedSector, selectedAWC, searchQuery, isOverdueOnly,
+    appliedDateOption, appliedTypes.join(','), appliedCategories.join(','),
+    appliedStatuses.join(','), resolvedByFilter,
+  ].join('|');
+
   // Active filter count for badge
   const activeFilterCount =
     (activeTab === 'Pending' && isOverdueOnly ? 1 : 0) +
+    (activeTab === 'PendingClosure' && resolvedByFilter !== 'All' ? 1 : 0) +
     (appliedDateOption ? 1 : 0) +
     appliedTypes.length +
     appliedCategories.length +
@@ -517,7 +587,7 @@ export default function CDPOView({
 
   const dateLabelText =
     appliedDateOption === '7' ? 'Last 7 Days' : appliedDateOption === '14' ? 'Last 14 Days' :
-    appliedDateOption === '21' ? 'Last 21 Days' : appliedDateOption === 'custom' ? 'Custom Range' : 'Date Range: All';
+    appliedDateOption === '21' ? 'Last 21 Days' : appliedDateOption === '21+' ? 'More than 21 Days' : 'Date Range: All';
 
   // ─── Render ───────────────────────────────────────────────────────────────────
   return (
@@ -672,13 +742,42 @@ export default function CDPOView({
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Status</label>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  {RESOLVED_STATUSES.map(s => (
+                  {RESOLVED_STATUSES.filter(s => !(assignedFilter === 'CDPO' && s.value === 'CLOSURE_PENDING')).map(s => (
                     <label key={s.value} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer', padding: '4px 0' }}>
                       <input type="checkbox" checked={appliedStatuses.includes(s.value)} onChange={() => setAppliedStatuses(prev => prev.includes(s.value) ? prev.filter(x => x !== s.value) : [...prev, s.value])}
                         style={{ accentColor: 'var(--primary-deep)', width: 15, height: 15 }} />
                       <span style={{ width: 8, height: 8, borderRadius: '50%', background: s.color, flexShrink: 0 }} />
                       <span style={{ color: appliedStatuses.includes(s.value) ? 'var(--primary-deep)' : 'var(--text-dark)', fontWeight: appliedStatuses.includes(s.value) ? 600 : 400 }}>{s.label}</span>
                     </label>
+                  ))}
+                </div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Beneficiary Category</label>
+                <select className="form-select" value={appliedCategories[0] || 'All'}
+                  onChange={e => setAppliedCategories(e.target.value === 'All' ? [] : [e.target.value])}
+                  style={{ width: '100%', height: 40, padding: '0 32px 0 12px', fontSize: 13 }}>
+                  <option value="All">Category: All</option>
+                  {BENEFICIARY_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+            </>
+          )}
+
+          {activeTab === 'PendingClosure' && (
+            <>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Resolved By</label>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  {(['All', 'Supervisor', 'AWW'] as const).map(role => (
+                    <button key={role} onClick={() => setResolvedByFilter(role)} style={{
+                      flex: 1, padding: '7px 4px', borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
+                      border: `1.5px solid ${resolvedByFilter === role ? 'var(--primary-deep)' : 'var(--border-color)'}`,
+                      background: resolvedByFilter === role ? 'var(--primary-deep)' : 'var(--bg-main)',
+                      color: resolvedByFilter === role ? '#ffffff' : 'var(--text-dark)',
+                    }}>
+                      {role}
+                    </button>
                   ))}
                 </div>
               </div>
@@ -716,8 +815,8 @@ export default function CDPOView({
             </button>
             <DateRangePopover
               open={dateOpen} onClose={() => setDateOpen(false)}
-              applied={appliedDateOption} appliedFrom={appliedFrom} appliedTo={appliedTo}
-              onApply={(opt, from, to) => { setAppliedDateOption(opt); setAppliedFrom(from); setAppliedTo(to); setDateOpen(false); }}
+              applied={appliedDateOption}
+              onApply={(opt) => { setAppliedDateOption(opt); setDateOpen(false); }}
               placement={datePanelPlacement}
             />
           </div>
@@ -736,12 +835,21 @@ export default function CDPOView({
           {/* Tabs + Search */}
           <div className="search-filter-section" style={{ marginBottom: 0 }}>
             <div className="tabs-navigation" style={{ borderBottom: 'none', margin: 0 }}>
-              {(['Pending','Resolved'] as const).map(tab => (
-                <button key={tab} className={`tab-btn ${activeTab === tab ? 'active' : ''}`} onClick={() => handleTabChange(tab)}>
-                  {tab}
-                  <span className="tab-count">{tab === 'Pending' ? displayedPending.length : displayedResolved.length}</span>
-                </button>
-              ))}
+              {(assignedFilter === 'CDPO'
+                ? (['PendingClosure','Pending','Resolved'] as const)
+                : (['Pending','Resolved'] as const)
+              ).map(tab => {
+                const label = tab === 'PendingClosure' ? 'Pending for Closure' : tab;
+                const count = tab === 'Pending' ? displayedPending.length
+                  : tab === 'PendingClosure' ? displayedPendingClosure.length
+                  : displayedResolved.length;
+                return (
+                  <button key={tab} className={`tab-btn ${activeTab === tab ? 'active' : ''}`} onClick={() => handleTabChange(tab)}>
+                    {label}
+                    <span className="tab-count">{count}</span>
+                  </button>
+                );
+              })}
             </div>
             <div className="search-input-wrapper" style={{ maxWidth: 260 }}>
               <Search className="search-icon-svg" />
@@ -766,11 +874,23 @@ export default function CDPOView({
                 <p style={{ fontSize: 13, marginTop: 4 }}>No tickets match the current filters.</p>
               </div>
             ) : (
-              <div className="ticket-grid">
-                {displayedPending.map(card => (
+              <BatchedTicketGrid items={displayedPending} resetKey={gridResetKey}
+                renderItem={card => (
                   <PendingCard key={card.id} card={card} showDocs={showDocs} onView={() => setSelectedTicket({ ...card, isPendingTicket: true })} />
-                ))}
+                )} />
+            )
+          ) : activeTab === 'PendingClosure' ? (
+            displayedPendingClosure.length === 0 ? (
+              <div style={{ padding: '64px 32px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-lg)', textAlign: 'center', color: 'var(--text-muted)' }}>
+                <Inbox size={48} style={{ opacity: 0.4, marginBottom: 16 }} />
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 600, color: 'var(--primary-deep)' }}>No Tickets Pending for Closure</h3>
+                <p style={{ fontSize: 13, marginTop: 4 }}>Tickets resolved by Supervisors and AWWs awaiting your closure will appear here.</p>
               </div>
+            ) : (
+              <BatchedTicketGrid items={displayedPendingClosure} resetKey={gridResetKey}
+                renderItem={card => (
+                  <ResolvedCard key={card.id} card={card} onView={() => setSelectedTicket(card)} showOwnerChip />
+                )} />
             )
           ) : (
             displayedResolved.length === 0 ? (
@@ -780,11 +900,10 @@ export default function CDPOView({
                 <p style={{ fontSize: 13, marginTop: 4 }}>No tickets match the current filters.</p>
               </div>
             ) : (
-              <div className="ticket-grid">
-                {displayedResolved.map(card => (
+              <BatchedTicketGrid items={displayedResolved} resetKey={gridResetKey}
+                renderItem={card => (
                   <ResolvedCard key={card.id} card={card} onView={() => setSelectedTicket(card)} />
-                ))}
-              </div>
+                )} />
             )
           )}
         </div>

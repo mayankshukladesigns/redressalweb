@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { TicketCard, ResolvedTicketCard } from '../web/types';
 import TicketDetailsScreen from './TicketDetailsScreen';
+import BatchedTicketGrid from '../components/BatchedTicketGrid';
 import { Search, Calendar, Eye, RefreshCw, X, Info, Clock, CheckCircle2, AlertTriangle, ShieldCheck } from 'lucide-react';
 
 interface SupervisorViewProps {
@@ -12,14 +13,14 @@ interface SupervisorViewProps {
 
 const RESOLVED_STATUS_CFG: Record<string, { label: string; color: string; bg: string; border: string }> = {
   CLOSED:          { label: 'CLOSED',          color: '#2e7d32', bg: '#e8f5e9', border: '#a5d6a7' },
-  CLOSURE_PENDING: { label: 'CLOSURE PENDING', color: '#f57f17', bg: '#fff8e1', border: '#ffe082' },
+  CLOSURE_PENDING: { label: 'PENDING FOR CLOSURE', color: '#f57f17', bg: '#fff8e1', border: '#ffe082' },
   APPEAL_RAISED:   { label: 'APPEAL RAISED',   color: '#e65100', bg: '#fff3e0', border: '#ffcc80' },
   APPEAL_RESOLVED: { label: 'APPEAL RESOLVED', color: '#1565c0', bg: '#e8eaf6', border: '#90caf9' },
 };
 
 const RESOLVED_STATUS_OPTIONS = [
   { value: 'CLOSED',          label: 'Closed',          color: '#2e7d32' },
-  { value: 'CLOSURE_PENDING', label: 'Closure Pending', color: '#f57f17' },
+  { value: 'CLOSURE_PENDING', label: 'Pending for Closure', color: '#f57f17' },
   { value: 'APPEAL_RAISED',   label: 'Appeal Raised',   color: '#e65100' },
   { value: 'APPEAL_RESOLVED', label: 'Appeal Resolved', color: '#1565c0' },
 ];
@@ -44,14 +45,14 @@ const CATEGORY_OPTIONS: { value: string; label: string }[] = [
   { value: 'Adolescent Girl', label: 'Adolescent Girls' },
 ];
 
-type DateRangeOption = 'All' | '7' | '14' | '21' | 'custom';
+type DateRangeOption = 'All' | '7' | '14' | '21' | '21+';
 
 const DATE_RANGE_LABELS: Record<DateRangeOption, string> = {
   All: 'Date Range: All',
   '7': 'Last 7 Days',
   '14': 'Last 14 Days',
   '21': 'Last 21 Days',
-  custom: 'Custom Range',
+  '21+': 'More than 21 Days',
 };
 
 const REFERENCE_TODAY = new Date(2025, 5, 30);
@@ -64,8 +65,23 @@ function parseSubmittedDate(value: string | undefined): Date | null {
   return new Date(Number(yyyy), Number(mm) - 1, Number(dd));
 }
 
-function toInputDate(date: Date): string {
-  return date.toISOString().slice(0, 10);
+const COMPLAINT_PRIORITY: Record<string, number> = { Urgent: 0, Corruption: 1, General: 2 };
+const complaintRank = (t?: string) => COMPLAINT_PRIORITY[t ?? ''] ?? 3;
+
+function ticketAge(submittedDate?: string): number {
+  const d = parseSubmittedDate(submittedDate);
+  if (!d) return 0;
+  return Math.floor((REFERENCE_TODAY.getTime() - d.getTime()) / 86400000);
+}
+
+// Queue order for pending tickets: the closer a ticket is to breaching the 21-day
+// SLA, the higher it sits — so already-overdue tickets lead (most overdue first),
+// followed by those nearest the deadline. Oldest-first achieves exactly that.
+// Complaint severity only breaks ties between tickets of the same age.
+function byBreachRisk(a: TicketCard, b: TicketCard): number {
+  const ageDiff = ticketAge(b.submittedDate) - ticketAge(a.submittedDate);
+  if (ageDiff !== 0) return ageDiff;
+  return complaintRank(a.complaintType) - complaintRank(b.complaintType);
 }
 
 export default function SupervisorScreen({
@@ -92,11 +108,7 @@ export default function SupervisorScreen({
   const [isDatePanelOpen, setIsDatePanelOpen] = useState(false);
   const [datePanelPlacement, setDatePanelPlacement] = useState<'below' | 'above'>('below');
   const [appliedDateOption, setAppliedDateOption] = useState<DateRangeOption>('All');
-  const [appliedFrom, setAppliedFrom] = useState('');
-  const [appliedTo, setAppliedTo] = useState('');
   const [draftDateOption, setDraftDateOption] = useState<DateRangeOption>('All');
-  const [draftFrom, setDraftFrom] = useState('');
-  const [draftTo, setDraftTo] = useState('');
 
   // Detail Overlay
   const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
@@ -151,8 +163,6 @@ export default function SupervisorScreen({
 
   const openDatePanel = () => {
     setDraftDateOption(appliedDateOption);
-    setDraftFrom(appliedFrom);
-    setDraftTo(appliedTo);
     const buttonRect = dateButtonRef.current?.getBoundingClientRect();
     const estimatedPanelHeight = 360;
     setDatePanelPlacement(
@@ -163,14 +173,10 @@ export default function SupervisorScreen({
 
   const handleClearDateFilter = () => {
     setDraftDateOption('All');
-    setDraftFrom('');
-    setDraftTo('');
   };
 
   const handleApplyDateFilter = () => {
     setAppliedDateOption(draftDateOption);
-    setAppliedFrom(draftFrom);
-    setAppliedTo(draftTo);
     setIsDatePanelOpen(false);
   };
 
@@ -189,10 +195,11 @@ export default function SupervisorScreen({
       if (appliedDateOption !== 'All') {
         const submitted = parseSubmittedDate(ticket.submittedDate);
         if (!submitted) return false;
-        if (appliedDateOption === 'custom') {
-          const from = appliedFrom ? new Date(appliedFrom) : null;
-          const to   = appliedTo   ? new Date(appliedTo)   : null;
-          if (!(!from || submitted >= from) || !(!to || submitted <= to)) return false;
+        if (appliedDateOption === '21+') {
+          // Equivalent to the Overdue definition used elsewhere (age >= 21 days).
+          const cutoff = new Date(REFERENCE_TODAY);
+          cutoff.setDate(cutoff.getDate() - 21);
+          if (!(submitted <= cutoff)) return false;
         } else {
           const days = Number(appliedDateOption);
           const windowStart = new Date(REFERENCE_TODAY);
@@ -215,7 +222,15 @@ export default function SupervisorScreen({
     });
   };
 
-  const filteredTickets = getFilteredTickets();
+  const filteredTickets = activeTab === 'Pending'
+    ? [...getFilteredTickets()].sort(byBreachRisk)
+    : getFilteredTickets();
+
+  // Any change to scope, tab or a filter snaps the batched grid back to page one.
+  const gridResetKey = [
+    activeTab, scopeFilter, selectedAWC, searchQuery, isOverdueOnly,
+    selectedCategory, appliedStatuses.join(','), appliedDateOption,
+  ].join('|');
 
   const handleResolveTicket = (ticketId: string, closureNote: string) => {
     const ticket = sharedPendingCards.find((t) => t.id === ticketId);
@@ -456,7 +471,7 @@ export default function SupervisorScreen({
                     Filter by Date Range
                   </h4>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    {([['7','Last 7 Days'],['14','Last 14 Days'],['21','Last 21 Days'],['custom','Custom Range']] as [DateRangeOption, string][]).map(([value, label]) => (
+                    {([['7','Last 7 Days'],['14','Last 14 Days'],['21','Last 21 Days'],['21+','More than 21 Days']] as [DateRangeOption, string][]).map(([value, label]) => (
                       <label key={value} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 4px', cursor: 'pointer', fontSize: '13px', fontWeight: 600, color: draftDateOption === value ? 'var(--primary-deep)' : 'var(--text-dark)' }}>
                         <input type="radio" name="dateRange" checked={draftDateOption === value} onChange={() => setDraftDateOption(value)}
                           style={{ accentColor: 'var(--primary-deep)', width: '16px', height: '16px' }} />
@@ -464,18 +479,6 @@ export default function SupervisorScreen({
                       </label>
                     ))}
                   </div>
-                  {draftDateOption === 'custom' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '10px', paddingLeft: '4px' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <label style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>From Date</label>
-                        <input type="date" className="form-control" value={draftFrom} max={toInputDate(REFERENCE_TODAY)} onChange={(e) => setDraftFrom(e.target.value)} style={{ height: '38px', fontSize: '13px' }} />
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <label style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>To Date</label>
-                        <input type="date" className="form-control" value={draftTo} max={toInputDate(REFERENCE_TODAY)} onChange={(e) => setDraftTo(e.target.value)} style={{ height: '38px', fontSize: '13px' }} />
-                      </div>
-                    </div>
-                  )}
                   <div style={{ display: 'flex', gap: '10px', marginTop: '18px' }}>
                     <button className="ux4g-btn ux4g-btn-outline-neutral ux4g-btn-sm" style={{ flex: 1 }} onClick={handleClearDateFilter}>Clear</button>
                     <button className="ux4g-btn ux4g-btn-primary ux4g-btn-sm" style={{ flex: 1 }} onClick={handleApplyDateFilter}>Apply Filters</button>
@@ -490,7 +493,7 @@ export default function SupervisorScreen({
             <button
               className="ux4g-btn ux4g-btn-outline-neutral ux4g-btn-sm"
               style={{ borderRadius: '20px', fontSize: '12px' }}
-              onClick={() => { setIsOverdueOnly(false); setSelectedCategory('All'); setAppliedStatuses([]); setAppliedDateOption('All'); setAppliedFrom(''); setAppliedTo(''); }}
+              onClick={() => { setIsOverdueOnly(false); setSelectedCategory('All'); setAppliedStatuses([]); setAppliedDateOption('All'); }}
             >
               Reset Filters
             </button>
@@ -541,8 +544,8 @@ export default function SupervisorScreen({
               <p style={{ fontSize: '13px', marginTop: '4px' }}>Try switching scope or adjusting the filters.</p>
             </div>
           ) : (
-            <div className="ticket-grid">
-              {filteredTickets.map((ticket) => {
+            <BatchedTicketGrid items={filteredTickets} resetKey={gridResetKey}
+              renderItem={(ticket) => {
                 const overdue = ticket.daysType === 'overdue' || ticket.isOverdue;
                 const resolvedCfg = activeTab === 'Resolved' ? (RESOLVED_STATUS_CFG[ticket.status || 'CLOSED'] ?? RESOLVED_STATUS_CFG.CLOSED) : null;
                 return (
@@ -579,8 +582,7 @@ export default function SupervisorScreen({
                     </button>
                   </div>
                 );
-              })}
-            </div>
+              }} />
           )}
         </div>
       </div>
@@ -673,7 +675,7 @@ export default function SupervisorScreen({
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
               {[
-                { label: 'Closure Pending', icon: Clock,        total: closurePendingSup + closurePendingAWW, sup: closurePendingSup, aww: closurePendingAWW, bg: 'var(--color-warning-light)', fg: 'var(--color-warning)' },
+                { label: 'Pending for Closure', icon: Clock,        total: closurePendingSup + closurePendingAWW, sup: closurePendingSup, aww: closurePendingAWW, bg: 'var(--color-warning-light)', fg: 'var(--color-warning)' },
                 { label: 'Closed',          icon: CheckCircle2, total: closedSup + closedAWW,                sup: closedSup,         aww: closedAWW,          bg: 'var(--accent-green-light)',  fg: 'var(--accent-green)'   },
                 { label: 'Appeal Raised',   icon: AlertTriangle,total: appealRaisedSup + appealRaisedAWW,   sup: appealRaisedSup,   aww: appealRaisedAWW,    bg: 'var(--accent-saffron-light)', fg: 'var(--accent-saffron)' },
                 { label: 'Appeal Resolved', icon: ShieldCheck,  total: appealResolvedSup + appealResolvedAWW,sup: appealResolvedSup, aww: appealResolvedAWW,  bg: 'var(--color-info-light)',    fg: 'var(--color-info)'     },

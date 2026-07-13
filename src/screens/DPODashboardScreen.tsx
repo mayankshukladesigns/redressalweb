@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { TicketCard, ResolvedTicketCard, AppealTicket } from '../web/types';
 import { initialAppealTickets } from '../web/mockData';
 import TicketDetailsScreen from './TicketDetailsScreen';
+import BatchedTicketGrid from '../components/BatchedTicketGrid';
 import {
   Search,
   AlertTriangle,
@@ -27,7 +28,7 @@ interface DPOViewProps {
 }
 
 type AssignedFilter = 'DPO' | 'CDPO' | 'Supervisor' | 'AWW';
-type DateRangeOption = '7' | '14' | '21' | 'custom';
+type DateRangeOption = '7' | '14' | '21' | '21+';
 
 // Constants
 const PROJECT_OPTIONS = ['All Projects', 'Sanganer', 'Jotwara', 'Amer', 'Sanganer II', 'Phagi'];
@@ -37,12 +38,16 @@ const AWC_OPTIONS = [
   'Anganwadi Centre 1', 'Anganwadi Centre 2', 'Anganwadi Centre 3',
   'Anganwadi Centre 4', 'Anganwadi Centre 5', 'Anganwadi Centre 6',
 ];
-const COMPLAINT_TYPES = ['Corruption', 'Urgent', 'Others'];
+const COMPLAINT_TYPES = ['Urgent', 'Corruption', 'General'];
+const COMPLAINT_PRIORITY: Record<string, number> = { Urgent: 0, Corruption: 1, General: 2 };
+const complaintRank = (t?: string) => COMPLAINT_PRIORITY[t ?? ''] ?? 3;
 const BENEFICIARY_CATEGORIES = [
   'Pregnant Woman', 'Lactating Mother', 'Children 0-6 months',
   'Children (6m-3y)', 'Children (3-6y)', 'Adolescent Girl',
 ];
 const REFERENCE_TODAY = new Date(2025, 5, 30);
+// A ticket is escalated to the DPO (view-only) once it has been open this long.
+const ESCALATION_DAYS = 14;
 
 // Helper function to parse dates
 function parseDateStr(str: string): Date | null {
@@ -53,23 +58,18 @@ function parseDateStr(str: string): Date | null {
   return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
 }
 
-function toInputDate(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
-
 function passesDateFilter(
   dateStr: string,
   option: DateRangeOption | null,
-  fromStr: string,
-  toStr: string,
 ): boolean {
   if (!option) return true;
   const d = parseDateStr(dateStr);
   if (!d) return false;
-  if (option === 'custom') {
-    const from = fromStr ? new Date(fromStr) : null;
-    const to = toStr ? new Date(toStr) : null;
-    return (!from || d >= from) && (!to || d <= to);
+  if (option === '21+') {
+    // Equivalent to the Overdue definition used elsewhere (age >= 21 days).
+    const cutoff = new Date(REFERENCE_TODAY);
+    cutoff.setDate(cutoff.getDate() - 21);
+    return d <= cutoff;
   }
   const days = Number(option);
   const windowStart = new Date(REFERENCE_TODAY);
@@ -95,23 +95,19 @@ const getRoleChipStyle = (role: string) => {
 
 // Date Range Popover
 const DateRangePopover = ({
-  open, onClose, applied, appliedFrom, appliedTo, onApply, placement = 'below',
+  open, onClose, applied, onApply, placement = 'below',
 }: {
   open: boolean; onClose: () => void;
-  applied: DateRangeOption | null; appliedFrom: string; appliedTo: string;
-  onApply: (opt: DateRangeOption | null, from: string, to: string) => void;
+  applied: DateRangeOption | null;
+  onApply: (opt: DateRangeOption | null) => void;
   placement?: 'below' | 'above';
 }) => {
   const [draft, setDraft] = useState<DateRangeOption | null>(applied);
-  const [from, setFrom] = useState(appliedFrom);
-  const [to, setTo] = useState(appliedTo);
 
   if (!open) return null;
 
   const handleCancel = () => {
     setDraft(applied);
-    setFrom(appliedFrom);
-    setTo(appliedTo);
     onClose();
   };
 
@@ -129,28 +125,16 @@ const DateRangePopover = ({
           Filter by Date Range
         </h4>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {([['7', 'Last 7 Days'], ['14', 'Last 14 Days'], ['21', 'Last 21 Days'], ['custom', 'Custom Range']] as [DateRangeOption, string][]).map(([val, lbl]) => (
+          {([['7', 'Last 7 Days'], ['14', 'Last 14 Days'], ['21', 'Last 21 Days'], ['21+', 'More than 21 Days']] as [DateRangeOption, string][]).map(([val, lbl]) => (
             <label key={val} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 4px', cursor: 'pointer', fontSize: 13, fontWeight: draft === val ? 600 : 400, color: draft === val ? 'var(--primary-deep)' : 'var(--text-dark)' }}>
               <input type="radio" name="dateRangeDPO" checked={draft === val} onChange={() => setDraft(val)} style={{ accentColor: 'var(--primary-deep)', width: 16, height: 16 }} />
               {lbl}
             </label>
           ))}
         </div>
-        {draft === 'custom' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10, paddingLeft: 4 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>From Date</label>
-              <input type="date" className="form-control" value={from} max={toInputDate(REFERENCE_TODAY)} onChange={e => setFrom(e.target.value)} style={{ height: 36, fontSize: 13 }} />
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>To Date</label>
-              <input type="date" className="form-control" value={to} max={toInputDate(REFERENCE_TODAY)} onChange={e => setTo(e.target.value)} style={{ height: 36, fontSize: 13 }} />
-            </div>
-          </div>
-        )}
         <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
-          <button className="ux4g-btn ux4g-btn-outline-neutral ux4g-btn-sm" style={{ flex: 1 }} onClick={() => { setDraft(null); setFrom(''); setTo(''); onApply(null, '', ''); }}>Clear</button>
-          <button className="ux4g-btn ux4g-btn-primary ux4g-btn-sm" style={{ flex: 1 }} onClick={() => { onApply(draft, from, to); onClose(); }}>Apply</button>
+          <button className="ux4g-btn ux4g-btn-outline-neutral ux4g-btn-sm" style={{ flex: 1 }} onClick={() => { setDraft(null); onApply(null); }}>Clear</button>
+          <button className="ux4g-btn ux4g-btn-primary ux4g-btn-sm" style={{ flex: 1 }} onClick={() => { onApply(draft); onClose(); }}>Apply</button>
         </div>
       </div>
     </>
@@ -238,7 +222,7 @@ const ResolvedBreakdownModal = ({
   if (!open) return null;
   const totalResolved = byRole.dpo + byRole.cdpo + byRole.sup + byRole.aww;
   const subCards = [
-    { label: 'Closure Pending', icon: Clock,         color: '#f57f17', bg: '#fff8e1', border: '#ffe082', total: byStatus.closurePending.dpo + byStatus.closurePending.cdpo + byStatus.closurePending.sup + byStatus.closurePending.aww, rows: [{r:'DPO',v:byStatus.closurePending.dpo},{r:'CDPO',v:byStatus.closurePending.cdpo},{r:'Supervisor',v:byStatus.closurePending.sup},{r:'AWW',v:byStatus.closurePending.aww}] },
+    { label: 'Pending for Closure', icon: Clock,         color: '#f57f17', bg: '#fff8e1', border: '#ffe082', total: byStatus.closurePending.dpo + byStatus.closurePending.cdpo + byStatus.closurePending.sup + byStatus.closurePending.aww, rows: [{r:'DPO',v:byStatus.closurePending.dpo},{r:'CDPO',v:byStatus.closurePending.cdpo},{r:'Supervisor',v:byStatus.closurePending.sup},{r:'AWW',v:byStatus.closurePending.aww}] },
     { label: 'Closed',          icon: CheckCircle2,  color: '#2e7d32', bg: '#e8f5e9', border: '#a5d6a7', total: byStatus.closed.dpo         + byStatus.closed.cdpo         + byStatus.closed.sup         + byStatus.closed.aww,         rows: [{r:'DPO',v:byStatus.closed.dpo},        {r:'CDPO',v:byStatus.closed.cdpo},        {r:'Supervisor',v:byStatus.closed.sup},        {r:'AWW',v:byStatus.closed.aww}]         },
     { label: 'Appeal Raised',   icon: AlertTriangle, color: '#e65100', bg: '#fff3e0', border: '#ffcc80', total: byStatus.appealRaised.dpo    + byStatus.appealRaised.cdpo    + byStatus.appealRaised.sup    + byStatus.appealRaised.aww,   rows: [{r:'DPO',v:byStatus.appealRaised.dpo},  {r:'CDPO',v:byStatus.appealRaised.cdpo},  {r:'Supervisor',v:byStatus.appealRaised.sup},  {r:'AWW',v:byStatus.appealRaised.aww}]   },
     { label: 'Appeal Resolved', icon: ShieldCheck,   color: '#1565c0', bg: '#e8eaf6', border: '#90caf9', total: byStatus.appealResolved.dpo  + byStatus.appealResolved.cdpo  + byStatus.appealResolved.sup  + byStatus.appealResolved.aww, rows: [{r:'DPO',v:byStatus.appealResolved.dpo},{r:'CDPO',v:byStatus.appealResolved.cdpo},{r:'Supervisor',v:byStatus.appealResolved.sup},{r:'AWW',v:byStatus.appealResolved.aww}] },
@@ -313,7 +297,7 @@ const TicketCardComponent = ({ card, onView }: { card: TicketCard; onView: () =>
           {card.complaintType === 'Urgent' && <span className="badge badge-warning">Urgent</span>}
           {isTicketOverdue && (
             <span className="badge badge-danger" style={{ backgroundColor: '#ffebee', color: '#d32f2f', border: '1px solid #ffcdd2' }}>
-              {card._isOverdueTab ? card.assignedTo?.toUpperCase() : 'OVERDUE'}
+              OVERDUE
             </span>
           )}
         </div>
@@ -359,7 +343,7 @@ const TicketCardComponent = ({ card, onView }: { card: TicketCard; onView: () =>
 
 const STATUS_CFG: Record<string, { label: string; color: string; bg: string; border: string }> = {
   CLOSED:          { label: 'CLOSED',          color: '#2e7d32', bg: '#e8f5e9', border: '#a5d6a7' },
-  CLOSURE_PENDING: { label: 'CLOSURE PENDING', color: '#f57f17', bg: '#fff8e1', border: '#ffe082' },
+  CLOSURE_PENDING: { label: 'PENDING FOR CLOSURE', color: '#f57f17', bg: '#fff8e1', border: '#ffe082' },
   APPEAL_RAISED:   { label: 'APPEAL RAISED',   color: '#e65100', bg: '#fff3e0', border: '#ffcc80' },
   APPEAL_RESOLVED: { label: 'APPEAL RESOLVED', color: '#1565c0', bg: '#e8eaf6', border: '#90caf9' },
 };
@@ -399,7 +383,7 @@ const ResolvedCard = ({ card, onView }: { card: ResolvedTicketCard; onView: () =
         {card.actionTaken && (
           <div style={{ background: '#f8fafc', border: '1px solid var(--border-color)', borderRadius: 6, padding: '8px 12px' }}>
             <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>
-              Action Taken
+              Action Taken Report (ATR)
             </div>
             <p style={{ fontSize: 12.5, color: 'var(--text-dark)', margin: 0, lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' } as any}>
               {card.actionTaken}
@@ -481,8 +465,10 @@ export default function DPOView({
   setSharedResolvedCards,
 }: DPOViewProps) {
 
-  // Core view state (tabs: 'Pending' | 'Overdue' | 'Resolved' | 'Appeals')
-  const [activeTab, setActiveTab] = useState<'Pending' | 'Overdue' | 'Resolved' | 'Appeals'>('Pending');
+  // Core view state (tabs: 'Appeals' | 'Pending' | 'Resolved').
+  // Appeals are the DPO's own statutory workload — everything else in their scope is
+  // view-only oversight — so they land on Appeals first.
+  const [activeTab, setActiveTab] = useState<'Pending' | 'Resolved' | 'Appeals'>('Appeals');
   const [assignedFilter, setAssignedFilter] = useState<AssignedFilter>('DPO');
   const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
 
@@ -502,8 +488,6 @@ export default function DPOView({
   const [searchQuery, setSearchQuery] = useState('');
   const [isOverdueOnly, setIsOverdueOnly] = useState(false);
   const [appliedDateOption, setAppliedDateOption] = useState<DateRangeOption | null>(null);
-  const [appliedFrom, setAppliedFrom] = useState('');
-  const [appliedTo, setAppliedTo] = useState('');
   const [dateOpen, setDateOpen] = useState(false);
   const dateButtonRef = useRef<HTMLButtonElement>(null);
   const [datePanelPlacement, setDatePanelPlacement] = useState<'below' | 'above'>('below');
@@ -526,8 +510,6 @@ export default function DPOView({
     setSearchQuery('');
     setIsOverdueOnly(false);
     setAppliedDateOption(null);
-    setAppliedFrom('');
-    setAppliedTo('');
     setAppliedTypes([]);
     setAppliedStatuses([]);
     setSelectedCategory('All');
@@ -545,7 +527,7 @@ export default function DPOView({
     }
   };
 
-  const handleTabChange = (tab: 'Pending' | 'Overdue' | 'Resolved' | 'Appeals') => {
+  const handleTabChange = (tab: 'Pending' | 'Resolved' | 'Appeals') => {
     setActiveTab(tab);
     clearAllFilters();
   };
@@ -612,8 +594,8 @@ export default function DPOView({
       if (!t.awcName || t.awcName !== selectedAWC) return false;
     }
 
-    // 2. Sidebar Urgency Toggle (Overdue Only) — Pending tab only; the Overdue
-    // tab is already exclusively overdue tickets, and Resolved/Appeals don't carry SLA state.
+    // 2. Sidebar Urgency Toggle (Overdue Only) — Pending tab only; Resolved/Appeals
+    // don't carry SLA state.
     if (activeTab === 'Pending' && isOverdueOnly) {
       const age = getTicketAge(t.submittedDate);
       if (!(t.isOverdue || age >= 21)) return false;
@@ -626,7 +608,7 @@ export default function DPOView({
     if (appliedTypes.length > 0 && (!t.complaintType || !appliedTypes.includes(t.complaintType))) return false;
 
     // 5. Date Range
-    if (!passesDateFilter(t.submittedDate ?? '', appliedDateOption, appliedFrom, appliedTo)) return false;
+    if (!passesDateFilter(t.submittedDate ?? '', appliedDateOption)) return false;
 
     // 6. Search Query
     if (searchQuery) {
@@ -642,44 +624,31 @@ export default function DPOView({
   };
 
   // ─── 1. Pending Tab List ───
+  // Includes overdue tickets too (for every "Assigned To" scope) — there is no
+  // separate Overdue tab; overdue tickets stay with their original assignee and
+  // are surfaced here via the "Overdue Only" sidebar filter.
   const displayedPending = sharedPendingCards.filter(t => {
-    if (assignedFilter === 'DPO') {
-      // DPO pending tickets (not overdue escalated from others yet)
-      if (t.assignedTo !== 'DPO') return false;
-    } else {
-      if (t.assignedTo !== assignedFilter) return false;
-      // Filter out escalated ones (age >= 21 days) or DPO escalation viewable (age >= 14 days)
-      const age = getTicketAge(t.submittedDate);
-      if (age >= 21) return false;
-    }
+    if (t.assignedTo !== assignedFilter) return false;
+    // Supervisor/AWW tickets only become visible to the DPO once they are escalated,
+    // which happens 14 days after creation. Before that they sit within the block
+    // hierarchy and the district office has no view of them. Ownership never
+    // transfers on escalation — the DPO's access stays read-only.
+    if ((assignedFilter === 'Supervisor' || assignedFilter === 'AWW') && getTicketAge(t.submittedDate) < ESCALATION_DAYS) return false;
     return applyCommonFilters(t);
-  });
+  })
+    // Queue order: the closer a ticket is to breaching the 21-day SLA, the higher it
+    // sits — already-overdue tickets lead (most overdue first), then those nearest the
+    // deadline. Oldest-first achieves exactly that; severity only breaks age ties.
+    .sort((a, b) => {
+      const ageDiff = getTicketAge(b.submittedDate) - getTicketAge(a.submittedDate);
+      if (ageDiff !== 0) return ageDiff;
+      return complaintRank(a.complaintType) - complaintRank(b.complaintType);
+    });
 
-  // ─── 2. Overdue Tab List ───
-  // Strictly SLA-breached tickets (21+ days) only — a ticket must have actually
-  // crossed the SLA to appear here, regardless of role or urgency priority.
-  const displayedOverdue = sharedPendingCards.filter(t => {
-    const age = getTicketAge(t.submittedDate);
-    const isBreached = t.isOverdue || age >= 21;
-
-    if (assignedFilter === 'DPO') {
-      // DPO Overdue view aggregates every breached ticket across all roles (DPO's own or escalated).
-      if (!isBreached) return false;
-    } else {
-      if (t.assignedTo !== assignedFilter) return false;
-      if (!isBreached) return false;
-    }
-    return applyCommonFilters(t);
-  });
-
-  // ─── 3. Resolved Tab List ───
+  // ─── 2. Resolved Tab List ───
   const displayedResolved = (() => {
     const directResolved = sharedResolvedCards.filter(t => {
-      if (assignedFilter === 'DPO') {
-        if (t.assignedTo !== 'DPO' && !t.resolvedByDPO) return false;
-      } else {
-        if (t.assignedTo !== assignedFilter) return false;
-      }
+      if (t.assignedTo !== assignedFilter) return false;
       return applyCommonFilters(t);
     });
 
@@ -714,7 +683,7 @@ export default function DPOView({
     return directResolved;
   })();
 
-  // ─── 4. Appeals Tab List ───
+  // ─── 3. Appeals Tab List ───
   const displayedAppeals = appealList.filter(appeal => {
     if (assignedFilter !== 'DPO' && appeal.roleLabel !== assignedFilter) return false;
     // Appeals tab only shows active / unresolved appeals
@@ -742,7 +711,7 @@ export default function DPOView({
 
     // Date Range (Appeal Date)
     const rawAppealDate = appeal.appealDate?.replace('Appeal Filed:', '').trim() ?? '';
-    if (!passesDateFilter(rawAppealDate, appliedDateOption, appliedFrom, appliedTo)) return false;
+    if (!passesDateFilter(rawAppealDate, appliedDateOption)) return false;
 
     // Search query matching
     if (searchQuery) {
@@ -757,6 +726,12 @@ export default function DPOView({
     return true;
   });
 
+  // Any change to scope, tab or a filter snaps the batched grids back to page one.
+  const gridResetKey = [
+    assignedFilter, activeTab, selectedProject, selectedSector, selectedAWC, searchQuery,
+    isOverdueOnly, appliedDateOption, appliedTypes.join(','), appliedStatuses.join(','), selectedCategory,
+  ].join('|');
+
   // Active filter count
   const activeFilterCount =
     (activeTab === 'Pending' && isOverdueOnly ? 1 : 0) +
@@ -769,13 +744,11 @@ export default function DPOView({
   const handleResolveOverdue = (ticketId: string, closureNote: string) => {
     const ticket = sharedPendingCards.find(t => t.id === ticketId);
     if (ticket) {
-      const wasEscalated = ticket.assignedTo !== 'DPO';
       const newCard: ResolvedTicketCard = {
         ...ticket,
         resolvedDate: 'Resolved: 30/06/2025',
         status: 'CLOSED',
-        actionTaken: closureNote || (wasEscalated ? 'Resolved & closed by DPO due to overdue escalation.' : 'Resolved & closed by DPO.'),
-        resolvedByDPO: wasEscalated || ticket.resolvedByDPO,
+        actionTaken: closureNote || 'Resolved & closed by DPO.',
       };
       setSharedPendingCards(prev => prev.filter(t => t.id !== ticketId));
       setSharedResolvedCards(prev => [newCard, ...prev]);
@@ -837,7 +810,7 @@ export default function DPOView({
     appliedDateOption === '7' ? 'Last 7 Days' :
     appliedDateOption === '14' ? 'Last 14 Days' :
     appliedDateOption === '21' ? 'Last 21 Days' :
-    appliedDateOption === 'custom' ? 'Custom Range' : 'Date Range: All';
+    appliedDateOption === '21+' ? 'More than 21 Days' : 'Date Range: All';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -982,8 +955,9 @@ export default function DPOView({
             )}
           </div>
 
-          {/* Urgency: Overdue Only — Pending tab only. The Overdue tab is already
-              exclusively overdue tickets, and Resolved/Appeals carry no SLA state. */}
+          {/* Urgency: Overdue Only — Pending tab only. This is the sole way to
+              isolate overdue tickets now that there's no separate Overdue tab;
+              Resolved/Appeals carry no SLA state. */}
           {activeTab === 'Pending' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Urgency</label>
@@ -1013,7 +987,7 @@ export default function DPOView({
             </select>
           </div>
 
-          {/* Complaint Type checkboxes (Corruption / Urgent / Others) */}
+          {/* Complaint Type checkboxes (Urgent / Corruption / General) */}
           {activeTab !== 'Appeals' ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Complaint Type</label>
@@ -1031,7 +1005,7 @@ export default function DPOView({
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Complaint Type</label>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                {['Corruption', 'Others'].map(t => (
+                {['Urgent', 'Corruption', 'General'].map(t => (
                   <label key={t} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer', padding: '4px 0' }}>
                     <input type="checkbox" checked={appliedTypes.includes(t)} onChange={() => setAppliedTypes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}
                       style={{ accentColor: 'var(--primary-deep)', width: 15, height: 15 }} />
@@ -1064,8 +1038,8 @@ export default function DPOView({
             </button>
             <DateRangePopover
               open={dateOpen} onClose={() => setDateOpen(false)}
-              applied={appliedDateOption} appliedFrom={appliedFrom} appliedTo={appliedTo}
-              onApply={(opt, from, to) => { setAppliedDateOption(opt); setAppliedFrom(from); setAppliedTo(to); setDateOpen(false); }}
+              applied={appliedDateOption}
+              onApply={(opt) => { setAppliedDateOption(opt); setDateOpen(false); }}
               placement={datePanelPlacement}
             />
           </div>
@@ -1084,29 +1058,22 @@ export default function DPOView({
           {/* Tab bar header */}
           <div className="search-filter-section" style={{ marginBottom: 0 }}>
             <div className="tabs-navigation" style={{ borderBottom: 'none', margin: 0 }}>
-              <button className={`tab-btn ${activeTab === 'Pending' ? 'active' : ''}`} onClick={() => handleTabChange('Pending')}>
-                Pending
-                <span className="tab-count">{displayedPending.length}</span>
-              </button>
-              
-              {assignedFilter === 'DPO' && (
-                <button className={`tab-btn ${activeTab === 'Overdue' ? 'active' : ''}`} onClick={() => handleTabChange('Overdue')}>
-                  Overdue
-                  <span className="tab-count">{displayedOverdue.length}</span>
-                </button>
-              )}
-
-              <button className={`tab-btn ${activeTab === 'Resolved' ? 'active' : ''}`} onClick={() => handleTabChange('Resolved')}>
-                Resolved
-                <span className="tab-count">{displayedResolved.length}</span>
-              </button>
-
               {assignedFilter === 'DPO' && (
                 <button className={`tab-btn ${activeTab === 'Appeals' ? 'active' : ''}`} onClick={() => handleTabChange('Appeals')}>
                   Appeals
                   <span className="tab-count">{displayedAppeals.length}</span>
                 </button>
               )}
+
+              <button className={`tab-btn ${activeTab === 'Pending' ? 'active' : ''}`} onClick={() => handleTabChange('Pending')}>
+                Pending
+                <span className="tab-count">{displayedPending.length}</span>
+              </button>
+
+              <button className={`tab-btn ${activeTab === 'Resolved' ? 'active' : ''}`} onClick={() => handleTabChange('Resolved')}>
+                Resolved
+                <span className="tab-count">{displayedResolved.length}</span>
+              </button>
             </div>
 
             <div className="search-input-wrapper" style={{ maxWidth: 260 }}>
@@ -1128,6 +1095,16 @@ export default function DPOView({
             </div>
           )}
 
+          {/* Escalation notice — explains why this list is a subset of the summary count */}
+          {activeTab === 'Pending' && (assignedFilter === 'Supervisor' || assignedFilter === 'AWW') && (
+            <div style={{ display: 'flex', gap: 10, background: '#fff3e0', borderRadius: 'var(--radius-md)', padding: '12px 14px', border: '1px solid #ffcc80' }}>
+              <Info size={15} style={{ color: '#e65100', flexShrink: 0, marginTop: 1 }} />
+              <p style={{ margin: 0, fontSize: 12.5, color: 'var(--text-dark)', lineHeight: 1.5 }}>
+                Showing only {assignedFilter} tickets <strong>escalated to DPO</strong> — those open for {ESCALATION_DAYS} days or more. These are <strong>view-only</strong>; the ticket stays with its original assignee.
+              </p>
+            </div>
+          )}
+
           {/* Cards Grid */}
           {activeTab === 'Pending' && (
             displayedPending.length === 0 ? (
@@ -1137,35 +1114,18 @@ export default function DPOView({
                 <p style={{ fontSize: 13, marginTop: 4 }}>No pending tickets match the current filters.</p>
               </div>
             ) : (
-              <div className="ticket-grid">
-                {displayedPending.map(ticket => (
+              <BatchedTicketGrid items={displayedPending} resetKey={gridResetKey}
+                renderItem={ticket => (
                   <TicketCardComponent
                     key={ticket.id}
                     card={ticket}
-                    onView={() => setSelectedTicket({ ...ticket, isPendingTicket: true })}
+                    onView={() => {
+                      const age = getTicketAge(ticket.submittedDate);
+                      const isOverdue = ticket.isOverdue || age >= 21;
+                      setSelectedTicket({ ...ticket, isPendingTicket: true, isOverdue });
+                    }}
                   />
-                ))}
-              </div>
-            )
-          )}
-
-          {activeTab === 'Overdue' && (
-            displayedOverdue.length === 0 ? (
-              <div style={{ padding: '64px 32px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-lg)', textAlign: 'center', color: 'var(--text-muted)' }}>
-                <Inbox size={48} style={{ opacity: 0.4, marginBottom: 16 }} />
-                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 600, color: 'var(--primary-deep)' }}>No Overdue Escalations</h3>
-                <p style={{ fontSize: 13, marginTop: 4 }}>All tickets are currently resolved or within SLA timeline.</p>
-              </div>
-            ) : (
-              <div className="ticket-grid">
-                {displayedOverdue.map(ticket => (
-                  <TicketCardComponent
-                    key={ticket.id}
-                    card={{ ...ticket, isOverdue: true, _isOverdueTab: true }}
-                    onView={() => setSelectedTicket({ ...ticket, isPendingTicket: true, isOverdue: true, _isOverdueTab: true })}
-                  />
-                ))}
-              </div>
+                )} />
             )
           )}
 
@@ -1177,15 +1137,14 @@ export default function DPOView({
                 <p style={{ fontSize: 13, marginTop: 4 }}>No resolved tickets match the current filters.</p>
               </div>
             ) : (
-              <div className="ticket-grid">
-                {displayedResolved.map(ticket => (
+              <BatchedTicketGrid items={displayedResolved} resetKey={gridResetKey}
+                renderItem={ticket => (
                   <ResolvedCard
                     key={ticket.id}
                     card={ticket as ResolvedTicketCard}
                     onView={() => setSelectedTicket(ticket)}
                   />
-                ))}
-              </div>
+                )} />
             )
           )}
 
@@ -1197,8 +1156,8 @@ export default function DPOView({
                 <p style={{ fontSize: 13, marginTop: 4 }}>No active appeals match the current filters.</p>
               </div>
             ) : (
-              <div className="ticket-grid">
-                {displayedAppeals.map(appeal => (
+              <BatchedTicketGrid items={displayedAppeals} resetKey={gridResetKey} itemNoun="appeals"
+                renderItem={appeal => (
                   <AppealCard
                     key={appeal.id}
                     card={appeal}
@@ -1207,6 +1166,8 @@ export default function DPOView({
                       description: appeal.originalDescription,
                       beneficiaryName: appeal.byName,
                       beneficiaryType: 'Beneficiary',
+                      assignedTo: appeal.roleLabel,
+                      actionTaken: appeal.originalActionTaken,
                       _isAppeal: true,
                       status: 'APPEAL_RAISED',
                     })}
@@ -1215,12 +1176,14 @@ export default function DPOView({
                       description: appeal.originalDescription,
                       beneficiaryName: appeal.byName,
                       beneficiaryType: 'Beneficiary',
+                      assignedTo: appeal.roleLabel,
+                      actionTaken: appeal.originalActionTaken,
+                      dpoActionTaken: appeal.resolutionNotes,
                       _isAppeal: true,
                       status: 'APPEAL_RESOLVED',
                     })}
                   />
-                ))}
-              </div>
+                )} />
             )
           )}
         </div>

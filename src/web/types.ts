@@ -16,7 +16,7 @@ export interface TicketCard {
   documentsCount?: number;
   isOverdue?: boolean;
   borderColor?: string;
-  complaintType?: 'Corruption' | 'Urgent' | 'Others';
+  complaintType?: 'Corruption' | 'Urgent' | 'General';
   helpTopic?: string;
   subTopic?: string;
   beneficiaryMobile?: string;
@@ -29,8 +29,6 @@ export interface TicketCard {
   status?: string;
   _isAppeal?: boolean;
   isPendingTicket?: boolean;
-  _isOverdueTab?: boolean;
-  resolvedByDPO?: boolean;
   title?: string;
   byName?: string;
   documents?: string;
@@ -56,7 +54,7 @@ export interface OverdueTicket {
   overdueDays: number;
   documents?: string;
   byName: string;
-  complaintType?: 'Corruption' | 'Urgent' | 'Others';
+  complaintType?: 'Corruption' | 'Urgent' | 'General';
 }
 
 export type AppealDecision = 'uphold' | 'dismiss' | null;
@@ -75,6 +73,6 @@ export interface AppealTicket {
   status?: 'raised' | 'resolved';
   decision?: AppealDecision;
   resolutionNotes?: string;
-  complaintType?: 'Corruption' | 'Urgent' | 'Others';
+  complaintType?: 'Corruption' | 'Urgent' | 'General';
   originalActionTaken?: string;
 }
