@@ -521,12 +521,34 @@ a {
 
 .ticket-desc {
   font-size: 15px;
+  line-height: 1.4;
   color: var(--text-muted);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  height: 38px;
+  min-height: 42px;
+}
+
+.ticket-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ticket-topic {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--primary-deep);
+}
+
+.ticket-awc-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  color: var(--text-muted);
 }
 
 .ticket-metadata {

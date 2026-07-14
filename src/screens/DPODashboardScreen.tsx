@@ -317,8 +317,8 @@ const TicketCardComponent = ({ card, onView }: { card: TicketCard; onView: () =>
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', margin: '4px 0 8px 0' }}>
-        <h4 className="ticket-title" style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>{card.beneficiaryName || card.byName}</h4>
+      <div className="ticket-title-row">
+        <h4 className="ticket-title" style={{ margin: 0 }}>{card.beneficiaryName || card.byName}</h4>
         {card.beneficiaryType && (
           <span style={{ fontSize: 13, background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: 4, fontWeight: 600, flexShrink: 0 }}>
             {card.beneficiaryType}
@@ -326,20 +326,18 @@ const TicketCardComponent = ({ card, onView }: { card: TicketCard; onView: () =>
         )}
       </div>
 
-      <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--primary-deep)', marginBottom: 2 }}>{card.topic || card.title}</div>
-      <p className="ticket-desc" style={{ fontSize: 15, color: 'var(--text-muted)', margin: '6px 0 10px 0', lineHeight: 1.4 }}>
-        {card.description}
-      </p>
+      <div className="ticket-topic">{card.topic || card.title}</div>
+      <p className="ticket-desc">{card.description}</p>
 
-      <div className="ticket-metadata" style={{ marginTop: 4, borderTop: 'none', paddingTop: 0 }}>
+      <div className="ticket-metadata">
         <span className="ticket-date" style={{ fontSize: 14 }}>{card.submittedDate?.includes('Submitted') ? card.submittedDate : `Submitted: ${card.submittedDate}`}</span>
         <span style={{ fontWeight: 700, fontSize: 14, color: accent }}>
           {card.daysLabel || (isTicketOverdue ? `Overdue by ${age - 20} Days` : 'Urgent')}
         </span>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 14, color: 'var(--text-muted)', borderTop: '1px solid #f1f5f9', paddingTop: 8, marginTop: 8 }}>
-        <span>AWC: <strong style={{ color: 'var(--primary-deep)' }}>{formatAwcName(card.awcName)}</strong></span>
+      <div className="ticket-awc-row">
+        <span>AWC: <strong className="ticket-awc">{formatAwcName(card.awcName)}</strong></span>
         {isCorruptionOrUrgent && (card.documentsCount ?? 0) > 0 && (
           <span style={{ background: '#e8eaf6', color: '#1565c0', padding: '2px 8px', borderRadius: 4, fontSize: 13, fontWeight: 600, border: '1px solid #90caf9' }}>
             Doc Uploaded
@@ -347,7 +345,7 @@ const TicketCardComponent = ({ card, onView }: { card: TicketCard; onView: () =>
         )}
       </div>
 
-      <button className="ux4g-btn ux4g-btn-secondary ux4g-btn-md" style={{ width: '100%', marginTop: 8, display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center' }}
+      <button className="ux4g-btn ux4g-btn-secondary ux4g-btn-md" style={{ width: '100%', display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center' }}
         onClick={e => { e.stopPropagation(); onView(); }}>
         <Eye size={14} /> View Details
       </button>
@@ -372,25 +370,23 @@ const ResolvedCard = ({ card, onView }: { card: ResolvedTicketCard; onView: () =
           Awaiting CDPO Closure
         </div>
       )}
-      <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span className="ticket-id">{card.ticketNumber}</span>
           <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 12.5, fontWeight: 700, background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}>
             {cfg.label}
           </span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          <h4 className="ticket-title" style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>{card.beneficiaryName}</h4>
+        <div className="ticket-title-row">
+          <h4 className="ticket-title" style={{ margin: 0 }}>{card.beneficiaryName}</h4>
           {card.beneficiaryType && (
             <span style={{ fontSize: 13, background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: 4, fontWeight: 600, flexShrink: 0 }}>
               {card.beneficiaryType}
             </span>
           )}
         </div>
-        <div>
-          {card.topic && <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--primary-deep)', marginBottom: 2 }}>{card.topic}</div>}
-          <p className="ticket-desc" style={{ fontSize: 15, color: 'var(--text-muted)', margin: 0, lineHeight: 1.4 }}>{card.description}</p>
-        </div>
+        {card.topic && <div className="ticket-topic">{card.topic}</div>}
+        <p className="ticket-desc">{card.description}</p>
         <div style={{ fontSize: 14, color: 'var(--text-muted)', fontWeight: 500 }}>
           {card.resolvedDate}
         </div>
@@ -404,8 +400,8 @@ const ResolvedCard = ({ card, onView }: { card: ResolvedTicketCard; onView: () =
             </p>
           </div>
         )}
-        <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>
-          AWC: <strong style={{ color: 'var(--primary-deep)' }}>{formatAwcName(card.awcName)}</strong>
+        <div className="ticket-awc-row">
+          <span>AWC: <strong className="ticket-awc">{formatAwcName(card.awcName)}</strong></span>
         </div>
         <button className="ux4g-btn ux4g-btn-secondary ux4g-btn-md" style={{ width: '100%', display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center' }}
           onClick={e => { e.stopPropagation(); onView(); }}>
@@ -430,23 +426,23 @@ const AppealCard = ({ card, onResolve, onViewDetails }: { card: AppealTicket; on
         </span>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', margin: '4px 0 8px 0' }}>
-        <h4 className="ticket-title" style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>{card.byName}</h4>
+      <div className="ticket-title-row">
+        <h4 className="ticket-title" style={{ margin: 0 }}>{card.byName}</h4>
         <span style={{ fontSize: 13, background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: 4, fontWeight: 600, flexShrink: 0 }}>
           Beneficiary
         </span>
       </div>
 
-      <h4 className="ticket-title" style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>{card.title}</h4>
+      <div className="ticket-topic">{card.title}</div>
       
-      <div style={{ background: '#f8fafc', border: '1px solid var(--border-color)', borderRadius: 6, padding: '8px 12px', margin: '8px 0 10px 0' }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 }}>Appeal Reason</div>
+      <div style={{ background: '#f8fafc', border: '1px solid var(--border-color)', borderRadius: 6, padding: '8px 12px' }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>Appeal Reason</div>
         <p style={{ fontSize: 14.5, color: 'var(--text-dark)', margin: 0, lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' } as any}>
           {card.appealReason}
         </p>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13.5, color: 'var(--text-muted)', marginBottom: 8, borderTop: '1px solid #f1f5f9', paddingTop: 8, marginTop: 8 }}>
+      <div className="ticket-awc-row">
         <span>Filed: <strong>{card.appealDate?.replace('Appeal Filed:', '') || '28 Jun 2025'}</strong></span>
         {card.documents && (card.complaintType === 'Corruption' || card.complaintType === 'Urgent') && (
           <span style={{ background: '#e8eaf6', color: '#1565c0', padding: '2px 8px', borderRadius: 4, fontSize: 13, fontWeight: 600, border: '1px solid #90caf9' }}>
@@ -456,14 +452,14 @@ const AppealCard = ({ card, onResolve, onViewDetails }: { card: AppealTicket; on
       </div>
 
       {isResolved ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--accent-green-light)', padding: '8px 12px', borderRadius: 6, marginTop: 4, border: '1px solid var(--accent-green)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--accent-green-light)', padding: '8px 12px', borderRadius: 6, border: '1px solid var(--accent-green)' }}>
           <CheckCircle2 size={14} style={{ color: 'var(--accent-green)' }} />
           <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--accent-green)' }}>
             Appeal Resolved
           </span>
         </div>
       ) : (
-        <button className="ux4g-btn ux4g-btn-primary ux4g-btn-md" style={{ width: '100%', marginTop: 8, display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--accent-green)', borderColor: 'var(--accent-green)' }}
+        <button className="ux4g-btn ux4g-btn-primary ux4g-btn-md" style={{ width: '100%', display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--accent-green)', borderColor: 'var(--accent-green)' }}
           onClick={e => { e.stopPropagation(); onResolve(); }}>
           Resolve Appeal
         </button>
@@ -479,10 +475,9 @@ export default function DPOView({
   setSharedResolvedCards,
 }: DPOViewProps) {
 
-  // Core view state (tabs: 'Appeals' | 'Pending' | 'Resolved').
-  // Appeals are the DPO's own statutory workload — everything else in their scope is
-  // view-only oversight — so they land on Appeals first.
-  const [activeTab, setActiveTab] = useState<'Pending' | 'Resolved' | 'Appeals'>('Appeals');
+  // Core view state (tabs: 'Pending' | 'Appeals' | 'Resolved').
+  // DPO lands on Pending first, followed by Appeals and Resolved.
+  const [activeTab, setActiveTab] = useState<'Pending' | 'Resolved' | 'Appeals'>('Pending');
   const [assignedFilter, setAssignedFilter] = useState<AssignedFilter>('DPO');
   const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
 
@@ -1079,17 +1074,17 @@ export default function DPOView({
           {/* Tab bar header */}
           <div className="search-filter-section" style={{ marginBottom: 0 }}>
             <div className="tabs-navigation" style={{ borderBottom: 'none', margin: 0 }}>
+              <button className={`tab-btn ${activeTab === 'Pending' ? 'active' : ''}`} onClick={() => handleTabChange('Pending')}>
+                Pending
+                <span className="tab-count">{displayedPending.length}</span>
+              </button>
+
               {assignedFilter === 'DPO' && (
                 <button className={`tab-btn ${activeTab === 'Appeals' ? 'active' : ''}`} onClick={() => handleTabChange('Appeals')}>
                   Appeals
                   <span className="tab-count">{displayedAppeals.length}</span>
                 </button>
               )}
-
-              <button className={`tab-btn ${activeTab === 'Pending' ? 'active' : ''}`} onClick={() => handleTabChange('Pending')}>
-                Pending
-                <span className="tab-count">{displayedPending.length}</span>
-              </button>
 
               <button className={`tab-btn ${activeTab === 'Resolved' ? 'active' : ''}`} onClick={() => handleTabChange('Resolved')}>
                 Resolved

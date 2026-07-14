@@ -586,14 +586,16 @@ export default function SupervisorScreen({
                   <div key={ticket.id} className="ticket-card" onClick={() => setSelectedTicket(ticket)} style={{ cursor: 'pointer', borderColor: overdue ? 'var(--color-danger)' : 'var(--border-color)' }}>
                     <div className="ticket-card-header">
                       <span className="ticket-id">{ticket.ticketNumber}</span>
-                      {activeTab === 'Pending' && overdue && <span className="badge badge-danger">Overdue</span>}
-                      {resolvedCfg && (
-                        <span style={{ padding: '3px 10px', borderRadius: '4px', fontSize: '10.5px', fontWeight: 700, letterSpacing: '0.3px', background: resolvedCfg.bg, color: resolvedCfg.color, border: `1px solid ${resolvedCfg.border}` }}>
-                          {resolvedCfg.label}
-                        </span>
-                      )}
+                      <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                        {activeTab === 'Pending' && overdue && <span className="badge badge-danger">Overdue</span>}
+                        {resolvedCfg && (
+                          <span style={{ padding: '3px 10px', borderRadius: '4px', fontSize: '10.5px', fontWeight: 700, letterSpacing: '0.3px', background: resolvedCfg.bg, color: resolvedCfg.color, border: `1px solid ${resolvedCfg.border}` }}>
+                            {resolvedCfg.label}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div className="ticket-title-row">
                       <h4 className="ticket-title" style={{ margin: 0 }}>{ticket.beneficiaryName}</h4>
                       {ticket.beneficiaryType && (
                         <span style={{ fontSize: '13px', background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: '4px', fontWeight: 600 }}>
@@ -601,7 +603,7 @@ export default function SupervisorScreen({
                         </span>
                       )}
                     </div>
-                    <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--primary-deep)' }}>{ticket.topic}</div>
+                    <div className="ticket-topic">{ticket.topic}</div>
                     <p className="ticket-desc">{ticket.description}</p>
                     <div className="ticket-metadata">
                       {activeTab === 'Resolved' ? (
@@ -613,8 +615,10 @@ export default function SupervisorScreen({
                         <span style={{ fontWeight: 700, color: overdue ? 'var(--color-danger)' : 'var(--accent-ashoka)' }}>{ticket.daysLabel}</span>
                       )}
                     </div>
-                    <div style={{ fontSize: '14px', color: 'var(--text-muted)', fontWeight: 500 }}>AWC: {formatAwcName(ticket.awcName)}</div>
-                    <button className="ux4g-btn ux4g-btn-secondary ux4g-btn-md" style={{ width: '100%', marginTop: '4px', display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'center' }}
+                    <div className="ticket-awc-row">
+                      <span>AWC: <strong className="ticket-awc">{formatAwcName(ticket.awcName)}</strong></span>
+                    </div>
+                    <button className="ux4g-btn ux4g-btn-secondary ux4g-btn-md" style={{ width: '100%', display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'center' }}
                       onClick={(e) => { e.stopPropagation(); setSelectedTicket(ticket); }}>
                       <Eye size={14} /> View Details
                     </button>

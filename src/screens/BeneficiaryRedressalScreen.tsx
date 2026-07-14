@@ -301,29 +301,27 @@ const PendingCard = ({ card, showDocs, onView }: { card: TicketCard; showDocs: b
           {overdue && <span className="badge badge-danger">OVERDUE</span>}
         </div>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+      <div className="ticket-title-row">
         <h4 className="ticket-title" style={{ margin: 0 }}>{card.beneficiaryName}</h4>
         {card.beneficiaryType && (
           <span style={{ fontSize: 13, background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: 4, fontWeight: 600, flexShrink: 0 }}>{card.beneficiaryType}</span>
         )}
       </div>
-      <div>
-        {card.topic && <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--primary-deep)', marginBottom: 2 }}>{card.topic}</div>}
-        <p className="ticket-desc">{card.description}</p>
-      </div>
+      {card.topic && <div className="ticket-topic">{card.topic}</div>}
+      <p className="ticket-desc">{card.description}</p>
       <div className="ticket-metadata">
         <span className="ticket-date" style={{ fontSize: 14 }}>{card.submittedDate?.includes('Submitted') ? card.submittedDate : `Submitted: ${card.submittedDate}`}</span>
         {card.daysLabel && (
           <span style={{ padding: '3px 10px', borderRadius: 12, fontSize: 13, fontWeight: 700, background: overdue ? '#ffebee' : '#fff3e0', color: overdue ? '#d32f2f' : '#e65100' }}>{card.daysLabel}</span>
         )}
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 14, color: 'var(--text-muted)' }}>
-        <span>AWC: <strong style={{ color: 'var(--primary-deep)' }}>{formatAwcName(card.awcName)}</strong></span>
+      <div className="ticket-awc-row">
+        <span>AWC: <strong className="ticket-awc">{formatAwcName(card.awcName)}</strong></span>
         {showDocs && isCorruptionOrUrgent && (card.documentsCount ?? 0) > 0 && (
           <span style={{ background: '#e8eaf6', color: '#1565c0', padding: '2px 8px', borderRadius: 4, fontSize: 13, fontWeight: 600, border: '1px solid #90caf9' }}>Doc Uploaded</span>
         )}
       </div>
-      <button className="ux4g-btn ux4g-btn-secondary ux4g-btn-md" style={{ width: '100%', marginTop: 4, display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center' }}
+      <button className="ux4g-btn ux4g-btn-secondary ux4g-btn-md" style={{ width: '100%', display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center' }}
         onClick={e => { e.stopPropagation(); onView(); }}>
         <Eye size={14} /> View Details
       </button>
@@ -352,7 +350,7 @@ const ResolvedCard = ({ card, onView, showOwnerChip }: {
           Awaiting CDPO Closure
         </div>
       )}
-      <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
           <span className="ticket-id">{card.ticketNumber}</span>
           {useOwnerChip ? (
@@ -363,16 +361,14 @@ const ResolvedCard = ({ card, onView, showOwnerChip }: {
             <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 12.5, fontWeight: 700, background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}>{cfg.label}</span>
           )}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <div className="ticket-title-row">
           <h4 className="ticket-title" style={{ margin: 0 }}>{card.beneficiaryName}</h4>
           {card.beneficiaryType && (
             <span style={{ fontSize: 13, background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: 4, fontWeight: 600, flexShrink: 0 }}>{card.beneficiaryType}</span>
           )}
         </div>
-        <div>
-          {card.topic && <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--primary-deep)', marginBottom: 2 }}>{card.topic}</div>}
-          <p className="ticket-desc">{card.description}</p>
-        </div>
+        {card.topic && <div className="ticket-topic">{card.topic}</div>}
+        <p className="ticket-desc">{card.description}</p>
         <div style={{ fontSize: 14, color: 'var(--text-muted)', fontWeight: 500 }}>{card.resolvedDate}</div>
         {card.actionTaken && (
           <div style={{ background: '#f8fafc', border: '1px solid var(--border-color)', borderRadius: 6, padding: '8px 12px' }}>
@@ -380,7 +376,9 @@ const ResolvedCard = ({ card, onView, showOwnerChip }: {
             <p style={{ fontSize: 14.5, color: 'var(--text-dark)', margin: 0, lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' } as any}>{card.actionTaken}</p>
           </div>
         )}
-        <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>AWC: <strong style={{ color: 'var(--primary-deep)' }}>{formatAwcName(card.awcName)}</strong></div>
+        <div className="ticket-awc-row">
+          <span>AWC: <strong className="ticket-awc">{formatAwcName(card.awcName)}</strong></span>
+        </div>
         <button className="ux4g-btn ux4g-btn-secondary ux4g-btn-md" style={{ width: '100%', display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center' }}
           onClick={e => { e.stopPropagation(); onView(); }}>
           <Eye size={14} /> View Details
