@@ -2,6 +2,21 @@ export type TabType = 'Pending' | 'Resolved';
 export type AssignedFilter = 'DPO' | 'CDPO' | 'Supervisor' | 'AWW';
 export type ResolvedStatus = 'CLOSED' | 'CLOSURE_PENDING' | 'APPEAL_RAISED' | 'APPEAL_RESOLVED';
 
+// How a grievance was lodged. Web submissions are always by the beneficiary
+// themselves; call-centre tickets may be logged by the beneficiary or a third
+// party (relative, ASHA, neighbour, or an anonymous tipster) via an agent.
+export type TicketChannel = 'WEB' | 'CALL_CENTRE';
+
+export interface TicketOrigin {
+  channel: TicketChannel;
+  callerIsSelf: boolean;      // true → the caller is the beneficiary
+  callerName?: string;        // when !callerIsSelf; may be 'Anonymous'
+  callerRelation?: string;    // caller's relation to the beneficiary
+  callerMobile?: string;      // caller's own contact, when different
+  agentName?: string;         // call-centre agent who logged the ticket
+  loggedAt?: string;          // when the call / web submission happened
+}
+
 export interface TicketCard {
   id: string;
   ticketNumber: string;
@@ -34,6 +49,7 @@ export interface TicketCard {
   documents?: string;
   actionTaken?: string;
   awaitingCdpoClosure?: boolean;
+  origin?: TicketOrigin;
 }
 
 export interface ResolvedTicketCard extends TicketCard {
@@ -75,4 +91,5 @@ export interface AppealTicket {
   resolutionNotes?: string;
   complaintType?: 'Corruption' | 'Urgent' | 'General';
   originalActionTaken?: string;
+  origin?: TicketOrigin;
 }

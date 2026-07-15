@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X, ArrowLeft, FileText, Check } from 'lucide-react';
+import { X, ArrowLeft, FileText, Check, Phone, Globe } from 'lucide-react';
 
 interface TicketDetailsProps {
   card: any;
@@ -48,6 +48,15 @@ export default function TicketDetailsScreen({
   const isAppeal = currentCard.status === 'APPEAL_RAISED' || currentCard._isAppeal;
   const hasAppealReason = isAppeal || currentCard.status === 'APPEAL_RESOLVED';
   const isOverdue = isPending && (currentCard.isOverdue || currentCard.daysType === 'overdue');
+
+  // Grievance origin. Tickets predating this field are treated as web self-service,
+  // which was the only channel before the call-centre flow existed.
+  const origin = currentCard.origin ?? { channel: 'WEB', callerIsSelf: true };
+  const isCallCentre = origin.channel === 'CALL_CENTRE';
+  const channelLabel = isCallCentre ? 'Call Centre' : 'Web (Self-service)';
+  const reportedBy = origin.callerIsSelf
+    ? 'Self (Beneficiary)'
+    : `${origin.callerName || 'Unknown'}${origin.callerRelation ? ` · ${origin.callerRelation}` : ''}`;
 
   const statusKey = isOverdue ? 'OVERDUE' : (isPending ? 'PENDING' : currentCard.status);
   const statusCfg = STATUS_CFG[statusKey] ?? STATUS_CFG.CLOSED;
@@ -363,6 +372,44 @@ export default function TicketDetailsScreen({
             <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Description</span>
             <div style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '14px 16px', fontSize: '16px', color: '#1e293b', whiteSpace: 'pre-line', lineHeight: '1.4' }}>
               {currentCard.description || currentCard.originalDescription || 'No description provided.'}
+            </div>
+          </div>
+
+          {/* GRIEVANCE ORIGIN — how the ticket was lodged and by whom */}
+          <div>
+            <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-dark)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid #cbd5e1', paddingBottom: '8px', marginBottom: '12px' }}>
+              Grievance Origin
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', alignItems: 'center' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Channel</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', fontWeight: 600, color: 'var(--text-dark)' }}>
+                  {isCallCentre ? <Phone size={14} style={{ color: '#1a237e' }} /> : <Globe size={14} style={{ color: '#1a237e' }} />}
+                  {channelLabel}
+                </span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Reported By</span>
+                <span style={{ fontWeight: 600, color: 'var(--text-dark)' }}>{reportedBy}</span>
+              </div>
+              {!origin.callerIsSelf && origin.callerMobile && (
+                <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Caller Contact</span>
+                  <span style={{ fontWeight: 600, color: 'var(--text-dark)' }}>{origin.callerMobile}</span>
+                </div>
+              )}
+              {isCallCentre && origin.agentName && (
+                <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Logged By Agent</span>
+                  <span style={{ fontWeight: 600, color: 'var(--text-dark)' }}>{origin.agentName}</span>
+                </div>
+              )}
+              {origin.loggedAt && (
+                <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Logged On</span>
+                  <span style={{ fontWeight: 600, color: 'var(--text-dark)' }}>{origin.loggedAt}</span>
+                </div>
+              )}
             </div>
           </div>
 

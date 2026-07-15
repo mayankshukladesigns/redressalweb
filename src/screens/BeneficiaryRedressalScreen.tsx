@@ -31,6 +31,11 @@ const AWC_OPTIONS = [
 const COMPLAINT_TYPES = ['Urgent', 'Corruption', 'General'];
 const COMPLAINT_PRIORITY: Record<string, number> = { Urgent: 0, Corruption: 1, General: 2 };
 const complaintRank = (t?: string) => COMPLAINT_PRIORITY[t ?? ''] ?? 3;
+
+// Tickets predating the origin field are treated as web self-service.
+type SourceFilter = 'All' | 'WEB' | 'CALL_CENTRE';
+const channelOf = (c: { origin?: { channel?: string } }) => c.origin?.channel ?? 'WEB';
+const passesSource = (c: { origin?: { channel?: string } }, f: SourceFilter) => f === 'All' || channelOf(c) === f;
 const BENEFICIARY_CATEGORIES = [
   'Pregnant Woman', 'Lactating Mother', 'Children 0-6 months',
   'Children (6m-3y)', 'Children (3-6y)', 'Adolescent Girl',
@@ -436,6 +441,9 @@ export default function CDPOView({
   // Pending-for-Closure only: which official resolved the ticket
   const [resolvedByFilter, setResolvedByFilter] = useState<'All' | 'Supervisor' | 'AWW'>('All');
 
+  // Source channel filter — applies on every tab.
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>('All');
+
 
   // ── Handle role/tab switch ────────────────────────────────────────────────────
   const clearAllFilters = () => {
@@ -443,6 +451,7 @@ export default function CDPOView({
     setAppliedDateOption(null);
     setAppliedTypes([]); setAppliedCategories([]); setAppliedStatuses([]);
     setResolvedByFilter('All');
+    setSourceFilter('All');
   };
 
   const handleRoleSwitch = (role: AssignedFilter) => {
@@ -482,6 +491,7 @@ export default function CDPOView({
   // ── Filter logic ──────────────────────────────────────────────────────────────
   const displayedPending = allPending.filter(card => {
     if (card.assignedTo && card.assignedTo !== assignedFilter) return false;
+    if (!passesSource(card, sourceFilter)) return false;
     if ((assignedFilter === 'Supervisor' || assignedFilter === 'AWW') && selectedSector !== 'All Sectors') {
       if (!card.sector || card.sector !== selectedSector) return false;
     }
@@ -506,6 +516,7 @@ export default function CDPOView({
 
   const displayedResolved = allResolved.filter(card => {
     if (card.assignedTo && card.assignedTo !== assignedFilter) return false;
+    if (!passesSource(card, sourceFilter)) return false;
     if ((assignedFilter === 'Supervisor' || assignedFilter === 'AWW') && selectedSector !== 'All Sectors') {
       if (!card.sector || card.sector !== selectedSector) return false;
     }
@@ -531,6 +542,7 @@ export default function CDPOView({
     if (!card.awaitingCdpoClosure) return false;
     if (card.assignedTo !== 'Supervisor' && card.assignedTo !== 'AWW') return false;
     if (resolvedByFilter !== 'All' && card.assignedTo !== resolvedByFilter) return false;
+    if (!passesSource(card, sourceFilter)) return false;
     if (!passesDateFilter(card.resolvedDate ?? '', appliedDateOption)) return false;
     if (appliedCategories.length > 0 && (!card.beneficiaryType || !appliedCategories.includes(card.beneficiaryType))) return false;
     if (searchQuery) {
@@ -551,13 +563,14 @@ export default function CDPOView({
   const gridResetKey = [
     assignedFilter, activeTab, selectedSector, selectedAWC, searchQuery, isOverdueOnly,
     appliedDateOption, appliedTypes.join(','), appliedCategories.join(','),
-    appliedStatuses.join(','), resolvedByFilter,
+    appliedStatuses.join(','), resolvedByFilter, sourceFilter,
   ].join('|');
 
   // Active filter count for badge
   const activeFilterCount =
     (activeTab === 'Pending' && isOverdueOnly ? 1 : 0) +
     (activeTab === 'PendingClosure' && resolvedByFilter !== 'All' ? 1 : 0) +
+    (sourceFilter !== 'All' ? 1 : 0) +
     (appliedDateOption ? 1 : 0) +
     appliedTypes.length +
     appliedCategories.length +
@@ -805,6 +818,23 @@ export default function CDPOView({
               </div>
             </>
           )}
+
+          {/* Source channel — shown on every tab */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Source</label>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {([['All', 'All'], ['WEB', 'Web'], ['CALL_CENTRE', 'Call Centre']] as [SourceFilter, string][]).map(([val, lbl]) => (
+                <button key={val} onClick={() => setSourceFilter(val)} style={{
+                  flex: 1, padding: '7px 4px', borderRadius: 20, fontSize: 13.5, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
+                  border: `1.5px solid ${sourceFilter === val ? 'var(--primary-deep)' : 'var(--border-color)'}`,
+                  background: sourceFilter === val ? 'var(--primary-deep)' : 'var(--bg-main)',
+                  color: sourceFilter === val ? '#ffffff' : 'var(--text-dark)',
+                }}>
+                  {lbl}
+                </button>
+              ))}
+            </div>
+          </div>
 
           {/* Date Range */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, position: 'relative' }}>

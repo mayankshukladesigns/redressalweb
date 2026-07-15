@@ -41,6 +41,11 @@ const AWC_OPTIONS = [
 const COMPLAINT_TYPES = ['Urgent', 'Corruption', 'General'];
 const COMPLAINT_PRIORITY: Record<string, number> = { Urgent: 0, Corruption: 1, General: 2 };
 const complaintRank = (t?: string) => COMPLAINT_PRIORITY[t ?? ''] ?? 3;
+
+// Tickets predating the origin field are treated as web self-service.
+type SourceFilter = 'All' | 'WEB' | 'CALL_CENTRE';
+const channelOf = (c: { origin?: { channel?: string } }) => c.origin?.channel ?? 'WEB';
+const passesSource = (c: { origin?: { channel?: string } }, f: SourceFilter) => f === 'All' || channelOf(c) === f;
 const BENEFICIARY_CATEGORIES = [
   'Pregnant Woman', 'Lactating Mother', 'Children 0-6 months',
   'Children (6m-3y)', 'Children (3-6y)', 'Adolescent Girl',
@@ -513,6 +518,7 @@ export default function DPOView({
   const [appliedTypes, setAppliedTypes] = useState<string[]>([]);
   const [appliedStatuses, setAppliedStatuses] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>('All');
 
   // Reset filters
   const clearAllFilters = () => {
@@ -522,6 +528,7 @@ export default function DPOView({
     setAppliedTypes([]);
     setAppliedStatuses([]);
     setSelectedCategory('All');
+    setSourceFilter('All');
   };
 
   const handleRoleSwitch = (role: AssignedFilter) => {
@@ -589,6 +596,9 @@ export default function DPOView({
 
   // ─── Filter logic helper for active lists ───
   const applyCommonFilters = (t: TicketCard) => {
+    // 0. Source channel
+    if (!passesSource(t, sourceFilter)) return false;
+
     // 1. Scoping dropdowns
     if (assignedFilter === 'CDPO' && selectedProject !== 'All Projects') {
       if (!t.project || t.project !== selectedProject) return false;
@@ -682,6 +692,7 @@ export default function DPOView({
             status: 'APPEAL_RESOLVED',
             actionTaken: t.resolutionNotes || 'Appeal resolved successfully by DPO.',
             assignedTo: t.roleLabel as AssignedFilter,
+            origin: t.origin,
           };
           return card;
         })
@@ -701,6 +712,8 @@ export default function DPOView({
     if (assignedFilter !== 'DPO' && appeal.roleLabel !== assignedFilter) return false;
     // Appeals tab only shows active / unresolved appeals
     if (appeal.status === 'resolved') return false;
+
+    if (!passesSource(appeal, sourceFilter)) return false;
 
     // Category filter mapping
     const categoryMap: Record<string, string> = {
@@ -742,7 +755,7 @@ export default function DPOView({
   // Any change to scope, tab or a filter snaps the batched grids back to page one.
   const gridResetKey = [
     assignedFilter, activeTab, selectedProject, selectedSector, selectedAWC, searchQuery,
-    isOverdueOnly, appliedDateOption, appliedTypes.join(','), appliedStatuses.join(','), selectedCategory,
+    isOverdueOnly, appliedDateOption, appliedTypes.join(','), appliedStatuses.join(','), selectedCategory, sourceFilter,
   ].join('|');
 
   // Active filter count
@@ -750,6 +763,7 @@ export default function DPOView({
     (activeTab === 'Pending' && isOverdueOnly ? 1 : 0) +
     (appliedDateOption ? 1 : 0) +
     (selectedCategory !== 'All' ? 1 : 0) +
+    (sourceFilter !== 'All' ? 1 : 0) +
     appliedTypes.length +
     appliedStatuses.length;
 
@@ -1031,6 +1045,23 @@ export default function DPOView({
               </div>
             </div>
           )}
+
+          {/* Source channel — shown on every tab */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Source</label>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {([['All', 'All'], ['WEB', 'Web'], ['CALL_CENTRE', 'Call Centre']] as [SourceFilter, string][]).map(([val, lbl]) => (
+                <button key={val} onClick={() => setSourceFilter(val)} style={{
+                  flex: 1, padding: '7px 4px', borderRadius: 20, fontSize: 13.5, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
+                  border: `1.5px solid ${sourceFilter === val ? 'var(--primary-deep)' : 'var(--border-color)'}`,
+                  background: sourceFilter === val ? 'var(--primary-deep)' : 'var(--bg-main)',
+                  color: sourceFilter === val ? '#ffffff' : 'var(--text-dark)',
+                }}>
+                  {lbl}
+                </button>
+              ))}
+            </div>
+          </div>
 
           {/* Submission / Resolution Date */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, position: 'relative' }}>

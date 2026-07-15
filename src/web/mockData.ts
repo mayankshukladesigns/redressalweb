@@ -1,4 +1,4 @@
-import { TicketCard, ResolvedTicketCard, AppealTicket, OverdueTicket } from './types';
+import { TicketCard, ResolvedTicketCard, AppealTicket, OverdueTicket, TicketOrigin } from './types';
 
 // ─── SLA / overdue derivation ──────────────────────────────────────────────
 // A pending ticket's overdue state is derived from its submission date using
@@ -970,13 +970,8 @@ const rawPendingCards: TicketCard[] = [
 
 // Overdue/remaining labels are computed from submittedDate (21-day SLA) rather
 // than the hand-authored values, keeping every screen aligned with the timeline.
-export const initialPendingCards: TicketCard[] = rawPendingCards.map(deriveSlaFields);
-
-// ─── PAN-India scale simulation: generated closure queue ───────────────────────
-// Generates `count` Supervisor/AWW-resolved tickets awaiting CDPO closure, split
-// evenly between the two roles. A seeded PRNG keeps the data identical on every
-// reload, so behaviour (sorting, filters, batching) is reproducible while testing.
-
+// Shared name pools — used both for generated tickets and for third-party caller
+// names in the grievance-origin derivation below.
 const FIRST_NAMES = [
   'Aarti', 'Anju', 'Asha', 'Babita', 'Chanda', 'Deepa', 'Durga', 'Ganga', 'Gita',
   'Hansa', 'Indira', 'Jyoti', 'Kajal', 'Kamini', 'Kanta', 'Kaushalya', 'Komal',
@@ -988,6 +983,63 @@ const LAST_NAMES = [
   'Devi', 'Sharma', 'Verma', 'Meena', 'Gurjar', 'Jat', 'Choudhary', 'Saini',
   'Yadav', 'Kumawat', 'Prajapat', 'Bairwa', 'Regar', 'Nagar', 'Khatik', 'Sen',
 ];
+
+// ─── Grievance origin derivation ───────────────────────────────────────────────
+// A grievance can be lodged on the web (always by the beneficiary) or via the call
+// centre (by the beneficiary or a third party, through an agent). We derive this
+// deterministically from the ticket id so every screen shows the same origin on
+// every reload — roughly 70% web, 30% call centre.
+const CALLER_RELATIONS = ['Spouse', 'Son', 'Daughter', 'Parent', 'Sibling', 'Neighbour', 'ASHA Worker', 'Relative'];
+const AGENT_NAMES = [
+  'Priya Nair', 'Rahul Verma', 'Anita Singh', 'Vikram Rao', 'Neha Gupta',
+  'Sunil Kumar', 'Kavita Joshi', 'Amit Patel', 'Deepika Menon', 'Rohit Sharma',
+];
+const CALL_TIMES = ['09:40 AM', '10:24 AM', '11:15 AM', '12:50 PM', '02:05 PM', '03:30 PM', '04:45 PM'];
+
+function hashStr(s: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+
+function deriveOrigin(seedId: string, subjectName: string, submittedDate?: string): TicketOrigin {
+  const h = hashStr(seedId);
+  const dateOnly = (submittedDate || '').replace('Submitted:', '').trim();
+  const loggedAt = dateOnly ? `${dateOnly}, ${CALL_TIMES[h % CALL_TIMES.length]}` : undefined;
+
+  // 70% web / 30% call centre. Web is always self-service by the beneficiary.
+  if (h % 10 < 7) return { channel: 'WEB', callerIsSelf: true, loggedAt };
+
+  const agentName = AGENT_NAMES[(h >>> 3) % AGENT_NAMES.length];
+  // About half of call-centre tickets are the beneficiary calling in themselves.
+  if (((h >>> 6) & 1) === 0) return { channel: 'CALL_CENTRE', callerIsSelf: true, agentName, loggedAt };
+
+  // Third-party caller. An anonymous subject (e.g. a corruption tip) stays
+  // anonymous — no name or contact is captured for the caller either.
+  if (/anonymous/i.test(subjectName)) {
+    return { channel: 'CALL_CENTRE', callerIsSelf: false, callerName: 'Anonymous', callerRelation: 'Not disclosed', agentName, loggedAt };
+  }
+  const callerName = `${FIRST_NAMES[(h >>> 9) % FIRST_NAMES.length]} ${LAST_NAMES[(h >>> 13) % LAST_NAMES.length]}`;
+  const callerRelation = CALLER_RELATIONS[(h >>> 16) % CALLER_RELATIONS.length];
+  const callerMobile = `98765 ${String(10000 + ((h >>> 4) % 89999))}`;
+  return { channel: 'CALL_CENTRE', callerIsSelf: false, callerName, callerRelation, callerMobile, agentName, loggedAt };
+}
+
+// Attach a derived origin to a ticket / appeal if it doesn't already carry one.
+function withOrigin<T extends TicketCard>(card: T): T {
+  return card.origin ? card : { ...card, origin: deriveOrigin(card.id, card.beneficiaryName || '', card.submittedDate) };
+}
+function withAppealOrigin(a: AppealTicket): AppealTicket {
+  return a.origin ? a : { ...a, origin: deriveOrigin(a.id, a.byName || '', a.submittedDate) };
+}
+
+export const initialPendingCards: TicketCard[] = rawPendingCards.map(deriveSlaFields).map(withOrigin);
+
+// ─── PAN-India scale simulation: generated closure queue ───────────────────────
+// Generates `count` Supervisor/AWW-resolved tickets awaiting CDPO closure, split
+// evenly between the two roles. A seeded PRNG keeps the data identical on every
+// reload, so behaviour (sorting, filters, batching) is reproducible while testing.
+
 // topic → [helpTopic, subTopic, description, ATR, eligible beneficiary categories]
 const CLOSURE_TOPICS: [string, string, string, string, string, string[]][] = [
   ['THR Distribution', 'Supplementary Nutrition', 'Take Home Ration',
@@ -1077,7 +1129,7 @@ function generateClosureQueue(count: number): ResolvedTicketCard[] {
   });
 }
 
-export const initialResolvedCards: ResolvedTicketCard[] = [
+const rawResolvedCards: ResolvedTicketCard[] = [
   {
     id: 'r1',
     ticketNumber: 'Ticket# 787868 898901',
@@ -1574,6 +1626,8 @@ export const initialResolvedCards: ResolvedTicketCard[] = [
   ...generateClosureQueue(300),
 ];
 
+export const initialResolvedCards: ResolvedTicketCard[] = rawResolvedCards.map(withOrigin);
+
 // ─── PAN-India scale simulation: generated appeals ─────────────────────────────
 // Appeals filed by beneficiaries who are unsatisfied with a CDPO/Supervisor/AWW
 // resolution. These land in the DPO's Appeals tab, which is their own workload.
@@ -1663,7 +1717,7 @@ function generateAppeals(count: number): AppealTicket[] {
   });
 }
 
-export const initialAppealTickets: AppealTicket[] = [
+const rawAppealTickets: AppealTicket[] = [
   {
     id: 'a1',
     ticketNumber: 'Ticket# CDPO 001234',
@@ -1741,3 +1795,5 @@ export const initialAppealTickets: AppealTicket[] = [
   // PAN-India scale simulation: 100 additional appeals awaiting DPO adjudication.
   ...generateAppeals(100),
 ];
+
+export const initialAppealTickets: AppealTicket[] = rawAppealTickets.map(withAppealOrigin);

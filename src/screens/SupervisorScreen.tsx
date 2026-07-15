@@ -82,6 +82,11 @@ const formatAwcName = (name: string | undefined): string => {
 const COMPLAINT_PRIORITY: Record<string, number> = { Urgent: 0, Corruption: 1, General: 2 };
 const complaintRank = (t?: string) => COMPLAINT_PRIORITY[t ?? ''] ?? 3;
 
+// Tickets predating the origin field are treated as web self-service.
+type SourceFilter = 'All' | 'WEB' | 'CALL_CENTRE';
+const channelOf = (c: { origin?: { channel?: string } }) => c.origin?.channel ?? 'WEB';
+const passesSource = (c: { origin?: { channel?: string } }, f: SourceFilter) => f === 'All' || channelOf(c) === f;
+
 function ticketAge(submittedDate?: string): number {
   const d = parseSubmittedDate(submittedDate);
   if (!d) return 0;
@@ -133,6 +138,7 @@ export default function SupervisorScreen({
   const [isOverdueOnly, setIsOverdueOnly] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [appliedStatuses, setAppliedStatuses] = useState<string[]>([]);
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>('All');
 
   // Date range filter
   const dateButtonRef = useRef<HTMLButtonElement>(null);
@@ -216,6 +222,8 @@ export default function SupervisorScreen({
     return list.filter((ticket) => {
       if (!matchesScope(ticket)) return false;
 
+      if (!passesSource(ticket, sourceFilter)) return false;
+
       const isOverdue = ticket.daysType === 'overdue' || ticket.isOverdue;
       if (activeTab === 'Pending' && isOverdueOnly && !isOverdue) return false;
 
@@ -260,7 +268,7 @@ export default function SupervisorScreen({
   // Any change to scope, tab or a filter snaps the batched grid back to page one.
   const gridResetKey = [
     activeTab, scopeFilter, selectedAWC, searchQuery, isOverdueOnly,
-    selectedCategory, appliedStatuses.join(','), appliedDateOption,
+    selectedCategory, appliedStatuses.join(','), appliedDateOption, sourceFilter,
   ].join('|');
 
   const handleResolveTicket = (ticketId: string, closureNote: string) => {
@@ -283,7 +291,8 @@ export default function SupervisorScreen({
     (activeTab === 'Pending' && isOverdueOnly ? 1 : 0) +
     (selectedCategory !== 'All' ? 1 : 0) +
     (activeTab === 'Resolved' ? appliedStatuses.length : 0) +
-    (appliedDateOption !== 'All' ? 1 : 0);
+    (appliedDateOption !== 'All' ? 1 : 0) +
+    (sourceFilter !== 'All' ? 1 : 0);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -471,6 +480,23 @@ export default function SupervisorScreen({
             </select>
           </div>
 
+          {/* Source channel */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Source</label>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {([['All', 'All'], ['WEB', 'Web'], ['CALL_CENTRE', 'Call Centre']] as [SourceFilter, string][]).map(([val, lbl]) => (
+                <button key={val} onClick={() => setSourceFilter(val)} style={{
+                  flex: 1, padding: '7px 4px', borderRadius: 20, fontSize: 13.5, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
+                  border: `1.5px solid ${sourceFilter === val ? 'var(--primary-deep)' : 'var(--border-color)'}`,
+                  background: sourceFilter === val ? 'var(--primary-deep)' : 'var(--bg-main)',
+                  color: sourceFilter === val ? '#ffffff' : 'var(--text-dark)',
+                }}>
+                  {lbl}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Date Range */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', position: 'relative' }}>
             <label style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Submission Date</label>
@@ -527,7 +553,7 @@ export default function SupervisorScreen({
             <button
               className="ux4g-btn ux4g-btn-outline-neutral ux4g-btn-sm"
               style={{ borderRadius: '20px', fontSize: '14px' }}
-              onClick={() => { setIsOverdueOnly(false); setSelectedCategory('All'); setAppliedStatuses([]); setAppliedDateOption('All'); }}
+              onClick={() => { setIsOverdueOnly(false); setSelectedCategory('All'); setAppliedStatuses([]); setAppliedDateOption('All'); setSourceFilter('All'); }}
             >
               Reset Filters
             </button>
