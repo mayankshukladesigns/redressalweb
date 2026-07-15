@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X, ArrowLeft, FileText, Check, Phone, Globe } from 'lucide-react';
+import { X, ArrowLeft, FileText, Check } from 'lucide-react';
 
 interface TicketDetailsProps {
   card: any;
@@ -382,9 +382,8 @@ export default function TicketDetailsScreen({
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '15px' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', alignItems: 'center' }}>
-                <span style={{ color: 'var(--text-muted)' }}>Channel</span>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', fontWeight: 600, color: 'var(--text-dark)' }}>
-                  {isCallCentre ? <Phone size={14} style={{ color: '#1a237e' }} /> : <Globe size={14} style={{ color: '#1a237e' }} />}
+                <span style={{ color: 'var(--text-muted)' }}>Originated from</span>
+                <span style={{ fontWeight: 600, color: 'var(--text-dark)' }}>
                   {channelLabel}
                 </span>
               </div>
@@ -400,14 +399,8 @@ export default function TicketDetailsScreen({
               )}
               {isCallCentre && origin.agentName && (
                 <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>Logged By Agent</span>
+                  <span style={{ color: 'var(--text-muted)' }}>Assisted by</span>
                   <span style={{ fontWeight: 600, color: 'var(--text-dark)' }}>{origin.agentName}</span>
-                </div>
-              )}
-              {origin.loggedAt && (
-                <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>Logged On</span>
-                  <span style={{ fontWeight: 600, color: 'var(--text-dark)' }}>{origin.loggedAt}</span>
                 </div>
               )}
             </div>
