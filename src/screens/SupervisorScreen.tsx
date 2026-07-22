@@ -83,7 +83,7 @@ const COMPLAINT_PRIORITY: Record<string, number> = { Urgent: 0, Corruption: 1, G
 const complaintRank = (t?: string) => COMPLAINT_PRIORITY[t ?? ''] ?? 3;
 
 // Tickets predating the origin field are treated as web self-service.
-type SourceFilter = 'All' | 'WEB' | 'CALL_CENTRE';
+type SourceFilter = 'All' | 'WEB' | 'APP' | 'CALL_CENTRE';
 const channelOf = (c: { origin?: { channel?: string } }) => c.origin?.channel ?? 'WEB';
 const passesSource = (c: { origin?: { channel?: string } }, f: SourceFilter) => f === 'All' || channelOf(c) === f;
 
@@ -484,7 +484,7 @@ export default function SupervisorScreen({
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <label style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Source</label>
             <div style={{ display: 'flex', gap: 6 }}>
-              {([['All', 'All'], ['WEB', 'Web'], ['CALL_CENTRE', 'Call Centre']] as [SourceFilter, string][]).map(([val, lbl]) => (
+              {([['All', 'All'], ['WEB', 'Web'], ['APP', 'App'], ['CALL_CENTRE', 'Call Centre']] as [SourceFilter, string][]).map(([val, lbl]) => (
                 <button key={val} onClick={() => setSourceFilter(val)} style={{
                   flex: 1, padding: '7px 4px', borderRadius: 20, fontSize: 13.5, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
                   border: `1.5px solid ${sourceFilter === val ? 'var(--primary-deep)' : 'var(--border-color)'}`,
@@ -720,43 +720,45 @@ export default function SupervisorScreen({
       {/* Resolved Breakdown Modal */}
       {breakdownView === 'resolved' && (
         <div className="modal-backdrop" onClick={() => setBreakdownView(null)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ padding: '28px', maxWidth: '560px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '21px', fontWeight: 700, color: 'var(--primary-deep)' }}>Resolved Breakdown</h3>
-              <button onClick={() => setBreakdownView(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '4px', display: 'flex', borderRadius: '6px' }}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()} style={{ padding: 28, maxWidth: 580 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 21, fontWeight: 700, color: 'var(--primary-deep)' }}>Resolved Breakdown</h3>
+              <button onClick={() => setBreakdownView(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4, display: 'flex', borderRadius: 6 }}>
                 <X size={20} />
               </button>
             </div>
-            <div style={{ background: 'var(--accent-green-light)', borderRadius: 'var(--radius-lg)', padding: '18px 24px', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '14px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--accent-green)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Total Resolved</span>
-                <span style={{ fontFamily: 'var(--font-display)', fontSize: '32px', fontWeight: 800, color: 'var(--accent-green)', lineHeight: 1 }}>{totalResolved.toLocaleString()}</span>
+            <div style={{ background: 'var(--accent-green-light)', borderRadius: 'var(--radius-lg)', padding: '16px 24px', marginBottom: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--accent-green)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Total Resolved</span>
+                <span style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 800, color: 'var(--accent-green)', lineHeight: 1 }}>{totalResolved.toLocaleString()}</span>
               </div>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <span style={{ background: 'rgba(255,255,255,0.7)', borderRadius: '999px', padding: '5px 12px', fontSize: '14px', fontWeight: 600, color: 'var(--text-dark)' }}>
-                  Supervisor <strong style={{ color: 'var(--accent-green)' }}>{supervisorResolved}</strong>
-                </span>
-                <span style={{ background: 'rgba(255,255,255,0.7)', borderRadius: '999px', padding: '5px 12px', fontSize: '14px', fontWeight: 600, color: 'var(--text-dark)' }}>
-                  AWW <strong style={{ color: 'var(--accent-green)' }}>{awwResolved}</strong>
-                </span>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {[{ l: 'Supervisor', v: supervisorResolved }, { l: 'AWW', v: awwResolved }].map((r) => (
+                  <span key={r.l} style={{ background: 'rgba(255,255,255,0.75)', borderRadius: 999, padding: '4px 10px', fontSize: 13, fontWeight: 600, color: 'var(--text-dark)' }}>
+                    {r.l} <strong style={{ color: 'var(--accent-green)' }}>{r.v}</strong>
+                  </span>
+                ))}
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               {[
-                { label: 'Pending for Closure', icon: Clock,        total: closurePendingSup + closurePendingAWW, sup: closurePendingSup, aww: closurePendingAWW, bg: 'var(--color-warning-light)', fg: 'var(--color-warning)' },
-                { label: 'Closed',          icon: CheckCircle2, total: closedSup + closedAWW,                sup: closedSup,         aww: closedAWW,          bg: 'var(--accent-green-light)',  fg: 'var(--accent-green)'   },
-                { label: 'Appeal Raised',   icon: AlertTriangle,total: appealRaisedSup + appealRaisedAWW,   sup: appealRaisedSup,   aww: appealRaisedAWW,    bg: 'var(--accent-saffron-light)', fg: 'var(--accent-saffron)' },
-                { label: 'Appeal Resolved', icon: ShieldCheck,  total: appealResolvedSup + appealResolvedAWW,sup: appealResolvedSup, aww: appealResolvedAWW,  bg: 'var(--color-info-light)',    fg: 'var(--color-info)'     },
-              ].map((stat) => (
-                <div key={stat.label} style={{ background: stat.bg, borderRadius: 'var(--radius-lg)', padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <stat.icon size={14} style={{ color: stat.fg }} />
-                    <span style={{ fontSize: '13px', fontWeight: 700, color: stat.fg, textTransform: 'uppercase', letterSpacing: '0.4px' }}>{stat.label}</span>
+                { label: 'Pending for Closure', icon: Clock,        color: '#f57f17', bg: '#fff8e1', border: '#ffe082', total: closurePendingSup + closurePendingAWW, rows: [{ r: 'Supervisor', v: closurePendingSup }, { r: 'AWW', v: closurePendingAWW }] },
+                { label: 'Closed',              icon: CheckCircle2, color: '#2e7d32', bg: '#e8f5e9', border: '#a5d6a7', total: closedSup + closedAWW,                 rows: [{ r: 'Supervisor', v: closedSup },         { r: 'AWW', v: closedAWW }] },
+                { label: 'Appeal Raised',       icon: AlertTriangle,color: '#e65100', bg: '#fff3e0', border: '#ffcc80', total: appealRaisedSup + appealRaisedAWW,    rows: [{ r: 'Supervisor', v: appealRaisedSup },   { r: 'AWW', v: appealRaisedAWW }] },
+                { label: 'Appeal Resolved',     icon: ShieldCheck,  color: '#1565c0', bg: '#e8eaf6', border: '#90caf9', total: appealResolvedSup + appealResolvedAWW,rows: [{ r: 'Supervisor', v: appealResolvedSup }, { r: 'AWW', v: appealResolvedAWW }] },
+              ].map((card) => (
+                <div key={card.label} style={{ background: card.bg, border: `1px solid ${card.border}`, borderRadius: 'var(--radius-lg)', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <card.icon size={13} style={{ color: card.color }} />
+                    <span style={{ fontSize: 13, fontWeight: 700, color: card.color, textTransform: 'uppercase', letterSpacing: '0.4px' }}>{card.label}</span>
                   </div>
-                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '28px', fontWeight: 800, color: stat.fg, lineHeight: 1 }}>{stat.total}</div>
-                  <div style={{ display: 'flex', gap: '6px' }}>
-                    <span style={{ background: 'rgba(255,255,255,0.7)', borderRadius: '999px', padding: '3px 9px', fontSize: '10.5px', fontWeight: 600, color: 'var(--text-dark)' }}>Supervisor <strong>{stat.sup}</strong></span>
-                    <span style={{ background: 'rgba(255,255,255,0.7)', borderRadius: '999px', padding: '3px 9px', fontSize: '10.5px', fontWeight: 600, color: 'var(--text-dark)' }}>AWW <strong>{stat.aww}</strong></span>
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 800, color: card.color, lineHeight: 1 }}>{card.total}</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4, borderTop: `1px solid ${card.border}`, paddingTop: 8 }}>
+                    {card.rows.map((r) => (
+                      <div key={r.r} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13.5, color: card.color }}>
+                        <span>{r.r}</span><strong>{r.v}</strong>
+                      </div>
+                    ))}
                   </div>
                 </div>
               ))}

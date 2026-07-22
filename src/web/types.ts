@@ -2,10 +2,10 @@ export type TabType = 'Pending' | 'Resolved';
 export type AssignedFilter = 'DPO' | 'CDPO' | 'Supervisor' | 'AWW';
 export type ResolvedStatus = 'CLOSED' | 'CLOSURE_PENDING' | 'APPEAL_RAISED' | 'APPEAL_RESOLVED';
 
-// How a grievance was lodged. Web submissions are always by the beneficiary
-// themselves; call-centre tickets may be logged by the beneficiary or a third
-// party (relative, ASHA, neighbour, or an anonymous tipster) via an agent.
-export type TicketChannel = 'WEB' | 'CALL_CENTRE';
+// How a grievance was lodged. Web and mobile-app submissions are always by the
+// beneficiary themselves; call-centre tickets may be logged by the beneficiary
+// or a third party (relative, ASHA, neighbour, or an anonymous tipster) via an agent.
+export type TicketChannel = 'WEB' | 'APP' | 'CALL_CENTRE';
 
 export interface TicketOrigin {
   channel: TicketChannel;

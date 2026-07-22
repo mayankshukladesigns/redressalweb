@@ -53,7 +53,8 @@ export default function TicketDetailsScreen({
   // which was the only channel before the call-centre flow existed.
   const origin = currentCard.origin ?? { channel: 'WEB', callerIsSelf: true };
   const isCallCentre = origin.channel === 'CALL_CENTRE';
-  const channelLabel = isCallCentre ? 'Call Centre' : 'Web (Self-service)';
+  const isApp = origin.channel === 'APP';
+  const channelLabel = isCallCentre ? 'Call Centre' : isApp ? 'Mobile App' : 'Web (Self-service)';
   const reportedBy = origin.callerIsSelf
     ? 'Self (Beneficiary)'
     : `${origin.callerName || 'Unknown'}${origin.callerRelation ? ` · ${origin.callerRelation}` : ''}`;

@@ -985,10 +985,10 @@ const LAST_NAMES = [
 ];
 
 // ─── Grievance origin derivation ───────────────────────────────────────────────
-// A grievance can be lodged on the web (always by the beneficiary) or via the call
-// centre (by the beneficiary or a third party, through an agent). We derive this
-// deterministically from the ticket id so every screen shows the same origin on
-// every reload — roughly 70% web, 30% call centre.
+// A grievance can be lodged on the web or mobile app (always by the beneficiary)
+// or via the call centre (by the beneficiary or a third party, through an agent).
+// We derive this deterministically from the ticket id so every screen shows the
+// same origin on every reload — roughly 50% web, 20% app, 30% call centre.
 const CALLER_RELATIONS = ['Spouse', 'Son', 'Daughter', 'Parent', 'Sibling', 'Neighbour', 'ASHA Worker', 'Relative'];
 const AGENT_NAMES = [
   'Priya Nair', 'Rahul Verma', 'Anita Singh', 'Vikram Rao', 'Neha Gupta',
@@ -1007,8 +1007,9 @@ function deriveOrigin(seedId: string, subjectName: string, submittedDate?: strin
   const dateOnly = (submittedDate || '').replace('Submitted:', '').trim();
   const loggedAt = dateOnly ? `${dateOnly}, ${CALL_TIMES[h % CALL_TIMES.length]}` : undefined;
 
-  // 70% web / 30% call centre. Web is always self-service by the beneficiary.
-  if (h % 10 < 7) return { channel: 'WEB', callerIsSelf: true, loggedAt };
+  // 50% web / 20% app / 30% call centre. Web and app are always self-service.
+  if (h % 10 < 5) return { channel: 'WEB', callerIsSelf: true, loggedAt };
+  if (h % 10 < 7) return { channel: 'APP', callerIsSelf: true, loggedAt };
 
   const agentName = AGENT_NAMES[(h >>> 3) % AGENT_NAMES.length];
   // About half of call-centre tickets are the beneficiary calling in themselves.
