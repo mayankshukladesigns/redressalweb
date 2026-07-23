@@ -54,10 +54,10 @@ export default function TicketDetailsScreen({
   const origin = currentCard.origin ?? { channel: 'WEB', callerIsSelf: true };
   const isCallCentre = origin.channel === 'CALL_CENTRE';
   const isApp = origin.channel === 'APP';
-  const channelLabel = isCallCentre ? 'Call Centre' : isApp ? 'Mobile App' : 'Web (Self-service)';
+  const channelLabel = isCallCentre ? 'Call Centre' : isApp ? 'Mobile App' : 'Web';
   const reportedBy = origin.callerIsSelf
-    ? 'Self (Beneficiary)'
-    : `${origin.callerName || 'Unknown'}${origin.callerRelation ? ` · ${origin.callerRelation}` : ''}`;
+    ? 'Self'
+    : origin.callerName || 'Unknown';
 
   const statusKey = isOverdue ? 'OVERDUE' : (isPending ? 'PENDING' : currentCard.status);
   const statusCfg = STATUS_CFG[statusKey] ?? STATUS_CFG.CLOSED;
