@@ -711,6 +711,8 @@ const rawPendingCards: TicketCard[] = [
     assignedTo: 'AWW',
   },
   {
+    // DPO no longer takes tickets directly (see p30–p33); Corruption-about-Supervisor
+    // and Urgent tickets route to CDPO, per the district escalation tiers.
     id: 'p30',
     ticketNumber: 'Ticket# 787868 898990',
     beneficiaryName: 'Hema Malini',
@@ -732,7 +734,7 @@ const rawPendingCards: TicketCard[] = [
     district: 'Jaipur',
     project: 'Sanganer',
     sector: 'Sector 1',
-    assignedTo: 'DPO',
+    assignedTo: 'CDPO',
   },
   {
     id: 'p31',
@@ -756,7 +758,7 @@ const rawPendingCards: TicketCard[] = [
     district: 'Jaipur',
     project: 'Sanganer',
     sector: 'Sector 4',
-    assignedTo: 'DPO',
+    assignedTo: 'CDPO',
   },
   {
     id: 'p32',
@@ -780,7 +782,7 @@ const rawPendingCards: TicketCard[] = [
     district: 'Jaipur',
     project: 'Sanganer',
     sector: 'Sector 3',
-    assignedTo: 'DPO',
+    assignedTo: 'CDPO',
   },
   {
     id: 'p33',
@@ -804,7 +806,7 @@ const rawPendingCards: TicketCard[] = [
     district: 'Jaipur',
     project: 'Sanganer',
     sector: 'Sector 1',
-    assignedTo: 'DPO',
+    assignedTo: 'CDPO',
   },
   {
     id: 'sup-pending-1',
@@ -1775,7 +1777,8 @@ const rawAppealTickets: AppealTicket[] = [
     byName: 'Geeta Sharma',
     status: 'resolved',
     decision: 'dismiss',
-    resolutionNotes: 'Appeal reviewed on 12 Jun 2025. Vaccination records verified at PHC — DPT booster and OPV confirmed administered on 11 Jun 2025. Immunisation card entries are accurate and complete. Resolution by Supervisor upheld. Appeal resolved in favour of existing resolution.',
+    resolutionNotes: 'Appeal reviewed on 20 Jun 2025. Vaccination records verified at PHC — DPT booster and OPV confirmed administered on 11 Jun 2025. Immunisation card entries are accurate and complete. Resolution by Supervisor upheld. Appeal resolved in favour of existing resolution.',
+    resolvedDate: 'Resolved: 20/06/2025',
     complaintType: 'General',
     originalActionTaken: 'Vaccination rescheduled with PHC medical officer. Child vaccinated on 11 Jun 2025.',
   },

@@ -156,7 +156,7 @@ const DateRangePopover = ({
         </h4>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {([['7','Last 7 Days'],['14','Last 14 Days'],['21','Last 21 Days'],['21+','More than 21 Days']] as [DateRangeOption, string][]).map(([val, lbl]) => (
-            <label key={val} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 4px', cursor: 'pointer', fontSize: 15, fontWeight: draft === val ? 600 : 400, color: draft === val ? 'var(--primary-deep)' : 'var(--text-dark)' }}>
+            <label key={val} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 4px', cursor: 'pointer', fontSize: 16, fontWeight: draft === val ? 600 : 400, color: draft === val ? 'var(--primary-deep)' : 'var(--text-dark)' }}>
               <input type="radio" name="dateRangeCDPO" checked={draft === val} onChange={() => setDraft(val)} style={{ accentColor: 'var(--primary-deep)', width: 16, height: 16 }} />
               {lbl}
             </label>
@@ -185,28 +185,28 @@ const PendingBreakdownModal = ({
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-card" onClick={e => e.stopPropagation()} style={{ padding: 28, maxWidth: 480 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 21, fontWeight: 700, color: 'var(--primary-deep)' }}>Pending Breakdown</h3>
+          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: 'var(--primary-deep)' }}>Pending Breakdown</h3>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4, display: 'flex', borderRadius: 6 }}><X size={20} /></button>
         </div>
         <div style={{ background: '#e8eaf6', borderRadius: 'var(--radius-lg)', padding: '16px 24px', marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: 15, fontWeight: 700, color: '#5c67b5', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Total Pending</span>
+          <span style={{ fontSize: 16, fontWeight: 700, color: '#5c67b5', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Total Pending</span>
           <span style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 800, color: '#1a237e', lineHeight: 1 }}>{totalP.toLocaleString()}</span>
         </div>
         <div style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', overflow: 'hidden', marginBottom: 18 }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 16 }}>
             <thead>
               <tr style={{ background: 'var(--bg-main)' }}>
-                <th style={{ textAlign: 'left', padding: '10px 16px', fontSize: 13, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Role</th>
-                <th style={{ textAlign: 'right', padding: '10px 16px', fontSize: 13, fontWeight: 700, color: '#e65100', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Pending</th>
-                <th style={{ textAlign: 'right', padding: '10px 16px', fontSize: 13, fontWeight: 700, color: '#d32f2f', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Overdue</th>
+                <th style={{ textAlign: 'left', padding: '10px 16px', fontSize: 14, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Role</th>
+                <th style={{ textAlign: 'right', padding: '10px 16px', fontSize: 14, fontWeight: 700, color: '#e65100', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Pending</th>
+                <th style={{ textAlign: 'right', padding: '10px 16px', fontSize: 14, fontWeight: 700, color: '#d32f2f', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Overdue</th>
               </tr>
             </thead>
             <tbody>
               {[{r:'CDPO',p:cdpoP,o:cdpoO},{r:'Supervisor',p:supP,o:supO},{r:'AWW',p:awwP,o:awwO}].map(row => (
                 <tr key={row.r} style={{ borderTop: '1px solid var(--border-color)' }}>
                   <td style={{ padding: '12px 16px', color: 'var(--text-dark)', fontWeight: 500 }}>{row.r}</td>
-                  <td style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 700, color: '#e65100', fontSize: 17 }}>{row.p}</td>
-                  <td style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 700, color: '#d32f2f', fontSize: 17 }}>{row.o}</td>
+                  <td style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 700, color: '#e65100', fontSize: 18 }}>{row.p}</td>
+                  <td style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 700, color: '#d32f2f', fontSize: 18 }}>{row.o}</td>
                 </tr>
               ))}
               <tr style={{ background: '#e8eaf6', borderTop: '2px solid var(--border-color)' }}>
@@ -219,7 +219,7 @@ const PendingBreakdownModal = ({
         </div>
         <div style={{ display: 'flex', gap: 10, background: 'var(--color-info-light)', borderRadius: 'var(--radius-md)', padding: '12px 14px' }}>
           <Info size={15} style={{ color: 'var(--color-info)', flexShrink: 0, marginTop: 1 }} />
-          <p style={{ margin: 0, fontSize: 14.5, color: 'var(--text-dark)', lineHeight: 1.55 }}>
+          <p style={{ margin: 0, fontSize: 16, color: 'var(--text-dark)', lineHeight: 1.55 }}>
             <strong>Pending</strong> is the count of tickets still awaiting action. <strong>Overdue</strong> tickets are grievances pending for more than 21 days and need immediate attention.
           </p>
         </div>
@@ -249,17 +249,17 @@ const ResolvedBreakdownModal = ({
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-card" onClick={e => e.stopPropagation()} style={{ padding: 28, maxWidth: 580 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 21, fontWeight: 700, color: 'var(--primary-deep)' }}>Resolved Breakdown</h3>
+          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: 'var(--primary-deep)' }}>Resolved Breakdown</h3>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4, display: 'flex', borderRadius: 6 }}><X size={20} /></button>
         </div>
         <div style={{ background: 'var(--accent-green-light)', borderRadius: 'var(--radius-lg)', padding: '16px 24px', marginBottom: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--accent-green)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Total Resolved</span>
+            <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--accent-green)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Total Resolved</span>
             <span style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 800, color: 'var(--accent-green)', lineHeight: 1 }}>{totalResolved.toLocaleString()}</span>
           </div>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             {[{l:'CDPO',v:byRole.cdpo},{l:'Supervisor',v:byRole.sup},{l:'AWW',v:byRole.aww}].map(r => (
-              <span key={r.l} style={{ background: 'rgba(255,255,255,0.75)', borderRadius: 999, padding: '4px 10px', fontSize: 13, fontWeight: 600, color: 'var(--text-dark)' }}>
+              <span key={r.l} style={{ background: 'rgba(255,255,255,0.75)', borderRadius: 999, padding: '4px 10px', fontSize: 14, fontWeight: 600, color: 'var(--text-dark)' }}>
                 {r.l} <strong style={{ color: 'var(--accent-green)' }}>{r.v}</strong>
               </span>
             ))}
@@ -272,12 +272,12 @@ const ResolvedBreakdownModal = ({
               <div key={card.label} style={{ background: card.bg, border: `1px solid ${card.border}`, borderRadius: 'var(--radius-lg)', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <Icon size={13} style={{ color: card.color }} />
-                  <span style={{ fontSize: 13, fontWeight: 700, color: card.color, textTransform: 'uppercase', letterSpacing: '0.4px' }}>{card.label}</span>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: card.color, textTransform: 'uppercase', letterSpacing: '0.4px' }}>{card.label}</span>
                 </div>
                 <div style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 800, color: card.color, lineHeight: 1 }}>{card.total}</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4, borderTop: `1px solid ${card.border}`, paddingTop: 8 }}>
                   {card.rows.map(r => (
-                    <div key={r.r} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13.5, color: card.color }}>
+                    <div key={r.r} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: card.color }}>
                       <span>{r.r}</span><strong>{r.v}</strong>
                     </div>
                   ))}
@@ -309,7 +309,7 @@ const PendingCard = ({ card, showDocs, onView }: { card: TicketCard; showDocs: b
       <div className="ticket-title-row">
         <h4 className="ticket-title" style={{ margin: 0 }}>{card.beneficiaryName}</h4>
         {card.beneficiaryType && (
-          <span style={{ fontSize: 13, background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: 4, fontWeight: 600, flexShrink: 0 }}>{card.beneficiaryType}</span>
+          <span style={{ fontSize: 14, background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: 4, fontWeight: 600, flexShrink: 0 }}>{card.beneficiaryType}</span>
         )}
       </div>
       {card.topic && <div className="ticket-topic">{card.topic}</div>}
@@ -317,13 +317,13 @@ const PendingCard = ({ card, showDocs, onView }: { card: TicketCard; showDocs: b
       <div className="ticket-metadata">
         <span className="ticket-date" style={{ fontSize: 14 }}>{card.submittedDate?.includes('Submitted') ? card.submittedDate : `Submitted: ${card.submittedDate}`}</span>
         {card.daysLabel && (
-          <span style={{ padding: '3px 10px', borderRadius: 12, fontSize: 13, fontWeight: 700, background: overdue ? '#ffebee' : '#fff3e0', color: overdue ? '#d32f2f' : '#e65100' }}>{card.daysLabel}</span>
+          <span style={{ padding: '3px 10px', borderRadius: 12, fontSize: 14, fontWeight: 700, background: overdue ? '#ffebee' : '#fff3e0', color: overdue ? '#d32f2f' : '#e65100' }}>{card.daysLabel}</span>
         )}
       </div>
       <div className="ticket-awc-row">
         <span>AWC: <strong className="ticket-awc">{formatAwcName(card.awcName)}</strong></span>
         {showDocs && isCorruptionOrUrgent && (card.documentsCount ?? 0) > 0 && (
-          <span style={{ background: '#e8eaf6', color: '#1565c0', padding: '2px 8px', borderRadius: 4, fontSize: 13, fontWeight: 600, border: '1px solid #90caf9' }}>Doc Uploaded</span>
+          <span style={{ background: '#e8eaf6', color: '#1565c0', padding: '2px 8px', borderRadius: 4, fontSize: 14, fontWeight: 600, border: '1px solid #90caf9' }}>Doc Uploaded</span>
         )}
       </div>
       <button className="ux4g-btn ux4g-btn-secondary ux4g-btn-md" style={{ width: '100%', display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center' }}
@@ -359,17 +359,17 @@ const ResolvedCard = ({ card, onView, showOwnerChip }: {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
           <span className="ticket-id">{card.ticketNumber}</span>
           {useOwnerChip ? (
-            <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 12.5, fontWeight: 700, background: ownerCfg.bg, color: ownerCfg.color, border: `1px solid ${ownerCfg.border}`, textTransform: 'uppercase', letterSpacing: '0.4px', flexShrink: 0 }}>
+            <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 14, fontWeight: 700, background: ownerCfg.bg, color: ownerCfg.color, border: `1px solid ${ownerCfg.border}`, textTransform: 'uppercase', letterSpacing: '0.4px', flexShrink: 0 }}>
               {owner}
             </span>
           ) : (
-            <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 12.5, fontWeight: 700, background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}>{cfg.label}</span>
+            <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 14, fontWeight: 700, background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}>{cfg.label}</span>
           )}
         </div>
         <div className="ticket-title-row">
           <h4 className="ticket-title" style={{ margin: 0 }}>{card.beneficiaryName}</h4>
           {card.beneficiaryType && (
-            <span style={{ fontSize: 13, background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: 4, fontWeight: 600, flexShrink: 0 }}>{card.beneficiaryType}</span>
+            <span style={{ fontSize: 14, background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: 4, fontWeight: 600, flexShrink: 0 }}>{card.beneficiaryType}</span>
           )}
         </div>
         {card.topic && <div className="ticket-topic">{card.topic}</div>}
@@ -378,7 +378,7 @@ const ResolvedCard = ({ card, onView, showOwnerChip }: {
         {card.actionTaken && (
           <div style={{ background: '#f8fafc', border: '1px solid var(--border-color)', borderRadius: 6, padding: '8px 12px' }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>Action Taken Report (ATR)</div>
-            <p style={{ fontSize: 14.5, color: 'var(--text-dark)', margin: 0, lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' } as any}>{card.actionTaken}</p>
+            <p style={{ fontSize: 16, color: 'var(--text-dark)', margin: 0, lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' } as any}>{card.actionTaken}</p>
           </div>
         )}
         <div className="ticket-awc-row">
@@ -626,16 +626,16 @@ export default function CDPOView({
             Review project complaints, audit Supervisor and Anganwadi Worker ticket resolutions, and coordinate final closure approvals.
           </p>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2, padding: '8px 16px', background: '#ffffff', border: '1px solid var(--border-color)', borderRadius: 8, fontSize: 15, fontWeight: 600 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2, padding: '8px 16px', background: '#ffffff', border: '1px solid var(--border-color)', borderRadius: 8, fontSize: 16, fontWeight: 600 }}>
           <span>Project: <span style={{ color: 'var(--accent-saffron)' }}>Sanganer</span></span>
-          <span style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 500 }}>4 Sectors</span>
+          <span style={{ fontSize: 14, color: 'var(--text-muted)', fontWeight: 500 }}>4 Sectors</span>
         </div>
       </div>
 
       {/* Summary Table */}
       <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-color)', padding: '22px 24px', boxShadow: 'var(--shadow-sm)' }}>
         <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--primary-deep)', letterSpacing: '0.5px', display: 'block' }}>Summary</span>
-        <p style={{ fontSize: 15, color: 'var(--text-muted)', marginTop: 4, marginBottom: 14 }}>
+        <p style={{ fontSize: 16, color: 'var(--text-muted)', marginTop: 4, marginBottom: 14 }}>
           Overview of pending grievances and resolved cases.
         </p>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 16 }}>
@@ -643,12 +643,12 @@ export default function CDPOView({
             <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
               <th style={{ textAlign: 'left', paddingBottom: 10, fontWeight: 600, paddingLeft: '24px' }}></th>
               <th style={{ textAlign: 'right', paddingBottom: 10, fontWeight: 600, width: '180px' }}>
-                <button onClick={() => setPendingModal(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: '#e65100', fontSize: 15, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: 2, width: '100%' }}>PENDING ▼</button>
+                <button onClick={() => setPendingModal(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: '#e65100', fontSize: 16, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: 2, width: '100%' }}>PENDING ▼</button>
               </th>
               <th style={{ textAlign: 'right', paddingBottom: 10, fontWeight: 600, width: '180px' }}>
-                <button onClick={() => setResolvedModal(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--accent-green)', fontSize: 15, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: 2, width: '100%' }}>RESOLVED ▼</button>
+                <button onClick={() => setResolvedModal(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--accent-green)', fontSize: 16, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: 2, width: '100%' }}>RESOLVED ▼</button>
               </th>
-              <th style={{ textAlign: 'right', paddingBottom: 10, fontWeight: 700, color: 'var(--primary-deep)', fontSize: 15, paddingRight: '24px', width: '180px' }}>TOTAL</th>
+              <th style={{ textAlign: 'right', paddingBottom: 10, fontWeight: 700, color: 'var(--primary-deep)', fontSize: 16, paddingRight: '24px', width: '180px' }}>TOTAL</th>
             </tr>
           </thead>
           <tbody>
@@ -668,14 +668,14 @@ export default function CDPOView({
             </tr>
           </tbody>
         </table>
-        <span style={{ display: 'block', textAlign: 'center', fontSize: 13, color: 'var(--text-muted)', marginTop: 12 }}>
+        <span style={{ display: 'block', textAlign: 'center', fontSize: 14, color: 'var(--text-muted)', marginTop: 12 }}>
           Click PENDING or RESOLVED column for detailed breakdown
         </span>
       </div>
 
       {/* ── Assigned To — uniform full-width row above main content ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-        <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-muted)', flexShrink: 0 }}>Assigned To</span>
+        <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-muted)', flexShrink: 0 }}>Assigned To</span>
         <div style={{ display: 'flex', gap: 8 }}>
           {(['CDPO','Supervisor','AWW'] as AssignedFilter[]).map(role => (
             <button key={role} onClick={() => handleRoleSwitch(role)} style={{
@@ -683,7 +683,7 @@ export default function CDPOView({
               border: `1.5px solid ${assignedFilter === role ? 'var(--primary-deep)' : 'var(--border-color)'}`,
               background: assignedFilter === role ? 'var(--primary-deep)' : '#ffffff',
               color: assignedFilter === role ? '#ffffff' : 'var(--text-dark)',
-              fontSize: 15, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
+              fontSize: 16, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
             }}>
               {role === 'CDPO' ? 'me' : role}
             </button>
@@ -692,13 +692,13 @@ export default function CDPOView({
         {/* Sector/AWC sub-filters inline when Supervisor/AWW selected */}
         {(assignedFilter === 'Supervisor' || assignedFilter === 'AWW') && (
           <select className="form-select" value={selectedSector} onChange={e => setSelectedSector(e.target.value)}
-            style={{ height: 38, padding: '0 32px 0 12px', fontSize: 15, fontWeight: 500, maxWidth: 180 }}>
+            style={{ height: 38, padding: '0 32px 0 12px', fontSize: 16, fontWeight: 500, maxWidth: 180 }}>
             {SECTOR_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
           </select>
         )}
         {assignedFilter === 'AWW' && (
           <select className="form-select" value={selectedAWC} onChange={e => setSelectedAWC(e.target.value)}
-            style={{ height: 38, padding: '0 32px 0 12px', fontSize: 15, fontWeight: 500, maxWidth: 210 }}>
+            style={{ height: 38, padding: '0 32px 0 12px', fontSize: 16, fontWeight: 500, maxWidth: 210 }}>
             {AWC_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
           </select>
         )}
@@ -710,9 +710,9 @@ export default function CDPOView({
         {/* Left Filter Sidebar */}
         <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-lg)', padding: '20px', display: 'flex', flexDirection: 'column', gap: 20, boxShadow: 'var(--shadow-sm)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: 10 }}>
-            <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--primary-deep)' }}>Filter Options</h3>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--primary-deep)' }}>Filter Options</h3>
             {activeFilterCount > 0 && (
-              <span style={{ background: 'var(--primary-deep)', color: '#fff', borderRadius: 99, padding: '2px 8px', fontSize: 13, fontWeight: 700 }}>{activeFilterCount}</span>
+              <span style={{ background: 'var(--primary-deep)', color: '#fff', borderRadius: 99, padding: '2px 8px', fontSize: 14, fontWeight: 700 }}>{activeFilterCount}</span>
             )}
           </div>
 
@@ -723,7 +723,7 @@ export default function CDPOView({
               <button
                 onClick={() => setIsOverdueOnly(v => !v)}
                 style={{
-                  padding: '8px 16px', borderRadius: 20, fontSize: 15, fontWeight: 600,
+                  padding: '8px 16px', borderRadius: 20, fontSize: 16, fontWeight: 600,
                   cursor: 'pointer', transition: 'all 0.2s',
                   background: isOverdueOnly ? 'var(--color-danger)' : 'var(--bg-main)',
                   color: isOverdueOnly ? '#fff' : 'var(--text-dark)',
@@ -741,7 +741,7 @@ export default function CDPOView({
               <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Complaint Type</label>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {COMPLAINT_TYPES.map(t => (
-                  <label key={t} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 15, cursor: 'pointer', padding: '4px 0' }}>
+                  <label key={t} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 16, cursor: 'pointer', padding: '4px 0' }}>
                     <input type="checkbox" checked={appliedTypes.includes(t)} onChange={() => setAppliedTypes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}
                       style={{ accentColor: 'var(--primary-deep)', width: 15, height: 15 }} />
                     <span style={{ color: appliedTypes.includes(t) ? 'var(--primary-deep)' : 'var(--text-dark)', fontWeight: appliedTypes.includes(t) ? 600 : 400 }}>{t}</span>
@@ -756,7 +756,7 @@ export default function CDPOView({
               <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Beneficiary Category</label>
               <select className="form-select" value={appliedCategories[0] || 'All'}
                 onChange={e => setAppliedCategories(e.target.value === 'All' ? [] : [e.target.value])}
-                style={{ width: '100%', height: 40, padding: '0 32px 0 12px', fontSize: 15 }}>
+                style={{ width: '100%', height: 40, padding: '0 32px 0 12px', fontSize: 16 }}>
                 <option value="All">Category: All</option>
                 {BENEFICIARY_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
@@ -769,7 +769,7 @@ export default function CDPOView({
                 <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Status</label>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {RESOLVED_STATUSES.filter(s => !(assignedFilter === 'CDPO' && s.value === 'CLOSURE_PENDING')).map(s => (
-                    <label key={s.value} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 15, cursor: 'pointer', padding: '4px 0' }}>
+                    <label key={s.value} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 16, cursor: 'pointer', padding: '4px 0' }}>
                       <input type="checkbox" checked={appliedStatuses.includes(s.value)} onChange={() => setAppliedStatuses(prev => prev.includes(s.value) ? prev.filter(x => x !== s.value) : [...prev, s.value])}
                         style={{ accentColor: 'var(--primary-deep)', width: 15, height: 15 }} />
                       <span style={{ width: 8, height: 8, borderRadius: '50%', background: s.color, flexShrink: 0 }} />
@@ -782,7 +782,7 @@ export default function CDPOView({
                 <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Beneficiary Category</label>
                 <select className="form-select" value={appliedCategories[0] || 'All'}
                   onChange={e => setAppliedCategories(e.target.value === 'All' ? [] : [e.target.value])}
-                  style={{ width: '100%', height: 40, padding: '0 32px 0 12px', fontSize: 15 }}>
+                  style={{ width: '100%', height: 40, padding: '0 32px 0 12px', fontSize: 16 }}>
                   <option value="All">Category: All</option>
                   {BENEFICIARY_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
@@ -811,7 +811,7 @@ export default function CDPOView({
                 <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Beneficiary Category</label>
                 <select className="form-select" value={appliedCategories[0] || 'All'}
                   onChange={e => setAppliedCategories(e.target.value === 'All' ? [] : [e.target.value])}
-                  style={{ width: '100%', height: 40, padding: '0 32px 0 12px', fontSize: 15 }}>
+                  style={{ width: '100%', height: 40, padding: '0 32px 0 12px', fontSize: 16 }}>
                   <option value="All">Category: All</option>
                   {BENEFICIARY_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
@@ -825,7 +825,7 @@ export default function CDPOView({
             <div style={{ display: 'flex', gap: 6 }}>
               {([['All', 'All'], ['WEB', 'Web'], ['APP', 'App'], ['CALL_CENTRE', 'Call Centre']] as [SourceFilter, string][]).map(([val, lbl]) => (
                 <button key={val} onClick={() => setSourceFilter(val)} style={{
-                  flex: 1, padding: '7px 4px', borderRadius: 20, fontSize: 13.5, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
+                  flex: 1, padding: '7px 4px', borderRadius: 20, fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
                   border: `1.5px solid ${sourceFilter === val ? 'var(--primary-deep)' : 'var(--border-color)'}`,
                   background: sourceFilter === val ? 'var(--primary-deep)' : 'var(--bg-main)',
                   color: sourceFilter === val ? '#ffffff' : 'var(--text-dark)',
@@ -902,7 +902,7 @@ export default function CDPOView({
 
           {/* Closure Banner */}
           {activeTab === 'Resolved' && assignedFilter === 'Supervisor' && awaitingClosureCount > 0 && (
-            <div style={{ background: '#fff8e1', border: '1px solid #ffe082', borderRadius: 'var(--radius-md)', padding: '10px 16px', fontSize: 15, fontWeight: 600, color: '#f57f17', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ background: '#fff8e1', border: '1px solid #ffe082', borderRadius: 'var(--radius-md)', padding: '10px 16px', fontSize: 16, fontWeight: 600, color: '#f57f17', display: 'flex', alignItems: 'center', gap: 8 }}>
               <span>⚠</span>
               {awaitingClosureCount} ticket{awaitingClosureCount > 1 ? 's' : ''} awaiting your closure — click a card to close
             </div>
@@ -914,7 +914,7 @@ export default function CDPOView({
               <div style={{ padding: '64px 32px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-lg)', textAlign: 'center', color: 'var(--text-muted)' }}>
                 <Inbox size={48} style={{ opacity: 0.4, marginBottom: 16 }} />
                 <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600, color: 'var(--primary-deep)' }}>No Pending Grievances</h3>
-                <p style={{ fontSize: 15, marginTop: 4 }}>No tickets match the current filters.</p>
+                <p style={{ fontSize: 16, marginTop: 4 }}>No tickets match the current filters.</p>
               </div>
             ) : (
               <BatchedTicketGrid items={displayedPending} resetKey={gridResetKey}
@@ -927,7 +927,7 @@ export default function CDPOView({
               <div style={{ padding: '64px 32px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-lg)', textAlign: 'center', color: 'var(--text-muted)' }}>
                 <Inbox size={48} style={{ opacity: 0.4, marginBottom: 16 }} />
                 <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600, color: 'var(--primary-deep)' }}>No Tickets Pending for Closure</h3>
-                <p style={{ fontSize: 15, marginTop: 4 }}>Tickets resolved by Supervisors and AWWs awaiting your closure will appear here.</p>
+                <p style={{ fontSize: 16, marginTop: 4 }}>Tickets resolved by Supervisors and AWWs awaiting your closure will appear here.</p>
               </div>
             ) : (
               <BatchedTicketGrid items={displayedPendingClosure} resetKey={gridResetKey}
@@ -940,7 +940,7 @@ export default function CDPOView({
               <div style={{ padding: '64px 32px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-lg)', textAlign: 'center', color: 'var(--text-muted)' }}>
                 <Inbox size={48} style={{ opacity: 0.4, marginBottom: 16 }} />
                 <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600, color: 'var(--primary-deep)' }}>No Resolved Tickets</h3>
-                <p style={{ fontSize: 15, marginTop: 4 }}>No tickets match the current filters.</p>
+                <p style={{ fontSize: 16, marginTop: 4 }}>No tickets match the current filters.</p>
               </div>
             ) : (
               <BatchedTicketGrid items={displayedResolved} resetKey={gridResetKey}

@@ -61,7 +61,7 @@ export default function BatchedTicketGrid<T>({
 
       {items.length > BATCH_SIZE && (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, padding: '4px 0 8px' }}>
-          <span style={{ fontSize: 12.5, color: 'var(--text-muted)', fontWeight: 500 }}>
+          <span style={{ fontSize: 14, color: 'var(--text-muted)', fontWeight: 500 }}>
             Showing <strong style={{ color: 'var(--primary-deep)' }}>{visible.length.toLocaleString()}</strong> of{' '}
             <strong style={{ color: 'var(--primary-deep)' }}>{items.length.toLocaleString()}</strong> {itemNoun}
           </span>

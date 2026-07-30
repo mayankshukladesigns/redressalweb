@@ -50,6 +50,21 @@ const BENEFICIARY_CATEGORIES = [
   'Pregnant Woman', 'Lactating Mother', 'Children 0-6 months',
   'Children (6m-3y)', 'Children (3-6y)', 'Adolescent Girl',
 ];
+// Appeal seed data has no beneficiaryType field, so category filtering maps the
+// filer's name to one — shared by both the Appeals and Appeal Resolved tabs.
+const APPEAL_CATEGORY_MAP: Record<string, string> = {
+  'Kamla Devi': 'Pregnant Woman',
+  'Rekha Sharma': 'Lactating Mother',
+  'Dr. Suresh Mehta (PHC)': 'Children (6m-3y)',
+  'Geeta Sharma': 'Adolescent Girl',
+  'Sita Devi': 'Pregnant Woman',
+  'Radha Bai': 'Lactating Mother',
+  'Sunita Choudhary': 'Children (6m-3y)',
+  'Priyanka Sen': 'Adolescent Girl',
+  'Kiran Yadav': 'Pregnant Woman',
+  'Maya Sharma': 'Lactating Mother',
+  'Pooja Soni': 'Children 0-6 months',
+};
 const REFERENCE_TODAY = new Date(2025, 5, 30);
 // A ticket is escalated to the DPO (view-only) once it has been open this long.
 const ESCALATION_DAYS = 14;
@@ -145,7 +160,7 @@ const DateRangePopover = ({
         </h4>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {([['7', 'Last 7 Days'], ['14', 'Last 14 Days'], ['21', 'Last 21 Days'], ['21+', 'More than 21 Days']] as [DateRangeOption, string][]).map(([val, lbl]) => (
-            <label key={val} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 4px', cursor: 'pointer', fontSize: 15, fontWeight: draft === val ? 600 : 400, color: draft === val ? 'var(--primary-deep)' : 'var(--text-dark)' }}>
+            <label key={val} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 4px', cursor: 'pointer', fontSize: 16, fontWeight: draft === val ? 600 : 400, color: draft === val ? 'var(--primary-deep)' : 'var(--text-dark)' }}>
               <input type="radio" name="dateRangeDPO" checked={draft === val} onChange={() => setDraft(val)} style={{ accentColor: 'var(--primary-deep)', width: 16, height: 16 }} />
               {lbl}
             </label>
@@ -177,20 +192,20 @@ const PendingBreakdownModal = ({
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-card" onClick={e => e.stopPropagation()} style={{ padding: 28, maxWidth: 480 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 21, fontWeight: 700, color: 'var(--primary-deep)' }}>Pending Breakdown</h3>
+          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: 'var(--primary-deep)' }}>Pending Breakdown</h3>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4, display: 'flex', borderRadius: 6 }}><X size={20} /></button>
         </div>
         <div style={{ background: '#e8eaf6', borderRadius: 'var(--radius-lg)', padding: '16px 24px', marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: 15, fontWeight: 700, color: '#5c67b5', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Total Pending</span>
+          <span style={{ fontSize: 16, fontWeight: 700, color: '#5c67b5', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Total Pending</span>
           <span style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 800, color: '#1a237e', lineHeight: 1 }}>{totalP.toLocaleString()}</span>
         </div>
         <div style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', overflow: 'hidden', marginBottom: 18 }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 16 }}>
             <thead>
               <tr style={{ background: 'var(--bg-main)' }}>
-                <th style={{ textAlign: 'left', padding: '10px 16px', fontSize: 13, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Role</th>
-                <th style={{ textAlign: 'right', padding: '10px 16px', fontSize: 13, fontWeight: 700, color: '#e65100', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Pending</th>
-                <th style={{ textAlign: 'right', padding: '10px 16px', fontSize: 13, fontWeight: 700, color: '#d32f2f', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Overdue</th>
+                <th style={{ textAlign: 'left', padding: '10px 16px', fontSize: 14, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Role</th>
+                <th style={{ textAlign: 'right', padding: '10px 16px', fontSize: 14, fontWeight: 700, color: '#e65100', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Pending</th>
+                <th style={{ textAlign: 'right', padding: '10px 16px', fontSize: 14, fontWeight: 700, color: '#d32f2f', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Overdue</th>
               </tr>
             </thead>
             <tbody>
@@ -202,8 +217,8 @@ const PendingBreakdownModal = ({
               ].map(row => (
                 <tr key={row.r} style={{ borderTop: '1px solid var(--border-color)' }}>
                   <td style={{ padding: '12px 16px', color: 'var(--text-dark)', fontWeight: 500 }}>{row.r}</td>
-                  <td style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 700, color: '#e65100', fontSize: 17 }}>{row.p}</td>
-                  <td style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 700, color: '#d32f2f', fontSize: 17 }}>{row.o}</td>
+                  <td style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 700, color: '#e65100', fontSize: 18 }}>{row.p}</td>
+                  <td style={{ textAlign: 'right', padding: '12px 16px', fontWeight: 700, color: '#d32f2f', fontSize: 18 }}>{row.o}</td>
                 </tr>
               ))}
               <tr style={{ background: '#e8eaf6', borderTop: '2px solid var(--border-color)' }}>
@@ -216,7 +231,7 @@ const PendingBreakdownModal = ({
         </div>
         <div style={{ display: 'flex', gap: 10, background: 'var(--color-info-light)', borderRadius: 'var(--radius-md)', padding: '12px 14px' }}>
           <Info size={15} style={{ color: 'var(--color-info)', flexShrink: 0, marginTop: 1 }} />
-          <p style={{ margin: 0, fontSize: 14.5, color: 'var(--text-dark)', lineHeight: 1.55 }}>
+          <p style={{ margin: 0, fontSize: 16, color: 'var(--text-dark)', lineHeight: 1.55 }}>
             <strong>Pending</strong> is the count of tickets still awaiting action. <strong>Overdue</strong> tickets are grievances pending for more than 21 days and need immediate attention.
           </p>
         </div>
@@ -250,17 +265,17 @@ const ResolvedBreakdownModal = ({
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-card" onClick={e => e.stopPropagation()} style={{ padding: 28, maxWidth: 580 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 21, fontWeight: 700, color: 'var(--primary-deep)' }}>Resolved Breakdown</h3>
+          <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: 'var(--primary-deep)' }}>Resolved Breakdown</h3>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4, display: 'flex', borderRadius: 6 }}><X size={20} /></button>
         </div>
         <div style={{ background: 'var(--accent-green-light)', borderRadius: 'var(--radius-lg)', padding: '16px 24px', marginBottom: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--accent-green)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Total Resolved</span>
+            <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--accent-green)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>Total Resolved</span>
             <span style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 800, color: 'var(--accent-green)', lineHeight: 1 }}>{totalResolved.toLocaleString()}</span>
           </div>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             {[{l:'DPO',v:byRole.dpo},{l:'CDPO',v:byRole.cdpo},{l:'Supervisor',v:byRole.sup},{l:'AWW',v:byRole.aww}].map(r => (
-              <span key={r.l} style={{ background: 'rgba(255,255,255,0.75)', borderRadius: 999, padding: '4px 10px', fontSize: 13, fontWeight: 600, color: 'var(--text-dark)' }}>
+              <span key={r.l} style={{ background: 'rgba(255,255,255,0.75)', borderRadius: 999, padding: '4px 10px', fontSize: 14, fontWeight: 600, color: 'var(--text-dark)' }}>
                 {r.l} <strong style={{ color: 'var(--accent-green)' }}>{r.v}</strong>
               </span>
             ))}
@@ -273,12 +288,12 @@ const ResolvedBreakdownModal = ({
               <div key={card.label} style={{ background: card.bg, border: `1px solid ${card.border}`, borderRadius: 'var(--radius-lg)', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <Icon size={13} style={{ color: card.color }} />
-                  <span style={{ fontSize: 13, fontWeight: 700, color: card.color, textTransform: 'uppercase', letterSpacing: '0.4px' }}>{card.label}</span>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: card.color, textTransform: 'uppercase', letterSpacing: '0.4px' }}>{card.label}</span>
                 </div>
                 <div style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 800, color: card.color, lineHeight: 1 }}>{card.total}</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4, borderTop: `1px solid ${card.border}`, paddingTop: 8 }}>
                   {card.rows.map(r => (
-                    <div key={r.r} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13.5, color: card.color }}>
+                    <div key={r.r} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: card.color }}>
                       <span>{r.r}</span><strong>{r.v}</strong>
                     </div>
                   ))}
@@ -325,7 +340,7 @@ const TicketCardComponent = ({ card, onView }: { card: TicketCard; onView: () =>
       <div className="ticket-title-row">
         <h4 className="ticket-title" style={{ margin: 0 }}>{card.beneficiaryName || card.byName}</h4>
         {card.beneficiaryType && (
-          <span style={{ fontSize: 13, background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: 4, fontWeight: 600, flexShrink: 0 }}>
+          <span style={{ fontSize: 14, background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: 4, fontWeight: 600, flexShrink: 0 }}>
             {card.beneficiaryType}
           </span>
         )}
@@ -344,7 +359,7 @@ const TicketCardComponent = ({ card, onView }: { card: TicketCard; onView: () =>
       <div className="ticket-awc-row">
         <span>AWC: <strong className="ticket-awc">{formatAwcName(card.awcName)}</strong></span>
         {isCorruptionOrUrgent && (card.documentsCount ?? 0) > 0 && (
-          <span style={{ background: '#e8eaf6', color: '#1565c0', padding: '2px 8px', borderRadius: 4, fontSize: 13, fontWeight: 600, border: '1px solid #90caf9' }}>
+          <span style={{ background: '#e8eaf6', color: '#1565c0', padding: '2px 8px', borderRadius: 4, fontSize: 14, fontWeight: 600, border: '1px solid #90caf9' }}>
             Doc Uploaded
           </span>
         )}
@@ -366,26 +381,38 @@ const STATUS_CFG: Record<string, { label: string; color: string; bg: string; bor
 };
 
 // Resolved ticket card component
-const ResolvedCard = ({ card, onView }: { card: ResolvedTicketCard; onView: () => void }) => {
+const ResolvedCard = ({ card, onView, showOwnerChip }: { card: ResolvedTicketCard; onView: () => void; showOwnerChip?: boolean }) => {
   const cfg = STATUS_CFG[card.status] ?? STATUS_CFG.CLOSED;
+  // In the "Pending for Closure" queue every card shares the same status, so the
+  // status chip carries no information there — show who resolved it instead,
+  // since that's the one thing that differs card to card.
+  const owner = card.assignedTo ?? '';
+  const ownerStyle = getRoleChipStyle(owner);
+  const useOwnerChip = showOwnerChip && !!owner;
   return (
     <div className="ticket-card" style={{ cursor: 'pointer', padding: 0, overflow: 'hidden' }} onClick={onView}>
-      {card.awaitingCdpoClosure && (
+      {card.awaitingCdpoClosure && !showOwnerChip && (
         <div style={{ background: '#fff8e1', borderBottom: '1px solid #ffe082', padding: '7px 18px', fontSize: 14, fontWeight: 700, color: '#f57f17' }}>
           Awaiting CDPO Closure
         </div>
       )}
       <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
           <span className="ticket-id">{card.ticketNumber}</span>
-          <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 12.5, fontWeight: 700, background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}>
-            {cfg.label}
-          </span>
+          {useOwnerChip ? (
+            <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 14, fontWeight: 700, background: ownerStyle.bg, color: ownerStyle.color, border: `1px solid ${ownerStyle.border}`, textTransform: 'uppercase', letterSpacing: '0.4px', flexShrink: 0 }}>
+              {owner}
+            </span>
+          ) : (
+            <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 14, fontWeight: 700, background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}>
+              {cfg.label}
+            </span>
+          )}
         </div>
         <div className="ticket-title-row">
           <h4 className="ticket-title" style={{ margin: 0 }}>{card.beneficiaryName}</h4>
           {card.beneficiaryType && (
-            <span style={{ fontSize: 13, background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: 4, fontWeight: 600, flexShrink: 0 }}>
+            <span style={{ fontSize: 14, background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: 4, fontWeight: 600, flexShrink: 0 }}>
               {card.beneficiaryType}
             </span>
           )}
@@ -400,7 +427,7 @@ const ResolvedCard = ({ card, onView }: { card: ResolvedTicketCard; onView: () =
             <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>
               Action Taken Report (ATR)
             </div>
-            <p style={{ fontSize: 14.5, color: 'var(--text-dark)', margin: 0, lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' } as any}>
+            <p style={{ fontSize: 16, color: 'var(--text-dark)', margin: 0, lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' } as any}>
               {card.actionTaken}
             </p>
           </div>
@@ -426,14 +453,14 @@ const AppealCard = ({ card, onResolve, onViewDetails }: { card: AppealTicket; on
     <div className="ticket-card" style={{ borderColor: isResolved ? 'var(--accent-green)' : 'var(--accent-saffron)' }} onClick={isResolved ? onViewDetails : onResolve}>
       <div className="ticket-card-header">
         <span className="ticket-id">{card.ticketNumber}</span>
-        <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 12.5, fontWeight: 700, background: roleStyle.bg, color: roleStyle.color, border: `1px solid ${roleStyle.border}` }}>
+        <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 14, fontWeight: 700, background: roleStyle.bg, color: roleStyle.color, border: `1px solid ${roleStyle.border}` }}>
           {card.roleLabel?.toUpperCase()}
         </span>
       </div>
 
       <div className="ticket-title-row">
         <h4 className="ticket-title" style={{ margin: 0 }}>{card.byName}</h4>
-        <span style={{ fontSize: 13, background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: 4, fontWeight: 600, flexShrink: 0 }}>
+        <span style={{ fontSize: 14, background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: 4, fontWeight: 600, flexShrink: 0 }}>
           Beneficiary
         </span>
       </div>
@@ -442,7 +469,7 @@ const AppealCard = ({ card, onResolve, onViewDetails }: { card: AppealTicket; on
       
       <div style={{ background: '#f8fafc', border: '1px solid var(--border-color)', borderRadius: 6, padding: '8px 12px' }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>Appeal Reason</div>
-        <p style={{ fontSize: 14.5, color: 'var(--text-dark)', margin: 0, lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' } as any}>
+        <p style={{ fontSize: 16, color: 'var(--text-dark)', margin: 0, lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' } as any}>
           {card.appealReason}
         </p>
       </div>
@@ -450,18 +477,30 @@ const AppealCard = ({ card, onResolve, onViewDetails }: { card: AppealTicket; on
       <div className="ticket-awc-row">
         <span>Filed: <strong>{card.appealDate?.replace('Appeal Filed:', '') || '28 Jun 2025'}</strong></span>
         {card.documents && (card.complaintType === 'Corruption' || card.complaintType === 'Urgent') && (
-          <span style={{ background: '#e8eaf6', color: '#1565c0', padding: '2px 8px', borderRadius: 4, fontSize: 13, fontWeight: 600, border: '1px solid #90caf9' }}>
+          <span style={{ background: '#e8eaf6', color: '#1565c0', padding: '2px 8px', borderRadius: 4, fontSize: 14, fontWeight: 600, border: '1px solid #90caf9' }}>
             Doc Uploaded
           </span>
         )}
       </div>
 
       {isResolved ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--accent-green-light)', padding: '8px 12px', borderRadius: 6, border: '1px solid var(--accent-green)' }}>
-          <CheckCircle2 size={14} style={{ color: 'var(--accent-green)' }} />
-          <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--accent-green)' }}>
-            Appeal Resolved
-          </span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {card.resolutionNotes && (
+            <div style={{ background: '#f8fafc', border: '1px solid var(--border-color)', borderRadius: 6, padding: '8px 12px' }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>
+                DPO Resolution Notes
+              </div>
+              <p style={{ fontSize: 16, color: 'var(--text-dark)', margin: 0, lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' } as any}>
+                {card.resolutionNotes}
+              </p>
+            </div>
+          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--accent-green-light)', padding: '8px 12px', borderRadius: 6, border: '1px solid var(--accent-green)' }}>
+            <CheckCircle2 size={14} style={{ color: 'var(--accent-green)' }} />
+            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--accent-green)' }}>
+              {card.resolvedDate ? `Resolved: ${card.resolvedDate.replace('Resolved:', '').trim()}` : 'Resolved'}
+            </span>
+          </div>
         </div>
       ) : (
         <button className="ux4g-btn ux4g-btn-primary ux4g-btn-md" style={{ width: '100%', display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--accent-green)', borderColor: 'var(--accent-green)' }}
@@ -480,9 +519,11 @@ export default function DPOView({
   setSharedResolvedCards,
 }: DPOViewProps) {
 
-  // Core view state (tabs: 'Pending' | 'Appeals' | 'Resolved').
-  // DPO lands on Pending first, followed by Appeals and Resolved.
-  const [activeTab, setActiveTab] = useState<'Pending' | 'Resolved' | 'Appeals'>('Pending');
+  // Core view state. Tickets are never assigned to the DPO directly anymore, so
+  // the 'DPO' ("me") scope only ever shows 'Appeals' | 'Appeal Resolved'; the
+  // 'CDPO' scope additionally gets 'PendingClosure' (mirroring the CDPO's own
+  // screen); Supervisor/AWW scopes stay 'Pending' | 'Resolved'.
+  const [activeTab, setActiveTab] = useState<'Pending' | 'Resolved' | 'Appeals' | 'Appeal Resolved' | 'PendingClosure'>('Appeals');
   const [assignedFilter, setAssignedFilter] = useState<AssignedFilter>('DPO');
   const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
 
@@ -519,6 +560,11 @@ export default function DPOView({
   const [appliedStatuses, setAppliedStatuses] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('All');
+  // Pending-for-Closure only: which official resolved the ticket (CDPO scope only)
+  const [resolvedByFilter, setResolvedByFilter] = useState<'All' | 'Supervisor' | 'AWW'>('All');
+  // Appeals / Appeal Resolved only (DPO scope, where every role's appeals are
+  // mixed together): which official's original decision is under appeal.
+  const [officialFilter, setOfficialFilter] = useState<'All' | 'CDPO' | 'Supervisor' | 'AWW'>('All');
 
   // Reset filters
   const clearAllFilters = () => {
@@ -529,6 +575,8 @@ export default function DPOView({
     setAppliedStatuses([]);
     setSelectedCategory('All');
     setSourceFilter('All');
+    setResolvedByFilter('All');
+    setOfficialFilter('All');
   };
 
   const handleRoleSwitch = (role: AssignedFilter) => {
@@ -537,13 +585,21 @@ export default function DPOView({
     setSelectedSector('All Sectors');
     setSelectedAWC('All Centres');
     clearAllFilters();
-    // Appeals is DPO specific, switch back to Pending if switching roles
-    if (role !== 'DPO' && activeTab === 'Appeals') {
+    // Appeals / Appeal Resolved only exist under the 'DPO' ("me") scope; Pending /
+    // Resolved only exist for every other scope; Pending for Closure only exists
+    // under 'CDPO'. Snap the tab back in bounds whichever direction the scope switch goes.
+    if (role === 'DPO') {
+      if (activeTab === 'Pending' || activeTab === 'Resolved' || activeTab === 'PendingClosure') {
+        setActiveTab('Appeals');
+      }
+    } else if (activeTab === 'Appeals' || activeTab === 'Appeal Resolved') {
+      setActiveTab('Pending');
+    } else if (role !== 'CDPO' && activeTab === 'PendingClosure') {
       setActiveTab('Pending');
     }
   };
 
-  const handleTabChange = (tab: 'Pending' | 'Resolved' | 'Appeals') => {
+  const handleTabChange = (tab: 'Pending' | 'Resolved' | 'Appeals' | 'Appeal Resolved' | 'PendingClosure') => {
     setActiveTab(tab);
     clearAllFilters();
   };
@@ -664,72 +720,57 @@ export default function DPOView({
       return complaintRank(a.complaintType) - complaintRank(b.complaintType);
     });
 
-  // ─── 2. Resolved Tab List ───
-  const displayedResolved = (() => {
-    const directResolved = sharedResolvedCards.filter(t => {
-      if (t.assignedTo !== assignedFilter) return false;
-      return applyCommonFilters(t);
-    });
-
-    // Merge resolved appeals under Resolved tab when viewing DPO scope
-    if (assignedFilter === 'DPO') {
-      const resolvedAppeals = appealList
-        .filter(t => t.status === 'resolved')
-        .map(t => {
-          const card: ResolvedTicketCard = {
-            id: t.id,
-            ticketNumber: t.ticketNumber,
-            beneficiaryName: t.byName,
-            beneficiaryType: 'Beneficiary',
-            topic: t.title,
-            description: t.appealReason || t.originalDescription,
-            submittedDate: t.submittedDate || 'Submitted: 25/06/2025',
-            resolvedDate: 'Resolved: 30/06/2025',
-            daysLabel: 'Resolved',
-            daysType: 'resolved' as any,
-            isOverdue: false,
-            awcName: 'AWC 27305060101',
-            status: 'APPEAL_RESOLVED',
-            actionTaken: t.resolutionNotes || 'Appeal resolved successfully by DPO.',
-            assignedTo: t.roleLabel as AssignedFilter,
-            origin: t.origin,
-          };
-          return card;
-        })
-        .filter(applyCommonFilters);
-      return [...directResolved, ...resolvedAppeals];
-    }
-
-    return directResolved;
-  })().sort((a, b) => {
+  // ─── 2. Resolved Tab List ─── (CDPO/Supervisor/AWW scopes only — the DPO
+  // scope has no direct resolved queue of its own; see Appeal Resolved below.)
+  const displayedResolved = sharedResolvedCards.filter(t => {
+    if (t.assignedTo !== assignedFilter) return false;
+    // Tickets still awaiting the CDPO's closure sign-off live in the dedicated
+    // Pending for Closure tab, not here — same split as the CDPO's own screen.
+    if (assignedFilter === 'CDPO' && t.status === 'CLOSURE_PENDING') return false;
+    return applyCommonFilters(t);
+  }).sort((a, b) => {
     const ageDiff = getTicketAge(b.submittedDate) - getTicketAge(a.submittedDate);
     if (ageDiff !== 0) return ageDiff;
     return complaintRank(a.complaintType) - complaintRank(b.complaintType);
   });
 
-  // ─── 3. Appeals Tab List ───
+  // ─── 2b. Pending for Closure Tab List ─── (CDPO scope only, ported from the
+  // CDPO's own screen: tickets Supervisor/AWW have resolved but the CDPO hasn't
+  // formally closed yet. View-only here — closure itself happens in that screen.)
+  const displayedPendingClosure = sharedResolvedCards.filter(card => {
+    if (!card.awaitingCdpoClosure) return false;
+    if (card.assignedTo !== 'Supervisor' && card.assignedTo !== 'AWW') return false;
+    if (resolvedByFilter !== 'All' && card.assignedTo !== resolvedByFilter) return false;
+    if (!passesSource(card, sourceFilter)) return false;
+    if (selectedProject !== 'All Projects' && card.project !== selectedProject) return false;
+    if (selectedCategory !== 'All' && card.beneficiaryType !== selectedCategory) return false;
+    if (!passesDateFilter(card.resolvedDate ?? '', appliedDateOption)) return false;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      const match = card.ticketNumber.toLowerCase().includes(q) ||
+        card.beneficiaryName.toLowerCase().includes(q) ||
+        (card.description && card.description.toLowerCase().includes(q));
+      if (!match) return false;
+    }
+    return true;
+  }).sort((a, b) => {
+    const da = parseDateStr(a.resolvedDate ?? '')?.getTime() ?? Number.MAX_SAFE_INTEGER;
+    const db = parseDateStr(b.resolvedDate ?? '')?.getTime() ?? Number.MAX_SAFE_INTEGER;
+    return db - da;
+  });
+
+  // ─── 3. Appeals Tab List ─── (active / unresolved appeals awaiting DPO adjudication)
   const displayedAppeals = appealList.filter(appeal => {
-    if (assignedFilter !== 'DPO' && appeal.roleLabel !== assignedFilter) return false;
-    // Appeals tab only shows active / unresolved appeals
+    if (assignedFilter !== 'DPO') {
+      if (appeal.roleLabel !== assignedFilter) return false;
+    } else if (officialFilter !== 'All' && appeal.roleLabel !== officialFilter) {
+      return false;
+    }
     if (appeal.status === 'resolved') return false;
 
     if (!passesSource(appeal, sourceFilter)) return false;
 
-    // Category filter mapping
-    const categoryMap: Record<string, string> = {
-      'Kamla Devi': 'Pregnant Woman',
-      'Rekha Sharma': 'Lactating Mother',
-      'Dr. Suresh Mehta (PHC)': 'Children (6m-3y)',
-      'Geeta Sharma': 'Adolescent Girl',
-      'Sita Devi': 'Pregnant Woman',
-      'Radha Bai': 'Lactating Mother',
-      'Sunita Choudhary': 'Children (6m-3y)',
-      'Priyanka Sen': 'Adolescent Girl',
-      'Kiran Yadav': 'Pregnant Woman',
-      'Maya Sharma': 'Lactating Mother',
-      'Pooja Soni': 'Children 0-6 months',
-    };
-    const beneficiaryType = categoryMap[appeal.byName] || 'Beneficiary';
+    const beneficiaryType = APPEAL_CATEGORY_MAP[appeal.byName] || 'Beneficiary';
     if (selectedCategory !== 'All' && beneficiaryType !== selectedCategory) return false;
 
     // Complaint Types
@@ -752,15 +793,56 @@ export default function DPOView({
     return true;
   });
 
+  // ─── 4. Appeal Resolved Tab List ─── (appeals the DPO has already adjudicated,
+  // kept as a permanent audit trail — every role's resolved appeals are visible
+  // here since the DPO is the sole appellate authority across the district.)
+  const displayedAppealsResolved = appealList.filter(appeal => {
+    if (appeal.status !== 'resolved') return false;
+    if (officialFilter !== 'All' && appeal.roleLabel !== officialFilter) return false;
+
+    if (!passesSource(appeal, sourceFilter)) return false;
+
+    const beneficiaryType = APPEAL_CATEGORY_MAP[appeal.byName] || 'Beneficiary';
+    if (selectedCategory !== 'All' && beneficiaryType !== selectedCategory) return false;
+
+    // Complaint Types
+    if (appliedTypes.length > 0 && (!appeal.complaintType || !appliedTypes.includes(appeal.complaintType))) return false;
+
+    // Date Range (Resolution Date) — appeals resolved before this field existed
+    // fall back to the appeal-filed date so they still surface under a filter.
+    const rawResolvedDate = (appeal.resolvedDate ?? appeal.appealDate)?.replace(/Resolved:|Appeal Filed:/, '').trim() ?? '';
+    if (!passesDateFilter(rawResolvedDate, appliedDateOption)) return false;
+
+    // Search query matching (also checks resolution notes, unlike the Appeals tab)
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      const match = appeal.ticketNumber.toLowerCase().includes(q) ||
+        appeal.byName.toLowerCase().includes(q) ||
+        (appeal.title && appeal.title.toLowerCase().includes(q)) ||
+        (appeal.appealReason && appeal.appealReason.toLowerCase().includes(q)) ||
+        (appeal.resolutionNotes && appeal.resolutionNotes.toLowerCase().includes(q));
+      if (!match) return false;
+    }
+
+    return true;
+  }).sort((a, b) => {
+    // Most recently resolved first; undated legacy entries sink to the bottom.
+    const da = parseDateStr(a.resolvedDate?.replace('Resolved:', '').trim() ?? '')?.getTime() ?? 0;
+    const db = parseDateStr(b.resolvedDate?.replace('Resolved:', '').trim() ?? '')?.getTime() ?? 0;
+    return db - da;
+  });
+
   // Any change to scope, tab or a filter snaps the batched grids back to page one.
   const gridResetKey = [
     assignedFilter, activeTab, selectedProject, selectedSector, selectedAWC, searchQuery,
-    isOverdueOnly, appliedDateOption, appliedTypes.join(','), appliedStatuses.join(','), selectedCategory, sourceFilter,
+    isOverdueOnly, appliedDateOption, appliedTypes.join(','), appliedStatuses.join(','), selectedCategory, sourceFilter, resolvedByFilter, officialFilter,
   ].join('|');
 
   // Active filter count
   const activeFilterCount =
     (activeTab === 'Pending' && isOverdueOnly ? 1 : 0) +
+    (activeTab === 'PendingClosure' && resolvedByFilter !== 'All' ? 1 : 0) +
+    ((activeTab === 'Appeals' || activeTab === 'Appeal Resolved') && officialFilter !== 'All' ? 1 : 0) +
     (appliedDateOption ? 1 : 0) +
     (selectedCategory !== 'All' ? 1 : 0) +
     (sourceFilter !== 'All' ? 1 : 0) +
@@ -787,7 +869,7 @@ export default function DPOView({
     setAppealList(prev =>
       prev.map(a =>
         a.id === ticketId
-          ? { ...a, status: 'resolved', resolutionNotes: notes }
+          ? { ...a, status: 'resolved', resolutionNotes: notes, resolvedDate: 'Resolved: 30/06/2025' }
           : a
       )
     );
@@ -852,7 +934,7 @@ export default function DPOView({
             Review district complaints, audit Supervisor and Anganwadi Worker ticket resolutions, and resolve active appeals.
           </p>
         </div>
-        <div style={{ padding: '8px 16px', background: '#ffffff', border: '1px solid var(--border-color)', borderRadius: '8px', fontSize: '15px', fontWeight: 600 }}>
+        <div style={{ padding: '8px 16px', background: '#ffffff', border: '1px solid var(--border-color)', borderRadius: '8px', fontSize: '16px', fontWeight: 600 }}>
           District: <span style={{ color: 'var(--accent-saffron)' }}>Jaipur District</span>
         </div>
       </div>
@@ -862,7 +944,7 @@ export default function DPOView({
         <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--primary-deep)', letterSpacing: '0.5px', display: 'block' }}>
           Summary
         </span>
-        <p style={{ fontSize: '15px', color: 'var(--text-muted)', marginTop: '4px', marginBottom: '16px' }}>
+        <p style={{ fontSize: '16px', color: 'var(--text-muted)', marginTop: '4px', marginBottom: '16px' }}>
           Overview of pending grievances and resolved cases.
         </p>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '16px' }}>
@@ -870,16 +952,16 @@ export default function DPOView({
             <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
               <th style={{ textAlign: 'left', paddingBottom: '10px', fontWeight: 600, paddingLeft: '24px' }}></th>
               <th style={{ textAlign: 'right', paddingBottom: '10px', fontWeight: 600, width: '180px' }}>
-                <button onClick={() => setPendingModal(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--accent-saffron)', fontSize: '15px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: '2px', width: '100%' }}>
+                <button onClick={() => setPendingModal(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--accent-saffron)', fontSize: '16px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: '2px', width: '100%' }}>
                   PENDING ▼
                 </button>
               </th>
               <th style={{ textAlign: 'right', paddingBottom: '10px', fontWeight: 600, width: '180px' }}>
-                <button onClick={() => setResolvedModal(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--accent-green)', fontSize: '15px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: '2px', width: '100%' }}>
+                <button onClick={() => setResolvedModal(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--accent-green)', fontSize: '16px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: '2px', width: '100%' }}>
                   RESOLVED ▼
                 </button>
               </th>
-              <th style={{ textAlign: 'right', paddingBottom: '10px', fontWeight: 700, color: 'var(--primary-deep)', fontSize: '15px', paddingRight: '24px', width: '180px' }}>TOTAL</th>
+              <th style={{ textAlign: 'right', paddingBottom: '10px', fontWeight: 700, color: 'var(--primary-deep)', fontSize: '16px', paddingRight: '24px', width: '180px' }}>TOTAL</th>
             </tr>
           </thead>
           <tbody>
@@ -904,14 +986,14 @@ export default function DPOView({
             </tr>
           </tbody>
         </table>
-        <span style={{ display: 'block', textAlign: 'center', fontSize: '13px', color: 'var(--text-muted)', marginTop: '14px' }}>
+        <span style={{ display: 'block', textAlign: 'center', fontSize: '14px', color: 'var(--text-muted)', marginTop: '14px' }}>
           Tap PENDING or RESOLVED column for detailed breakdown
         </span>
       </div>
 
       {/* ── Assigned To Scope Switcher — Uniform row above main content area ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-        <span style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-muted)', flexShrink: 0 }}>Assigned To</span>
+        <span style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-muted)', flexShrink: 0 }}>Assigned To</span>
         <div style={{ display: 'flex', gap: 8 }}>
           {(['DPO', 'CDPO', 'Supervisor', 'AWW'] as AssignedFilter[]).map(role => (
             <button
@@ -922,7 +1004,7 @@ export default function DPOView({
                 border: `1.5px solid ${assignedFilter === role ? 'var(--primary-deep)' : 'var(--border-color)'}`,
                 background: assignedFilter === role ? 'var(--primary-deep)' : '#ffffff',
                 color: assignedFilter === role ? '#ffffff' : 'var(--text-dark)',
-                fontSize: 15, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
+                fontSize: 16, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
               }}
             >
               {role === 'DPO' ? 'me' : role}
@@ -933,7 +1015,7 @@ export default function DPOView({
         {/* CDPO Project filter */}
         {assignedFilter === 'CDPO' && (
           <select className="form-select" value={selectedProject} onChange={e => setSelectedProject(e.target.value)}
-            style={{ height: 38, padding: '0 32px 0 12px', fontSize: 15, fontWeight: 500, maxWidth: 180 }}>
+            style={{ height: 38, padding: '0 32px 0 12px', fontSize: 16, fontWeight: 500, maxWidth: 180 }}>
             {PROJECT_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
           </select>
         )}
@@ -942,11 +1024,11 @@ export default function DPOView({
         {assignedFilter === 'Supervisor' && (
           <>
             <select className="form-select" value={selectedProject} onChange={e => setSelectedProject(e.target.value)}
-              style={{ height: 38, padding: '0 32px 0 12px', fontSize: 15, fontWeight: 500, maxWidth: 180 }}>
+              style={{ height: 38, padding: '0 32px 0 12px', fontSize: 16, fontWeight: 500, maxWidth: 180 }}>
               {PROJECT_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
             </select>
             <select className="form-select" value={selectedSector} onChange={e => setSelectedSector(e.target.value)}
-              style={{ height: 38, padding: '0 32px 0 12px', fontSize: 15, fontWeight: 500, maxWidth: 180 }}>
+              style={{ height: 38, padding: '0 32px 0 12px', fontSize: 16, fontWeight: 500, maxWidth: 180 }}>
               {SECTOR_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
             </select>
           </>
@@ -956,15 +1038,15 @@ export default function DPOView({
         {assignedFilter === 'AWW' && (
           <>
             <select className="form-select" value={selectedProject} onChange={e => setSelectedProject(e.target.value)}
-              style={{ height: 38, padding: '0 32px 0 12px', fontSize: 15, fontWeight: 500, maxWidth: 180 }}>
+              style={{ height: 38, padding: '0 32px 0 12px', fontSize: 16, fontWeight: 500, maxWidth: 180 }}>
               {PROJECT_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
             </select>
             <select className="form-select" value={selectedSector} onChange={e => setSelectedSector(e.target.value)}
-              style={{ height: 38, padding: '0 32px 0 12px', fontSize: 15, fontWeight: 500, maxWidth: 180 }}>
+              style={{ height: 38, padding: '0 32px 0 12px', fontSize: 16, fontWeight: 500, maxWidth: 180 }}>
               {SECTOR_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
             </select>
             <select className="form-select" value={selectedAWC} onChange={e => setSelectedAWC(e.target.value)}
-              style={{ height: 38, padding: '0 32px 0 12px', fontSize: 15, fontWeight: 500, maxWidth: 210 }}>
+              style={{ height: 38, padding: '0 32px 0 12px', fontSize: 16, fontWeight: 500, maxWidth: 210 }}>
               {AWC_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
             </select>
           </>
@@ -977,9 +1059,9 @@ export default function DPOView({
         {/* Left Filter Sidebar */}
         <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-lg)', padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: 'var(--shadow-sm)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px' }}>
-            <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--primary-deep)' }}>Filter Options</h3>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--primary-deep)' }}>Filter Options</h3>
             {activeFilterCount > 0 && (
-              <span style={{ background: 'var(--primary-deep)', color: '#fff', borderRadius: '99px', padding: '2px 8px', fontSize: 13, fontWeight: 700 }}>
+              <span style={{ background: 'var(--primary-deep)', color: '#fff', borderRadius: '99px', padding: '2px 8px', fontSize: 14, fontWeight: 700 }}>
                 {activeFilterCount}
               </span>
             )}
@@ -995,7 +1077,7 @@ export default function DPOView({
                 onClick={() => setIsOverdueOnly(v => !v)}
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  padding: '8px 16px', borderRadius: '20px', fontSize: '15px', fontWeight: 600,
+                  padding: '8px 16px', borderRadius: '20px', fontSize: '16px', fontWeight: 600,
                   cursor: 'pointer', transition: 'all 0.2s',
                   background: isOverdueOnly ? 'var(--color-danger)' : 'var(--bg-main)',
                   color: isOverdueOnly ? '#fff' : 'var(--text-dark)',
@@ -1011,19 +1093,40 @@ export default function DPOView({
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Beneficiary Category</label>
             <select className="form-select" value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}
-              style={{ width: '100%', height: 40, padding: '0 32px 0 12px', fontSize: 15 }}>
+              style={{ width: '100%', height: 40, padding: '0 32px 0 12px', fontSize: 16 }}>
               <option value="All">Category: All</option>
               {BENEFICIARY_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
 
-          {/* Complaint Type checkboxes (Urgent / Corruption / General) */}
-          {activeTab !== 'Appeals' ? (
+          {/* Official — Appeals / Appeal Resolved only, DPO scope: which role's
+              original decision is under appeal (all roles are mixed together there). */}
+          {(activeTab === 'Appeals' || activeTab === 'Appeal Resolved') && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Official</label>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {(['All', 'CDPO', 'Supervisor', 'AWW'] as const).map(role => (
+                  <button key={role} onClick={() => setOfficialFilter(role)} style={{
+                    flex: '1 1 40%', padding: '7px 4px', borderRadius: 20, fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
+                    border: `1.5px solid ${officialFilter === role ? 'var(--primary-deep)' : 'var(--border-color)'}`,
+                    background: officialFilter === role ? 'var(--primary-deep)' : 'var(--bg-main)',
+                    color: officialFilter === role ? '#ffffff' : 'var(--text-dark)',
+                  }}>
+                    {role}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Complaint Type checkboxes (Urgent / Corruption / General) — not on
+              Pending for Closure, which filters by "Resolved By" instead. */}
+          {activeTab !== 'PendingClosure' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Complaint Type</label>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {COMPLAINT_TYPES.map(t => (
-                  <label key={t} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 15, cursor: 'pointer', padding: '4px 0' }}>
+                  <label key={t} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 16, cursor: 'pointer', padding: '4px 0' }}>
                     <input type="checkbox" checked={appliedTypes.includes(t)} onChange={() => setAppliedTypes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}
                       style={{ accentColor: 'var(--primary-deep)', width: 15, height: 15 }} />
                     <span style={{ color: appliedTypes.includes(t) ? 'var(--primary-deep)' : 'var(--text-dark)', fontWeight: appliedTypes.includes(t) ? 600 : 400 }}>{t}</span>
@@ -1031,16 +1134,22 @@ export default function DPOView({
                 ))}
               </div>
             </div>
-          ) : (
+          )}
+
+          {/* Resolved By — Pending for Closure only, mirrors the CDPO's own screen */}
+          {activeTab === 'PendingClosure' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Complaint Type</label>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                {['Urgent', 'Corruption', 'General'].map(t => (
-                  <label key={t} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 15, cursor: 'pointer', padding: '4px 0' }}>
-                    <input type="checkbox" checked={appliedTypes.includes(t)} onChange={() => setAppliedTypes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}
-                      style={{ accentColor: 'var(--primary-deep)', width: 15, height: 15 }} />
-                    <span style={{ color: appliedTypes.includes(t) ? 'var(--primary-deep)' : 'var(--text-dark)', fontWeight: appliedTypes.includes(t) ? 600 : 400 }}>{t}</span>
-                  </label>
+              <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Resolved By</label>
+              <div style={{ display: 'flex', gap: 6 }}>
+                {(['All', 'Supervisor', 'AWW'] as const).map(role => (
+                  <button key={role} onClick={() => setResolvedByFilter(role)} style={{
+                    flex: 1, padding: '7px 4px', borderRadius: 20, fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
+                    border: `1.5px solid ${resolvedByFilter === role ? 'var(--primary-deep)' : 'var(--border-color)'}`,
+                    background: resolvedByFilter === role ? 'var(--primary-deep)' : 'var(--bg-main)',
+                    color: resolvedByFilter === role ? '#ffffff' : 'var(--text-dark)',
+                  }}>
+                    {role}
+                  </button>
                 ))}
               </div>
             </div>
@@ -1052,7 +1161,7 @@ export default function DPOView({
             <div style={{ display: 'flex', gap: 6 }}>
               {([['All', 'All'], ['WEB', 'Web'], ['APP', 'App'], ['CALL_CENTRE', 'Call Centre']] as [SourceFilter, string][]).map(([val, lbl]) => (
                 <button key={val} onClick={() => setSourceFilter(val)} style={{
-                  flex: 1, padding: '7px 4px', borderRadius: 20, fontSize: 13.5, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
+                  flex: 1, padding: '7px 4px', borderRadius: 20, fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
                   border: `1.5px solid ${sourceFilter === val ? 'var(--primary-deep)' : 'var(--border-color)'}`,
                   background: sourceFilter === val ? 'var(--primary-deep)' : 'var(--bg-main)',
                   color: sourceFilter === val ? '#ffffff' : 'var(--text-dark)',
@@ -1066,7 +1175,7 @@ export default function DPOView({
           {/* Submission / Resolution Date */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, position: 'relative' }}>
             <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-              {activeTab === 'Resolved' ? 'Resolution Date' : 'Submission Date'}
+              {activeTab === 'Resolved' || activeTab === 'Appeal Resolved' || activeTab === 'PendingClosure' ? 'Resolution Date' : activeTab === 'Appeals' ? 'Appeal Date' : 'Submission Date'}
             </label>
             <button
               ref={dateButtonRef}
@@ -1105,22 +1214,35 @@ export default function DPOView({
           {/* Tab bar header */}
           <div className="search-filter-section" style={{ marginBottom: 0 }}>
             <div className="tabs-navigation" style={{ borderBottom: 'none', margin: 0 }}>
-              <button className={`tab-btn ${activeTab === 'Pending' ? 'active' : ''}`} onClick={() => handleTabChange('Pending')}>
-                Pending
-                <span className="tab-count">{displayedPending.length}</span>
-              </button>
-
-              {assignedFilter === 'DPO' && (
-                <button className={`tab-btn ${activeTab === 'Appeals' ? 'active' : ''}`} onClick={() => handleTabChange('Appeals')}>
-                  Appeals
-                  <span className="tab-count">{displayedAppeals.length}</span>
-                </button>
+              {assignedFilter === 'DPO' ? (
+                <>
+                  <button className={`tab-btn ${activeTab === 'Appeals' ? 'active' : ''}`} onClick={() => handleTabChange('Appeals')}>
+                    Appeals
+                    <span className="tab-count">{displayedAppeals.length}</span>
+                  </button>
+                  <button className={`tab-btn ${activeTab === 'Appeal Resolved' ? 'active' : ''}`} onClick={() => handleTabChange('Appeal Resolved')}>
+                    Appeal Resolved
+                    <span className="tab-count">{displayedAppealsResolved.length}</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button className={`tab-btn ${activeTab === 'Pending' ? 'active' : ''}`} onClick={() => handleTabChange('Pending')}>
+                    Pending
+                    <span className="tab-count">{displayedPending.length}</span>
+                  </button>
+                  {assignedFilter === 'CDPO' && (
+                    <button className={`tab-btn ${activeTab === 'PendingClosure' ? 'active' : ''}`} onClick={() => handleTabChange('PendingClosure')}>
+                      Pending for Closure
+                      <span className="tab-count">{displayedPendingClosure.length}</span>
+                    </button>
+                  )}
+                  <button className={`tab-btn ${activeTab === 'Resolved' ? 'active' : ''}`} onClick={() => handleTabChange('Resolved')}>
+                    Resolved
+                    <span className="tab-count">{displayedResolved.length}</span>
+                  </button>
+                </>
               )}
-
-              <button className={`tab-btn ${activeTab === 'Resolved' ? 'active' : ''}`} onClick={() => handleTabChange('Resolved')}>
-                Resolved
-                <span className="tab-count">{displayedResolved.length}</span>
-              </button>
             </div>
 
             <div className="search-input-wrapper" style={{ maxWidth: 260 }}>
@@ -1136,8 +1258,28 @@ export default function DPOView({
           {activeTab === 'Appeals' && (
             <div style={{ display: 'flex', gap: 10, background: 'var(--color-info-light)', borderRadius: 'var(--radius-md)', padding: '12px 14px', border: '1px solid var(--border-color)' }}>
               <Info size={15} style={{ color: 'var(--color-info)', flexShrink: 0, marginTop: 1 }} />
-              <p style={{ margin: 0, fontSize: 14.5, color: 'var(--text-dark)', lineHeight: 1.5 }}>
+              <p style={{ margin: 0, fontSize: 16, color: 'var(--text-dark)', lineHeight: 1.5 }}>
                 <strong>Appeals</strong> are grievances escalated by beneficiaries who are unsatisfied with the resolution. DPO acts as the Senior Redressal Authority to audit and resolve them.
+              </p>
+            </div>
+          )}
+
+          {/* Appeal Resolved Tab Info Box */}
+          {activeTab === 'Appeal Resolved' && (
+            <div style={{ display: 'flex', gap: 10, background: 'var(--accent-green-light)', borderRadius: 'var(--radius-md)', padding: '12px 14px', border: '1px solid var(--accent-green)' }}>
+              <ShieldCheck size={15} style={{ color: 'var(--accent-green)', flexShrink: 0, marginTop: 1 }} />
+              <p style={{ margin: 0, fontSize: 16, color: 'var(--text-dark)', lineHeight: 1.5 }}>
+                These are appeals you've already reviewed and resolved, kept here for your records.
+              </p>
+            </div>
+          )}
+
+          {/* Pending for Closure Tab Info Box */}
+          {activeTab === 'PendingClosure' && (
+            <div style={{ display: 'flex', gap: 10, background: '#fff8e1', borderRadius: 'var(--radius-md)', padding: '12px 14px', border: '1px solid #ffe082' }}>
+              <Clock size={15} style={{ color: '#f57f17', flexShrink: 0, marginTop: 1 }} />
+              <p style={{ margin: 0, fontSize: 16, color: 'var(--text-dark)', lineHeight: 1.5 }}>
+                Tickets the Supervisor or AWW have already resolved, waiting on the CDPO to formally close them. View only — closing happens from the CDPO's own screen.
               </p>
             </div>
           )}
@@ -1146,7 +1288,7 @@ export default function DPOView({
           {activeTab === 'Pending' && (assignedFilter === 'CDPO' || assignedFilter === 'Supervisor' || assignedFilter === 'AWW') && (
             <div style={{ display: 'flex', gap: 10, background: '#fff3e0', borderRadius: 'var(--radius-md)', padding: '12px 14px', border: '1px solid #ffcc80' }}>
               <Info size={15} style={{ color: '#e65100', flexShrink: 0, marginTop: 1 }} />
-              <p style={{ margin: 0, fontSize: 14.5, color: 'var(--text-dark)', lineHeight: 1.5 }}>
+              <p style={{ margin: 0, fontSize: 16, color: 'var(--text-dark)', lineHeight: 1.5 }}>
                 Showing only {assignedFilter} tickets <strong>escalated to DPO</strong> — those open for {ESCALATION_DAYS} days or more. These are <strong>view-only</strong>; the ticket stays with its original assignee.
               </p>
             </div>
@@ -1158,7 +1300,7 @@ export default function DPOView({
               <div style={{ padding: '64px 32px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-lg)', textAlign: 'center', color: 'var(--text-muted)' }}>
                 <Inbox size={48} style={{ opacity: 0.4, marginBottom: 16 }} />
                 <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600, color: 'var(--primary-deep)' }}>No Pending Grievances</h3>
-                <p style={{ fontSize: 15, marginTop: 4 }}>No pending tickets match the current filters.</p>
+                <p style={{ fontSize: 16, marginTop: 4 }}>No pending tickets match the current filters.</p>
               </div>
             ) : (
               <BatchedTicketGrid items={displayedPending} resetKey={gridResetKey}
@@ -1176,12 +1318,32 @@ export default function DPOView({
             )
           )}
 
+          {activeTab === 'PendingClosure' && (
+            displayedPendingClosure.length === 0 ? (
+              <div style={{ padding: '64px 32px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-lg)', textAlign: 'center', color: 'var(--text-muted)' }}>
+                <Inbox size={48} style={{ opacity: 0.4, marginBottom: 16 }} />
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600, color: 'var(--primary-deep)' }}>No Tickets Pending for Closure</h3>
+                <p style={{ fontSize: 16, marginTop: 4 }}>Tickets resolved by Supervisors and AWWs awaiting CDPO closure will appear here.</p>
+              </div>
+            ) : (
+              <BatchedTicketGrid items={displayedPendingClosure} resetKey={gridResetKey}
+                renderItem={ticket => (
+                  <ResolvedCard
+                    key={ticket.id}
+                    card={ticket}
+                    onView={() => setSelectedTicket(ticket)}
+                    showOwnerChip
+                  />
+                )} />
+            )
+          )}
+
           {activeTab === 'Resolved' && (
             displayedResolved.length === 0 ? (
               <div style={{ padding: '64px 32px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-lg)', textAlign: 'center', color: 'var(--text-muted)' }}>
                 <Inbox size={48} style={{ opacity: 0.4, marginBottom: 16 }} />
                 <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600, color: 'var(--primary-deep)' }}>No Resolved Tickets</h3>
-                <p style={{ fontSize: 15, marginTop: 4 }}>No resolved tickets match the current filters.</p>
+                <p style={{ fontSize: 16, marginTop: 4 }}>No resolved tickets match the current filters.</p>
               </div>
             ) : (
               <BatchedTicketGrid items={displayedResolved} resetKey={gridResetKey}
@@ -1200,7 +1362,7 @@ export default function DPOView({
               <div style={{ padding: '64px 32px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-lg)', textAlign: 'center', color: 'var(--text-muted)' }}>
                 <Inbox size={48} style={{ opacity: 0.4, marginBottom: 16 }} />
                 <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600, color: 'var(--primary-deep)' }}>No Appeal Grievances</h3>
-                <p style={{ fontSize: 15, marginTop: 4 }}>No active appeals match the current filters.</p>
+                <p style={{ fontSize: 16, marginTop: 4 }}>No active appeals match the current filters.</p>
               </div>
             ) : (
               <BatchedTicketGrid items={displayedAppeals} resetKey={gridResetKey} itemNoun="appeals"
@@ -1218,6 +1380,36 @@ export default function DPOView({
                       _isAppeal: true,
                       status: 'APPEAL_RAISED',
                     })}
+                    onViewDetails={() => setSelectedTicket({
+                      ...appeal,
+                      description: appeal.originalDescription,
+                      beneficiaryName: appeal.byName,
+                      beneficiaryType: 'Beneficiary',
+                      assignedTo: appeal.roleLabel,
+                      actionTaken: appeal.originalActionTaken,
+                      dpoActionTaken: appeal.resolutionNotes,
+                      _isAppeal: true,
+                      status: 'APPEAL_RESOLVED',
+                    })}
+                  />
+                )} />
+            )
+          )}
+
+          {activeTab === 'Appeal Resolved' && (
+            displayedAppealsResolved.length === 0 ? (
+              <div style={{ padding: '64px 32px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-lg)', textAlign: 'center', color: 'var(--text-muted)' }}>
+                <ShieldCheck size={48} style={{ opacity: 0.4, marginBottom: 16 }} />
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600, color: 'var(--primary-deep)' }}>No Resolved Appeals</h3>
+                <p style={{ fontSize: 16, marginTop: 4 }}>No resolved appeals match the current filters.</p>
+              </div>
+            ) : (
+              <BatchedTicketGrid items={displayedAppealsResolved} resetKey={gridResetKey} itemNoun="resolved appeals"
+                renderItem={appeal => (
+                  <AppealCard
+                    key={appeal.id}
+                    card={appeal}
+                    onResolve={() => {}}
                     onViewDetails={() => setSelectedTicket({
                       ...appeal,
                       description: appeal.originalDescription,

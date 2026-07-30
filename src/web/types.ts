@@ -89,6 +89,7 @@ export interface AppealTicket {
   status?: 'raised' | 'resolved';
   decision?: AppealDecision;
   resolutionNotes?: string;
+  resolvedDate?: string;
   complaintType?: 'Corruption' | 'Urgent' | 'General';
   originalActionTaken?: string;
   origin?: TicketOrigin;
