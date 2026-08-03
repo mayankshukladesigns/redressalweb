@@ -66,8 +66,6 @@ const APPEAL_CATEGORY_MAP: Record<string, string> = {
   'Pooja Soni': 'Children 0-6 months',
 };
 const REFERENCE_TODAY = new Date(2025, 5, 30);
-// A ticket is escalated to the DPO (view-only) once it has been open this long.
-const ESCALATION_DAYS = 14;
 
 // Helper function to parse dates
 function parseDateStr(str: string): Date | null {
@@ -483,7 +481,7 @@ const AppealCard = ({ card, onResolve, onViewDetails }: { card: AppealTicket; on
         )}
       </div>
 
-      {isResolved ? (
+      {isResolved && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {card.resolutionNotes && (
             <div style={{ background: '#f8fafc', border: '1px solid var(--border-color)', borderRadius: 6, padding: '8px 12px' }}>
@@ -502,12 +500,14 @@ const AppealCard = ({ card, onResolve, onViewDetails }: { card: AppealTicket; on
             </span>
           </div>
         </div>
-      ) : (
-        <button className="ux4g-btn ux4g-btn-primary ux4g-btn-md" style={{ width: '100%', display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--accent-green)', borderColor: 'var(--accent-green)' }}
-          onClick={e => { e.stopPropagation(); onResolve(); }}>
-          Resolve Appeal
-        </button>
       )}
+
+      {/* Same View Details CTA as every other ticket card — the appeal is acted on
+          from the details screen, not from the card. */}
+      <button className="ux4g-btn ux4g-btn-secondary ux4g-btn-md" style={{ width: '100%', display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center' }}
+        onClick={e => { e.stopPropagation(); (isResolved ? onViewDetails : onResolve)(); }}>
+        <Eye size={14} /> View Details
+      </button>
     </div>
   );
 };
@@ -704,11 +704,9 @@ export default function DPOView({
   // are surfaced here via the "Overdue Only" sidebar filter.
   const displayedPending = sharedPendingCards.filter(t => {
     if (t.assignedTo !== assignedFilter) return false;
-    // CDPO/Supervisor/AWW tickets only become visible to the DPO once they are escalated,
-    // which happens 14 days after creation. Before that they sit within the block/sector
-    // hierarchy and the district office has no view of them. Ownership never
-    // transfers on escalation — the DPO's access stays read-only.
-    if ((assignedFilter === 'CDPO' || assignedFilter === 'Supervisor' || assignedFilter === 'AWW') && getTicketAge(t.submittedDate) < ESCALATION_DAYS) return false;
+    // CDPO/Supervisor/AWW tickets are visible to the DPO from the moment they are
+    // assigned — the same visibility the CDPO has over its own hierarchy. Ownership
+    // never transfers, so the DPO's access to them stays read-only.
     return applyCommonFilters(t);
   })
     // Queue order: the closer a ticket is to breaching the 21-day SLA, the higher it
@@ -1284,12 +1282,12 @@ export default function DPOView({
             </div>
           )}
 
-          {/* Escalation notice — explains why this list is a subset of the summary count */}
+          {/* Visibility notice — DPO can monitor these queues but never act on them */}
           {activeTab === 'Pending' && (assignedFilter === 'CDPO' || assignedFilter === 'Supervisor' || assignedFilter === 'AWW') && (
             <div style={{ display: 'flex', gap: 10, background: '#fff3e0', borderRadius: 'var(--radius-md)', padding: '12px 14px', border: '1px solid #ffcc80' }}>
               <Info size={15} style={{ color: '#e65100', flexShrink: 0, marginTop: 1 }} />
               <p style={{ margin: 0, fontSize: 16, color: 'var(--text-dark)', lineHeight: 1.5 }}>
-                Showing only {assignedFilter} tickets <strong>escalated to DPO</strong> — those open for {ESCALATION_DAYS} days or more. These are <strong>view-only</strong>; the ticket stays with its original assignee.
+                Showing all pending {assignedFilter} tickets. These are <strong>view-only</strong>; resolution and closure stay with the assignee.
               </p>
             </div>
           )}

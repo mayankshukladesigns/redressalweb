@@ -3,7 +3,7 @@ import { TicketCard, ResolvedTicketCard, AppealTicket, OverdueTicket, TicketOrig
 // ─── SLA / overdue derivation ──────────────────────────────────────────────
 // A pending ticket's overdue state is derived from its submission date using
 // the same rules as the ticket-details timeline (see TicketDetailsScreen):
-//   • Reminder sent at 7 days, Escalated to DPO (view only) at 14 days — timeline only
+//   • Reminder sent at 7 days — timeline only
 //   • OVERDUE only at 21 days from creation — this is what drives the badge/flag
 // Reference "today" is fixed at 30 Jun 2025 to match the timeline and filters,
 // so cards, badges and the DPO overdue list never disagree with the timeline.

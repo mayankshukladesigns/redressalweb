@@ -132,14 +132,8 @@ export default function TicketDetailsScreen({
       items.push({ label: `Reminder Sent to ${assignedRole}`, date: fmt(eventDate(reminderDays), '10:30 AM'), dotColor: '#f57f17' });
     }
 
-    // DPO Escalation (after 14 days)
-    if (milestoneFired(14)) {
-      items.push({ label: 'Ticket Escalated to DPO (View Only)', date: fmt(eventDate(14), '02:00 PM'), dotColor: '#e65100' });
-    }
-
-    // Ticket Overdue (after 21 days). Tickets are never reassigned to DPO on
-    // breach — DPO only gets view-only visibility via the "Escalated to DPO"
-    // step above; ownership stays with the original assignee.
+    // Ticket Overdue (after 21 days). Tickets are never reassigned on breach —
+    // ownership stays with the original assignee.
     if (milestoneFired(21)) {
       items.push({ label: 'Ticket Overdue', date: fmt(eventDate(21), '05:00 PM'), dotColor: '#d32f2f' });
     }
@@ -561,8 +555,8 @@ export default function TicketDetailsScreen({
             (assignedFilter === 'CDPO' && isPending) ||
             (assignedFilter === 'CDPO' && isClosurePending) ||
             // DPO can only resolve & close tickets actually assigned to them, plus
-            // appeals. Overdue tickets escalated from CDPO/Supervisor/AWW are
-            // view-only for DPO — ownership never transfers on SLA breach.
+            // appeals. CDPO/Supervisor/AWW tickets are view-only for the DPO —
+            // ownership never transfers, however old the ticket gets.
             (assignedFilter === 'DPO' && isPending && currentCard.assignedTo === 'DPO') ||
             (assignedFilter === 'DPO' && isAppeal);
 
