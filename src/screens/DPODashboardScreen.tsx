@@ -922,19 +922,14 @@ export default function DPOView({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       
-      {/* Title & jurisdiction banner */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '30px', fontWeight: 700, color: 'var(--primary-deep)' }}>
-            Beneficiary Redressal
-          </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '16px', marginTop: '4px' }}>
-            Review district complaints, audit Supervisor and Anganwadi Worker ticket resolutions, and resolve active appeals.
-          </p>
-        </div>
-        <div style={{ padding: '8px 16px', background: '#ffffff', border: '1px solid var(--border-color)', borderRadius: '8px', fontSize: '16px', fontWeight: 600 }}>
-          District: <span style={{ color: 'var(--accent-saffron)' }}>Jaipur District</span>
-        </div>
+      {/* Title */}
+      <div>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '30px', fontWeight: 700, color: 'var(--primary-deep)' }}>
+          Beneficiary Redressal
+        </h1>
+        <p style={{ color: 'var(--text-muted)', fontSize: '16px', marginTop: '4px' }}>
+          Review district complaints, audit Supervisor and Anganwadi Worker ticket resolutions, and resolve active appeals.
+        </p>
       </div>
 
       {/* SUMMARY Table */}

@@ -297,22 +297,14 @@ export default function SupervisorScreen({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
-      {/* Title & jurisdiction banner */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '30px', fontWeight: 700, color: 'var(--primary-deep)' }}>
-            Beneficiary Redressal
-          </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '16px', marginTop: '4px' }}>
-            Track and resolve grievances raised by beneficiaries within your jurisdiction.
-          </p>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 16px', background: '#ffffff', border: '1px solid var(--border-color)', borderRadius: '8px', fontSize: '16px', fontWeight: 600 }}>
-          <span>Sector 1</span>
-          <span style={{ color: '#cbd5e1' }}>|</span>
-          <span>AWC 6</span>
-          <span style={{ marginLeft: '4px', fontSize: '14px', color: 'var(--text-muted)', letterSpacing: '0.5px' }}>JURISDICTION</span>
-        </div>
+      {/* Title */}
+      <div>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '30px', fontWeight: 700, color: 'var(--primary-deep)' }}>
+          Beneficiary Redressal
+        </h1>
+        <p style={{ color: 'var(--text-muted)', fontSize: '16px', marginTop: '4px' }}>
+          Track and resolve grievances raised by beneficiaries within your jurisdiction.
+        </p>
       </div>
 
       {/* SUMMARY Table */}

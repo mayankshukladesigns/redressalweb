@@ -616,20 +616,14 @@ export default function CDPOView({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
-      {/* Title + Project Badge */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 700, color: 'var(--primary-deep)' }}>
-            Beneficiary Redressal
-          </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: 16, marginTop: 4 }}>
-            Review project complaints, audit Supervisor and Anganwadi Worker ticket resolutions, and coordinate final closure approvals.
-          </p>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2, padding: '8px 16px', background: '#ffffff', border: '1px solid var(--border-color)', borderRadius: 8, fontSize: 16, fontWeight: 600 }}>
-          <span>Project: <span style={{ color: 'var(--accent-saffron)' }}>Sanganer</span></span>
-          <span style={{ fontSize: 14, color: 'var(--text-muted)', fontWeight: 500 }}>4 Sectors</span>
-        </div>
+      {/* Title */}
+      <div>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 700, color: 'var(--primary-deep)' }}>
+          Beneficiary Redressal
+        </h1>
+        <p style={{ color: 'var(--text-muted)', fontSize: 16, marginTop: 4 }}>
+          Review project complaints, audit Supervisor and Anganwadi Worker ticket resolutions, and coordinate final closure approvals.
+        </p>
       </div>
 
       {/* Summary Table */}
