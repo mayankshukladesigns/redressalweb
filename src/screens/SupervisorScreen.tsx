@@ -179,7 +179,6 @@ export default function SupervisorScreen({
 
   const scopedPendingCount  = pendingList.filter(matchesScope).length;
   const scopedResolvedCount = resolvedList.filter(matchesScope).length;
-  const awaitingClosureCount = resolvedList.filter((c) => c.awaitingCdpoClosure && matchesScope(c)).length;
 
   const isTicketOverdue  = (c: TicketCard) => c.daysType === 'overdue' || c.isOverdue;
   const supervisorOverdue = pendingList.filter(c => c.assignedTo === 'Supervisor' && isTicketOverdue(c)).length;
@@ -265,6 +264,13 @@ export default function SupervisorScreen({
     ? [...getFilteredTickets()].sort(byBreachRisk)
     : [...getFilteredTickets()].sort(byLatestResolutionDate);
 
+  // Counted from the list actually on screen rather than the whole queue, so the
+  // banner can never contradict the cards below it once a filter or search narrows
+  // the list.
+  const awaitingClosureCount = activeTab === 'Resolved'
+    ? filteredTickets.filter(t => t.awaitingCdpoClosure).length
+    : 0;
+
   // Any change to scope, tab or a filter snaps the batched grid back to page one.
   const gridResetKey = [
     activeTab, scopeFilter, selectedAWC, searchQuery, isOverdueOnly,
@@ -274,12 +280,15 @@ export default function SupervisorScreen({
   const handleResolveTicket = (ticketId: string, closureNote: string) => {
     const ticket = sharedPendingCards.find((t) => t.id === ticketId);
     if (ticket) {
+      // The Supervisor's note is their ATR. Closure is the CDPO's own act, so no
+      // closer or closure remark is recorded until they sign it off.
       const newCard: ResolvedTicketCard = {
         ...ticket,
         resolvedDate: 'Resolved: 30/06/2025',
         status: 'CLOSURE_PENDING',
         awaitingCdpoClosure: true,
         actionTaken: closureNote,
+        resolvedBy: 'Supervisor',
       };
       setSharedPendingCards((prev) => prev.filter((t) => t.id !== ticketId));
       setSharedResolvedCards((prev) => [newCard, ...prev]);

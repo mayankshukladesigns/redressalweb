@@ -732,6 +732,13 @@ export default function DPOView({
     return complaintRank(a.complaintType) - complaintRank(b.complaintType);
   });
 
+  // Counted from the list actually on screen rather than the whole queue, so the
+  // banner can never contradict the cards below it once a filter or search narrows
+  // the list. Supervisor/AWW resolutions sit here until the CDPO signs them off;
+  // in the CDPO scope they live in the Pending for Closure tab instead, so this
+  // is naturally zero there.
+  const awaitingClosureCount = displayedResolved.filter(c => c.awaitingCdpoClosure).length;
+
   // ─── 2b. Pending for Closure Tab List ─── (CDPO scope only, ported from the
   // CDPO's own screen: tickets Supervisor/AWW have resolved but the CDPO hasn't
   // formally closed yet. View-only here — closure itself happens in that screen.)
@@ -851,11 +858,15 @@ export default function DPOView({
   const handleResolveOverdue = (ticketId: string, closureNote: string) => {
     const ticket = sharedPendingCards.find(t => t.id === ticketId);
     if (ticket) {
+      // The DPO resolving their own ticket does both acts at once — same officer
+      // on both ends of the chain, so the ATR is the only note.
       const newCard: ResolvedTicketCard = {
         ...ticket,
         resolvedDate: 'Resolved: 30/06/2025',
         status: 'CLOSED',
         actionTaken: closureNote || 'Resolved & closed by DPO.',
+        resolvedBy: 'DPO',
+        closedBy: 'DPO',
       };
       setSharedPendingCards(prev => prev.filter(t => t.id !== ticketId));
       setSharedResolvedCards(prev => [newCard, ...prev]);
@@ -883,8 +894,11 @@ export default function DPOView({
               ? {
                   ...rc,
                   status: 'APPEAL_RESOLVED',
+                  // The DPO's decision is its own act — it sits alongside the
+                  // resolver's ATR and the closing remarks, never on top of them.
                   dpoActionTaken: notes,
-                  actionTaken: appeal.originalActionTaken || rc.actionTaken,
+                  actionTaken: rc.actionTaken || appeal.originalActionTaken || '',
+                  appealReason: rc.appealReason || appeal.appealReason,
                 }
               : rc
           )
@@ -903,6 +917,10 @@ export default function DPOView({
           resolvedDate: 'Resolved: 30/06/2025',
           status: 'APPEAL_RESOLVED',
           actionTaken: appeal.originalActionTaken || '',
+          resolvedBy: appeal.resolvedBy ?? (appeal.roleLabel as AssignedFilter),
+          closureNote: appeal.closureNote,
+          closedBy: appeal.closedBy,
+          appealReason: appeal.appealReason,
           dpoActionTaken: notes,
           awcName: 'Anganwadi Centre',
           complaintType: appeal.complaintType,
@@ -1274,6 +1292,16 @@ export default function DPOView({
               <p style={{ margin: 0, fontSize: 16, color: 'var(--text-dark)', lineHeight: 1.5 }}>
                 Tickets the Supervisor or AWW have already resolved, waiting on the CDPO to formally close them. View only — closing happens from the CDPO's own screen.
               </p>
+            </div>
+          )}
+
+          {/* Closure banner — how much of this resolved list is not actually closed
+              yet. Worded neutrally: the DPO watches this queue but the closure is
+              the CDPO's to make. */}
+          {activeTab === 'Resolved' && awaitingClosureCount > 0 && (
+            <div style={{ background: '#fff8e1', border: '1px solid #ffe082', borderRadius: 'var(--radius-md)', padding: '10px 16px', fontSize: 16, fontWeight: 600, color: '#f57f17', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span>⚠</span>
+              {awaitingClosureCount} ticket{awaitingClosureCount > 1 ? 's' : ''} awaiting CDPO closure
             </div>
           )}
 

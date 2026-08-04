@@ -555,7 +555,11 @@ export default function CDPOView({
   })
     .sort((a, b) => resolutionTime(b.resolvedDate) - resolutionTime(a.resolvedDate));
 
-  const awaitingClosureCount = allResolved.filter(c => c.awaitingCdpoClosure && c.assignedTo === 'Supervisor').length;
+  // Counted from the list actually on screen rather than the whole queue, so the
+  // banner can never contradict the cards below it once a filter or search narrows
+  // the list. Applies to every scope whose resolutions the CDPO signs off — both
+  // Supervisor and AWW — not just the Supervisor's.
+  const awaitingClosureCount = displayedResolved.filter(c => c.awaitingCdpoClosure).length;
   const showDocs = assignedFilter === 'CDPO';
   const isCdpoPending = assignedFilter === 'CDPO' && activeTab === 'Pending';
 
@@ -577,33 +581,49 @@ export default function CDPOView({
     appliedStatuses.length;
 
   // ── Action handlers ───────────────────────────────────────────────────────────
+  // The CDPO resolving their own ticket does both acts at once, so the same
+  // officer is recorded as resolver and closer and the ATR is the only note.
   const handleResolveTicket = (ticketId: string, closureNote: string) => {
     const ticket = sharedPendingCards.find(t => t.id === ticketId);
     if (ticket) {
-      const newCard: ResolvedTicketCard = { ...ticket, resolvedDate: 'Resolved: 30/06/2025', status: 'CLOSED', actionTaken: closureNote };
+      const newCard: ResolvedTicketCard = {
+        ...ticket,
+        resolvedDate: 'Resolved: 30/06/2025',
+        status: 'CLOSED',
+        actionTaken: closureNote,
+        resolvedBy: 'CDPO',
+        closedBy: 'CDPO',
+      };
       setSharedPendingCards(prev => prev.filter(t => t.id !== ticketId));
       setSharedResolvedCards(prev => [newCard, ...prev]);
     }
   };
 
+  // Closing a ticket someone else resolved is a separate act: the CDPO's remarks
+  // are stored in their own field so the resolver's ATR survives intact.
   const handleCloseTicket = (ticketId: string, note?: string) => {
     const ticket = sharedPendingCards.find(t => t.id === ticketId);
     if (ticket) {
-      const newCard: ResolvedTicketCard = { 
-        ...ticket, 
-        resolvedDate: 'Resolved: 30/06/2025', 
-        status: 'CLOSED', 
-        actionTaken: note || 'Ticket closed by CDPO.', 
-        awaitingCdpoClosure: false 
+      const newCard: ResolvedTicketCard = {
+        ...ticket,
+        resolvedDate: 'Resolved: 30/06/2025',
+        status: 'CLOSED',
+        actionTaken: ticket.actionTaken || '',
+        resolvedBy: ticket.resolvedBy || ticket.assignedTo,
+        closureNote: note || 'Resolution reviewed and accepted. Ticket closed at project level.',
+        closedBy: 'CDPO',
+        awaitingCdpoClosure: false,
       };
       setSharedPendingCards(prev => prev.filter(t => t.id !== ticketId));
       setSharedResolvedCards(prev => [newCard, ...prev]);
     } else {
-      setSharedResolvedCards(prev => prev.map(t => t.id === ticketId ? { 
-        ...t, 
-        status: 'CLOSED', 
-        actionTaken: note || t.actionTaken || 'Ticket closed by CDPO.', 
-        awaitingCdpoClosure: false 
+      setSharedResolvedCards(prev => prev.map(t => t.id === ticketId ? {
+        ...t,
+        status: 'CLOSED',
+        resolvedBy: t.resolvedBy || t.assignedTo,
+        closureNote: note || t.closureNote || 'Resolution reviewed and accepted. Ticket closed at project level.',
+        closedBy: 'CDPO',
+        awaitingCdpoClosure: false,
       } : t));
     }
   };
@@ -895,7 +915,7 @@ export default function CDPOView({
           </div>
 
           {/* Closure Banner */}
-          {activeTab === 'Resolved' && assignedFilter === 'Supervisor' && awaitingClosureCount > 0 && (
+          {activeTab === 'Resolved' && awaitingClosureCount > 0 && (
             <div style={{ background: '#fff8e1', border: '1px solid #ffe082', borderRadius: 'var(--radius-md)', padding: '10px 16px', fontSize: 16, fontWeight: 600, color: '#f57f17', display: 'flex', alignItems: 'center', gap: 8 }}>
               <span>⚠</span>
               {awaitingClosureCount} ticket{awaitingClosureCount > 1 ? 's' : ''} awaiting your closure — click a card to close

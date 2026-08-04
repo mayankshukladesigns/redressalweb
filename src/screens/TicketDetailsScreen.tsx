@@ -10,6 +10,16 @@ interface TicketDetailsProps {
   onResolveAppeal?: (ticketId: string, notes: string) => void;
 }
 
+// Shared label style for the resolution-chain blocks, so every act in the chain
+// is headed the same way regardless of which officer performed it.
+const fieldLabelStyle: React.CSSProperties = {
+  fontSize: '14px',
+  fontWeight: 700,
+  color: 'var(--text-muted)',
+  textTransform: 'uppercase',
+  letterSpacing: '0.5px',
+};
+
 // Status badge config — ported verbatim from the mobile app (my-app/src/screens/TicketDetailsScreen.tsx STATUS_CFG)
 const STATUS_CFG: Record<string, { label: string; color: string; bg: string; border: string; hasIcon: boolean }> = {
   PENDING:         { label: 'PENDING',         color: '#e65100', bg: '#fff3e0', border: '#ffcc80', hasIcon: false },
@@ -51,6 +61,19 @@ export default function TicketDetailsScreen({
   const isAppeal = currentCard.status === 'APPEAL_RAISED' || (currentCard._isAppeal && currentCard.status !== 'APPEAL_RESOLVED');
   const hasAppealReason = isAppeal || currentCard.status === 'APPEAL_RESOLVED';
   const isOverdue = isPending && (currentCard.isOverdue || currentCard.daysType === 'overdue');
+
+  // ── Resolution chain ────────────────────────────────────────────────────────
+  // Who did what: the resolver wrote the ATR, the closing officer signed it off.
+  // An AWW's or a Supervisor's resolution goes to the CDPO for closure, while a
+  // CDPO or DPO closes its own in the same action — one act, not two. A ticket
+  // still Pending for Closure has no closer yet, and that slot is shown as
+  // awaiting rather than left out, so the chain reads as incomplete, not skipped.
+  const resolverRole: string = currentCard.resolvedBy || currentCard.assignedTo || 'AWW';
+  const impliedCloser = resolverRole === 'AWW' || resolverRole === 'Supervisor' ? 'CDPO' : resolverRole;
+  const closerRole: string | undefined = isClosurePending ? undefined : (currentCard.closedBy || impliedCloser);
+  // Resolver and closer being the same officer means the ticket was resolved and
+  // closed in a single action, so it is recorded as one act rather than two.
+  const isSingleAct = !!closerRole && closerRole === resolverRole;
 
   // Grievance origin. Tickets predating this field are treated as web self-service,
   // which was the only channel before the call-centre flow existed.
@@ -138,39 +161,39 @@ export default function TicketDetailsScreen({
       items.push({ label: 'Ticket Overdue', date: fmt(eventDate(21), '05:00 PM'), dotColor: '#d32f2f' });
     }
 
-    // Resolution & closure steps once the ticket is no longer pending. Offsets are
-    // clamped by eventDate so they always fall after the milestones above.
+    // Resolution & closure steps once the ticket is no longer pending. The events
+    // come from the ticket's own resolution chain (`resolvedBy` / `closedBy`)
+    // rather than being inferred from who the ticket is assigned to, so a ticket
+    // resolved by an AWW and closed by the CDPO reads as two acts by two officers.
+    // Offsets are clamped by eventDate so they always fall after the milestones above.
     if (!isPending) {
       const closedOffset = resolvedOffset + 2;
       const appealOffset = resolvedOffset + 4;
 
-      if (currentCard.status === 'CLOSURE_PENDING') {
-        items.push({ label: `Ticket Resolved by ${assignedRole}`, date: fmt(eventDate(resolvedOffset), '03:00 PM'), dotColor: '#2e7d32' });
-      } else if (currentCard.status === 'CLOSED') {
-        if (assignedRole === 'DPO') {
-          items.push({ label: 'Ticket Resolved & Closed by DPO', date: fmt(eventDate(closedOffset), '10:00 AM'), dotColor: '#2e7d32' });
-        } else if (assignedRole === 'CDPO') {
-          items.push({ label: 'Ticket Resolved & Closed by CDPO', date: fmt(eventDate(closedOffset), '10:00 AM'), dotColor: '#2e7d32' });
-        } else {
-          items.push({ label: `Ticket Resolved by ${assignedRole}`, date: fmt(eventDate(resolvedOffset), '03:00 PM'), dotColor: '#2e7d32' });
-          items.push({ label: 'Ticket Closed by CDPO', date: fmt(eventDate(closedOffset), '10:00 AM'), dotColor: '#2e7d32' });
+      const pushResolutionAndClosure = () => {
+        // Still waiting on the CDPO. The timeline is a record of what has
+        // happened, so it ends at the resolution — no closure event is entered
+        // for a step that has not taken place. The ticket's PENDING FOR CLOSURE
+        // status is what says it is still outstanding.
+        if (currentCard.status === 'CLOSURE_PENDING' || !closerRole) {
+          items.push({ label: `Ticket Resolved by ${resolverRole}`, date: fmt(eventDate(resolvedOffset), '03:00 PM'), dotColor: '#2e7d32' });
+          return;
         }
-      } else if (currentCard.status === 'APPEAL_RAISED') {
-        if (assignedRole === 'CDPO') {
-          items.push({ label: 'Ticket Resolved & Closed by CDPO', date: fmt(eventDate(closedOffset), '10:00 AM'), dotColor: '#2e7d32' });
-        } else {
-          items.push({ label: `Ticket Resolved by ${assignedRole}`, date: fmt(eventDate(resolvedOffset), '03:00 PM'), dotColor: '#2e7d32' });
-          items.push({ label: 'Ticket Closed by CDPO', date: fmt(eventDate(closedOffset), '10:00 AM'), dotColor: '#2e7d32' });
+        // Same officer resolving and closing — one act, recorded as one event.
+        if (closerRole === resolverRole) {
+          items.push({ label: `Ticket Resolved & Closed by ${resolverRole}`, date: fmt(eventDate(closedOffset), '10:00 AM'), dotColor: '#2e7d32' });
+          return;
         }
+        items.push({ label: `Ticket Resolved by ${resolverRole}`, date: fmt(eventDate(resolvedOffset), '03:00 PM'), dotColor: '#2e7d32' });
+        items.push({ label: `Ticket Closed by ${closerRole}`, date: fmt(eventDate(closedOffset), '10:00 AM'), dotColor: '#2e7d32' });
+      };
+
+      pushResolutionAndClosure();
+
+      if (currentCard.status === 'APPEAL_RAISED' || currentCard.status === 'APPEAL_RESOLVED') {
         items.push({ label: 'Appeal Raised by Beneficiary', date: fmt(eventDate(appealOffset), '02:00 PM'), dotColor: '#f57f17' });
-      } else if (currentCard.status === 'APPEAL_RESOLVED') {
-        if (assignedRole === 'CDPO') {
-          items.push({ label: 'Ticket Resolved & Closed by CDPO', date: fmt(eventDate(closedOffset), '10:00 AM'), dotColor: '#2e7d32' });
-        } else {
-          items.push({ label: `Ticket Resolved by ${assignedRole}`, date: fmt(eventDate(resolvedOffset), '03:00 PM'), dotColor: '#2e7d32' });
-          items.push({ label: 'Ticket Closed by CDPO', date: fmt(eventDate(closedOffset), '10:00 AM'), dotColor: '#2e7d32' });
-        }
-        items.push({ label: 'Appeal Raised by Beneficiary', date: fmt(eventDate(appealOffset), '02:00 PM'), dotColor: '#f57f17' });
+      }
+      if (currentCard.status === 'APPEAL_RESOLVED') {
         items.push({ label: 'Appeal Resolved by DPO', date: fmt(eventDate(appealOffset + 5), '11:00 AM'), dotColor: '#1a237e' });
       }
     }
@@ -215,7 +238,9 @@ export default function TicketDetailsScreen({
 
     if (assignedFilter === 'Supervisor' && onResolveTicket) {
       onResolveTicket(currentCard.id, actionNote);
-      setCurrentCard((prev: any) => ({ ...prev, status: 'CLOSURE_PENDING', actionTaken: actionNote, resolvedDate: prev.resolvedDate || 'Resolved: 30/06/2025' }));
+      // The Supervisor's note is their ATR; closure is the CDPO's separate act,
+      // so no closer is recorded here.
+      setCurrentCard((prev: any) => ({ ...prev, status: 'CLOSURE_PENDING', actionTaken: actionNote, resolvedBy: 'Supervisor', closedBy: undefined, closureNote: undefined, resolvedDate: prev.resolvedDate || 'Resolved: 30/06/2025' }));
       setSuccessInfo({
         title: 'Ticket Resolved!',
         description: 'Your resolution has been submitted. The CDPO will review it and close the ticket.',
@@ -225,7 +250,9 @@ export default function TicketDetailsScreen({
     } else if (assignedFilter === 'CDPO') {
       if (isClosurePending && onCloseTicket) {
         onCloseTicket(currentCard.id, actionNote);
-        setCurrentCard((prev: any) => ({ ...prev, status: 'CLOSED' }));
+        // Closure remarks are the CDPO's own act — they are recorded alongside the
+        // resolver's ATR, never on top of it.
+        setCurrentCard((prev: any) => ({ ...prev, status: 'CLOSED', closureNote: actionNote, closedBy: 'CDPO', awaitingCdpoClosure: false }));
         setSuccessInfo({
           title: 'Ticket Closed!',
           description: 'The resolution has been accepted and the ticket is now closed.',
@@ -234,7 +261,9 @@ export default function TicketDetailsScreen({
         setShowSuccess(true);
       } else if (onResolveTicket) {
         onResolveTicket(currentCard.id, actionNote);
-        setCurrentCard((prev: any) => ({ ...prev, status: 'CLOSED', actionTaken: actionNote, resolvedDate: prev.resolvedDate || 'Resolved: 30/06/2025' }));
+        // The CDPO resolving their own ticket resolves and closes it in one act,
+        // so the same officer is recorded on both ends of the chain.
+        setCurrentCard((prev: any) => ({ ...prev, status: 'CLOSED', actionTaken: actionNote, resolvedBy: 'CDPO', closedBy: 'CDPO', resolvedDate: prev.resolvedDate || 'Resolved: 30/06/2025' }));
         setSuccessInfo({
           title: 'Ticket Closed!',
           description: 'The ticket has been resolved and closed. No further action is required.',
@@ -250,7 +279,8 @@ export default function TicketDetailsScreen({
         setShowAppealSuccess(true);
       } else if (onResolveTicket) {
         onResolveTicket(currentCard.id, actionNote);
-        setCurrentCard((prev: any) => ({ ...prev, status: 'CLOSED', actionTaken: actionNote, resolvedDate: prev.resolvedDate || 'Resolved: 30/06/2025' }));
+        // Same single act as the CDPO above, at district level.
+        setCurrentCard((prev: any) => ({ ...prev, status: 'CLOSED', actionTaken: actionNote, resolvedBy: 'DPO', closedBy: 'DPO', resolvedDate: prev.resolvedDate || 'Resolved: 30/06/2025' }));
         setSuccessInfo({
           title: 'Ticket Closed!',
           description: 'The ticket has been resolved and closed. No further action is required.',
@@ -472,50 +502,66 @@ export default function TicketDetailsScreen({
             </div>
           )}
 
-          {/* RESOLUTION DETAILS */}
-          {!isPending && currentCard.actionTaken && (
+          {/* RESOLUTION DETAILS — the whole chain, one block per act, each headed
+              by the officer who performed it: the resolver's ATR, the closing
+              officer's ATR, the beneficiary's appeal, and the DPO's decision.
+              Keeping them apart is the point — a later act must never overwrite
+              the account of an earlier one. Only acts that have actually happened
+              appear here; an outstanding step is reported by the timeline, which
+              is the one place that tracks what a ticket is still waiting on. */}
+          {!isPending && (currentCard.actionTaken || hasAppealReason) && (
             <div>
               <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-dark)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid #cbd5e1', paddingBottom: '8px', marginBottom: '12px' }}>
                 Resolution Details
               </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Action Taken Report (ATR)</span>
-                <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '6px', padding: '14px 16px', fontSize: '16px', color: '#166534', whiteSpace: 'pre-line', lineHeight: '1.4' }}>
-                  {currentCard.actionTaken}
-                </div>
-              </div>
-            </div>
-          )}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
-          {/* APPEAL RAISED (Appeal Reason) — shown after the original resolution, before the DPO's appeal resolution.
-              Stays visible once the appeal is resolved too, since it's the record of why the appeal was filed. */}
-          {hasAppealReason && (
-            <div>
-              <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-dark)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid #cbd5e1', paddingBottom: '8px', marginBottom: '12px' }}>
-                Appeal Raised
-              </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Appeal Reason</span>
-                <div style={{ background: '#fff3e0', border: '1px solid #ffcc80', borderRadius: '6px', padding: '14px 16px', fontSize: '16px', color: '#e65100', whiteSpace: 'pre-line', lineHeight: '1.4' }}>
-                  {currentCard.appealReason || 'Beneficiary is unsatisfied with the resolution steps taken by the officer.'}
-                </div>
-              </div>
-            </div>
-          )}
+                {/* The resolver's Action Taken Report */}
+                {currentCard.actionTaken && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <span style={fieldLabelStyle}>Action Taken Report (ATR) by {resolverRole}</span>
+                    <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '6px', padding: '14px 16px', fontSize: '16px', color: '#166534', whiteSpace: 'pre-line', lineHeight: '1.4' }}>
+                      {currentCard.actionTaken}
+                    </div>
+                  </div>
+                )}
 
-          {/* APPEAL RESOLUTION — only once the DPO has actually resolved the
-              appeal. While it's merely raised (APPEAL_RAISED) there is no
-              DPO action to show yet, so this section stays hidden. */}
-          {!isPending && currentCard.status === 'APPEAL_RESOLVED' && (
-            <div>
-              <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-dark)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid #cbd5e1', paddingBottom: '8px', marginBottom: '12px' }}>
-                Appeal Resolution
-              </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Action Taken By DPO</span>
-                <div style={{ background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: '6px', padding: '14px 16px', fontSize: '16px', color: '#5b21b6', whiteSpace: 'pre-line', lineHeight: '1.4' }}>
-                  {currentCard.dpoActionTaken || 'Appeal resolved in favour of existing resolution.'}
-                </div>
+                {/* The closing officer's own ATR — a separate act by a different
+                    officer, so it gets its own block. Nothing is shown while the
+                    ticket is still awaiting closure: there is no report to show
+                    until the closing officer writes one. Suppressed too when the
+                    resolver closed their own ticket in the same action, since
+                    that is one act, not two. */}
+                {!isClosurePending && !isSingleAct && currentCard.closureNote && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <span style={fieldLabelStyle}>Action Taken Report (ATR) by {closerRole}</span>
+                    <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '6px', padding: '14px 16px', fontSize: '16px', color: '#1e40af', whiteSpace: 'pre-line', lineHeight: '1.4' }}>
+                      {currentCard.closureNote}
+                    </div>
+                  </div>
+                )}
+
+                {/* Why the beneficiary appealed. Stays visible once the appeal is
+                    decided too — it's the record of what the DPO was asked to review. */}
+                {hasAppealReason && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <span style={fieldLabelStyle}>Appeal Reason by Beneficiary</span>
+                    <div style={{ background: '#fff3e0', border: '1px solid #ffcc80', borderRadius: '6px', padding: '14px 16px', fontSize: '16px', color: '#e65100', whiteSpace: 'pre-line', lineHeight: '1.4' }}>
+                      {currentCard.appealReason || 'Beneficiary is unsatisfied with the resolution steps taken by the officer.'}
+                    </div>
+                  </div>
+                )}
+
+                {/* The DPO's decision — only once the appeal has actually been
+                    decided. While it is merely raised there is nothing to show. */}
+                {currentCard.status === 'APPEAL_RESOLVED' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <span style={fieldLabelStyle}>Action Taken by DPO</span>
+                    <div style={{ background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: '6px', padding: '14px 16px', fontSize: '16px', color: '#5b21b6', whiteSpace: 'pre-line', lineHeight: '1.4' }}>
+                      {currentCard.dpoActionTaken || 'Appeal resolved in favour of existing resolution.'}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}

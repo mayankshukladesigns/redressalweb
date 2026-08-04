@@ -1038,6 +1038,74 @@ function withAppealOrigin(a: AppealTicket): AppealTicket {
 
 export const initialPendingCards: TicketCard[] = rawPendingCards.map(deriveSlaFields).map(withOrigin);
 
+// ─── Resolution chain derivation ───────────────────────────────────────────────
+// Every resolved ticket carries the resolver's ATR; who closed it follows from the
+// workflow rather than being authored per ticket. An AWW's or a Supervisor's
+// resolution goes to the CDPO for closure, while a CDPO or DPO closes its own in
+// the same action. CLOSURE_PENDING has no closer and therefore no closing ATR —
+// the details drawer shows nothing for that act and the timeline reports it as
+// outstanding, so the awaiting state is stated once rather than in two places.
+type ChainRole = NonNullable<TicketCard['closedBy']>;
+
+function closerFor(resolver: ChainRole): ChainRole {
+  return resolver === 'AWW' || resolver === 'Supervisor' ? 'CDPO' : resolver;
+}
+
+// Closure lands two days after the resolution, matching the timeline's closure
+// milestone. Appeals pass a negative offset instead, since the closure they are
+// appealing against necessarily happened before the appeal was filed. Clamped to
+// the fixed reference "today" so no ticket cites a closure date in the future.
+function closureDateFor(baseDate: string | undefined, offsetDays: number): string {
+  const m = (baseDate || '').match(/(\d{2})\/(\d{2})\/(\d{4})/);
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  if (!m) return '30 Jun 2025';
+  const base = new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+  const shifted = base.getTime() + offsetDays * 86400000;
+  const d = new Date(Math.min(shifted, REFERENCE_TODAY.getTime()));
+  return `${String(d.getDate()).padStart(2, '0')} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+// Deliberately records only what the closing officer did — verifying the ATR and
+// signing it off. It must not claim the beneficiary was satisfied: a good number
+// of these tickets are the ones that go on to be appealed.
+function closureRemarkFor(resolver: ChainRole, closer: ChainRole, baseDate: string | undefined, offsetDays: number): string {
+  const on = closureDateFor(baseDate, offsetDays);
+  if (resolver === closer) {
+    // Same officer resolving and closing — one act, so the drawer shows only the
+    // ATR. The remark is still recorded for the audit trail.
+    return `Resolved and closed in the same action by ${closer} on ${on}. No further follow-up required.`;
+  }
+  return `ATR submitted by ${resolver} reviewed at project level and found in order. Supporting register entries verified on ${on} and the ticket closed by ${closer}.`;
+}
+
+function withResolutionChain<T extends ResolvedTicketCard>(card: T): T {
+  const resolver = (card.resolvedBy || card.assignedTo || 'AWW') as ChainRole;
+  // Still waiting on the CDPO's sign-off: there is a resolver but no closer yet.
+  if (card.status === 'CLOSURE_PENDING') {
+    return { ...card, resolvedBy: resolver, closedBy: undefined, closureNote: undefined };
+  }
+  const closer = (card.closedBy || closerFor(resolver)) as ChainRole;
+  return {
+    ...card,
+    resolvedBy: resolver,
+    closedBy: closer,
+    closureNote: card.closureNote || closureRemarkFor(resolver, closer, card.resolvedDate, 2),
+  };
+}
+
+// An appealed grievance was resolved and closed before the beneficiary appealed,
+// so it carries the same chain as any other closed ticket.
+function withAppealChain(a: AppealTicket): AppealTicket {
+  const resolver = (a.resolvedBy || a.roleLabel || 'AWW') as ChainRole;
+  const closer = (a.closedBy || closerFor(resolver)) as ChainRole;
+  return {
+    ...a,
+    resolvedBy: resolver,
+    closedBy: closer,
+    closureNote: a.closureNote || closureRemarkFor(resolver, closer, a.appealDate?.replace('Appeal Filed:', ''), -2),
+  };
+}
+
 // ─── PAN-India scale simulation: generated closure queue ───────────────────────
 // Generates `count` Supervisor/AWW-resolved tickets awaiting CDPO closure, split
 // evenly between the two roles. A seeded PRNG keeps the data identical on every
@@ -1202,6 +1270,7 @@ const rawResolvedCards: ResolvedTicketCard[] = [
     project: 'Sanganer',
     sector: 'Sector 1',
     assignedTo: 'AWW',
+    appealReason: 'Ticket was marked resolved on the basis of an escalation note alone. Seven working days have passed and I have received no communication about the vocational training batch.',
   },
   {
     id: 'r4',
@@ -1225,7 +1294,8 @@ const rawResolvedCards: ResolvedTicketCard[] = [
     project: 'Project Alpha',
     sector: 'Sector 1',
     assignedTo: 'Supervisor',
-    dpoActionTaken: 'Appeal reviewed on 12 Jul 2025. Vaccination records verified at PHC Ramgarh — DPT booster and OPV confirmed administered on 01 Jul 2025. Immunisation card entries are accurate and complete. Resolution by AWW upheld. Appeal resolved in favour of existing resolution by AWW Priya Mehta.',
+    appealReason: 'The sub-centre was shut on the scheduled date and no one informed us. The dose was finally given only after I complained again — no action was taken on the staff who stayed absent.',
+    dpoActionTaken: 'Appeal reviewed on 12 Jul 2025. Vaccination records verified at PHC Ramgarh — DPT booster and OPV confirmed administered on 01 Jul 2025. Immunisation card entries are accurate and complete. Resolution by the Supervisor upheld; separately, an explanation has been sought from the sub-centre staff for the unannounced closure.',
   },
   {
     id: 'r5',
@@ -1394,13 +1464,14 @@ const rawResolvedCards: ResolvedTicketCard[] = [
     beneficiaryName: 'Neetu Chandra',
     beneficiaryType: 'Lactating Mother',
     topic: 'Growth Monitoring',
-    description: 'CDPO resolved. Appeal under review by DPO.',
+    description: 'Infant weight not recorded for three consecutive months and growth chart never shared with the mother',
     submittedDate: 'Submitted: 16/06/2025',
     daysLabel: 'Resolved',
     daysType: 'remaining',
     resolvedDate: 'Resolved: 25/06/2025',
     status: 'APPEAL_RAISED',
-    actionTaken: 'CDPO resolved. Appeal under review by DPO.',
+    actionTaken: 'Growth register inspected at AWC 27305060105. Three missed weighing entries traced to a faulty scale, since replaced from block stock. Infant weighed on 25 Jun 2025 and entries updated on the POSHAN tracker.',
+    appealReason: 'The weight was recorded once for the register and nothing since. I was never given a growth chart, and no one explained why three months went unrecorded.',
     awcName: 'AWC 27305060105',
     helpTopic: 'Growth Monitoring',
     subTopic: 'Weight Recording',
@@ -1417,13 +1488,14 @@ const rawResolvedCards: ResolvedTicketCard[] = [
     beneficiaryName: 'Chitra Singh',
     beneficiaryType: 'Pregnant Woman',
     topic: 'Urgent',
-    description: 'Appeal resolved by DPO. Resolution upheld.',
+    description: 'No emergency transport arranged for a high-risk pregnancy referral despite repeated calls to the centre',
     submittedDate: 'Submitted: 14/06/2025',
     daysLabel: 'Resolved',
     daysType: 'remaining',
     resolvedDate: 'Resolved: 24/06/2025',
     status: 'APPEAL_RESOLVED',
-    actionTaken: 'Appeal resolved by DPO. Resolution upheld.',
+    actionTaken: 'Referral coordinated with PHC Sanganer and 108 ambulance dispatched on 24 Jun 2025. Beneficiary admitted the same day. Centre staff briefed on the emergency referral protocol.',
+    appealReason: 'Transport came only after four days of calling and after I arranged a private vehicle myself. The delay put my pregnancy at risk and no one has been held answerable for it.',
     awcName: 'AWC 27305060106',
     helpTopic: 'Urgent',
     subTopic: 'Emergency Service',
@@ -1433,6 +1505,7 @@ const rawResolvedCards: ResolvedTicketCard[] = [
     project: 'Sanganer',
     sector: 'Sector 2',
     assignedTo: 'CDPO',
+    dpoActionTaken: 'Appeal reviewed on 28 Jun 2025. PHC referral slip and 108 dispatch log confirm the ambulance reached the beneficiary on 24 Jun 2025, but the four-day delay between the first call and dispatch is established. Resolution upheld on the medical outcome; the centre has been issued a written warning for the delay and the referral register will be audited monthly for the next quarter.',
   },
   {
     id: 'r16',
@@ -1479,6 +1552,7 @@ const rawResolvedCards: ResolvedTicketCard[] = [
     project: 'Sanganer',
     sector: 'Sector 3',
     assignedTo: 'Supervisor',
+    appealReason: 'Resubmitting the claim on the portal is not a resolution. Two months on, the second installment has still not been credited to my account and no one is tracking it.',
   },
   {
     id: 'r18',
@@ -1527,6 +1601,7 @@ const rawResolvedCards: ResolvedTicketCard[] = [
     project: 'Sanganer',
     sector: 'Sector 3',
     assignedTo: 'AWW',
+    appealReason: 'The register shows a kit issued in my name but I received only a part of it, and nothing at all in the month before. I want the issuance checked against what was actually handed over.',
   },
   {
     id: 'r20',
@@ -1629,7 +1704,7 @@ const rawResolvedCards: ResolvedTicketCard[] = [
   ...generateClosureQueue(300),
 ];
 
-export const initialResolvedCards: ResolvedTicketCard[] = rawResolvedCards.map(withOrigin);
+export const initialResolvedCards: ResolvedTicketCard[] = rawResolvedCards.map(withOrigin).map(withResolutionChain);
 
 // ─── PAN-India scale simulation: generated appeals ─────────────────────────────
 // Appeals filed by beneficiaries who are unsatisfied with a CDPO/Supervisor/AWW
@@ -1800,4 +1875,4 @@ const rawAppealTickets: AppealTicket[] = [
   ...generateAppeals(100),
 ];
 
-export const initialAppealTickets: AppealTicket[] = rawAppealTickets.map(withAppealOrigin);
+export const initialAppealTickets: AppealTicket[] = rawAppealTickets.map(withAppealOrigin).map(withAppealChain);

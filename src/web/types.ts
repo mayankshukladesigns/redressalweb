@@ -47,9 +47,20 @@ export interface TicketCard {
   title?: string;
   byName?: string;
   documents?: string;
-  actionTaken?: string;
   awaitingCdpoClosure?: boolean;
   origin?: TicketOrigin;
+
+  // ── Resolution chain ────────────────────────────────────────────────────────
+  // A closed grievance is the record of up to four separate acts, each owned by a
+  // different officer. They are stored in four separate fields so no act can
+  // overwrite another — the closing officer's remarks must never replace the
+  // resolver's ATR, which is the only account of what was actually done.
+  actionTaken?: string;      // the resolver's Action Taken Report
+  resolvedBy?: AssignedFilter; // officer who wrote the ATR
+  closureNote?: string;      // the closing officer's own remarks
+  closedBy?: AssignedFilter; // officer who formally closed it; absent while CLOSURE_PENDING
+  appealReason?: string;     // the beneficiary's reason for appealing
+  dpoActionTaken?: string;   // the DPO's decision on the appeal
 }
 
 export interface ResolvedTicketCard extends TicketCard {
@@ -57,7 +68,6 @@ export interface ResolvedTicketCard extends TicketCard {
   status: ResolvedStatus;
   actionTaken: string;
   awaitingCdpoClosure?: boolean;
-  dpoActionTaken?: string;
 }
 
 export interface OverdueTicket {
@@ -93,4 +103,10 @@ export interface AppealTicket {
   complaintType?: 'Corruption' | 'Urgent' | 'General';
   originalActionTaken?: string;
   origin?: TicketOrigin;
+  // Same chain as TicketCard: the appealed grievance was resolved by `roleLabel`
+  // and closed before the beneficiary appealed, so the details drawer can show
+  // that history alongside the appeal itself.
+  resolvedBy?: AssignedFilter;
+  closedBy?: AssignedFilter;
+  closureNote?: string;
 }
