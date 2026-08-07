@@ -1223,6 +1223,7 @@ const rawResolvedCards: ResolvedTicketCard[] = [
     project: 'Sanganer',
     sector: 'Sector 1',
     assignedTo: 'AWW',
+    feedback: { satisfied: true, rating: 'Good', submittedOn: '24 Jun 2025' },
   },
   {
     id: 'r2',
@@ -1319,6 +1320,7 @@ const rawResolvedCards: ResolvedTicketCard[] = [
     project: 'Sanganer',
     sector: 'Sector 2',
     assignedTo: 'CDPO',
+    feedback: { satisfied: true, rating: 'Average', submittedOn: '12 Jun 2025' },
   },
   {
     id: 'r6',
@@ -1342,6 +1344,12 @@ const rawResolvedCards: ResolvedTicketCard[] = [
     project: 'Sanganer',
     sector: 'Sector 4',
     assignedTo: 'AWW',
+    feedback: {
+      satisfied: true,
+      rating: 'Poor',
+      comment: 'The records were updated as promised, but only after I followed up at the centre three times. Please keep the monthly weighing on schedule so I do not have to chase it again.',
+      submittedOn: '29 Jun 2025',
+    },
   },
   {
     id: 'r7',
@@ -1365,7 +1373,11 @@ const rawResolvedCards: ResolvedTicketCard[] = [
     project: 'Sanganer',
     sector: 'Sector 1',
     assignedTo: 'CDPO',
+    feedback: { satisfied: true, rating: 'Good', submittedOn: '30 Jun 2025' },
   },
+  // Closed the same day as the reference "today" and carries no feedback yet —
+  // responding is voluntary and takes the beneficiary a day or two, so the details
+  // drawer has to read correctly with the feedback block absent.
   {
     id: 'r10',
     ticketNumber: 'Ticket# 787868 898960',
@@ -1411,6 +1423,7 @@ const rawResolvedCards: ResolvedTicketCard[] = [
     project: 'Sanganer',
     sector: 'Sector 4',
     assignedTo: 'CDPO',
+    feedback: { satisfied: true, rating: 'Average', submittedOn: '30 Jun 2025' },
   },
   {
     id: 'r12',
@@ -1434,6 +1447,7 @@ const rawResolvedCards: ResolvedTicketCard[] = [
     project: 'Sanganer',
     sector: 'Sector 3',
     assignedTo: 'CDPO',
+    feedback: { satisfied: true, rating: 'Good', submittedOn: '30 Jun 2025' },
   },
   {
     id: 'r13',
@@ -1457,6 +1471,12 @@ const rawResolvedCards: ResolvedTicketCard[] = [
     project: 'Sanganer',
     sector: 'Sector 1',
     assignedTo: 'CDPO',
+    feedback: {
+      satisfied: true,
+      rating: 'Poor',
+      comment: 'The enquiry was done and I was told the outcome, but it took four visits to the centre before anyone would listen to me. Reporting something like this should not be this hard.',
+      submittedOn: '30 Jun 2025',
+    },
   },
   {
     id: 'r14',
@@ -1529,6 +1549,7 @@ const rawResolvedCards: ResolvedTicketCard[] = [
     project: 'Sanganer',
     sector: 'Sector 2',
     assignedTo: 'Supervisor',
+    feedback: { satisfied: true, rating: 'Average', submittedOn: '26 Jun 2025' },
   },
   {
     id: 'r17',
@@ -1869,6 +1890,21 @@ const rawAppealTickets: AppealTicket[] = [
     byName: 'Sita Devi',
     complaintType: 'General',
     originalActionTaken: 'Placed procurement order for weighing scales and height boards with central stores.',
+    status: 'raised',
+  },
+  {
+    id: 'a6',
+    ticketNumber: 'Ticket# CDPO 000998',
+    roleLabel: 'CDPO',
+    title: 'Delay in SNP Grain Distribution & False Audit Entry',
+    originalDescription: 'Supplementary Nutrition Programme (SNP) grain allocation not received at AWC for over two months.',
+    appealReason: 'CDPO closed ticket stating grains delivered on 28 May 2025. Verification at AWC stock register shows zero balance.',
+    submittedDate: 'Submitted: 20/05/2025',
+    appealDate: 'Appeal Filed: 02/06/2025',
+    documents: '3 documents',
+    byName: 'Pooja Devi',
+    complaintType: 'Corruption',
+    originalActionTaken: 'Stock register inspected at project warehouse. Transport challan verified for delivery.',
     status: 'raised',
   },
   // PAN-India scale simulation: 100 additional appeals awaiting DPO adjudication.

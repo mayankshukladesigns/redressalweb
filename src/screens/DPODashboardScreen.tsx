@@ -3,6 +3,8 @@ import { TicketCard, ResolvedTicketCard, AppealTicket } from '../web/types';
 import { initialAppealTickets } from '../web/mockData';
 import TicketDetailsScreen from './TicketDetailsScreen';
 import BatchedTicketGrid from '../components/BatchedTicketGrid';
+import FeedbackChip from '../components/FeedbackChip';
+import { isTicketOverdue, overdueLabel, isAppealOverdue } from '../web/sla';
 import {
   Search,
   AlertTriangle,
@@ -239,25 +241,30 @@ const PendingBreakdownModal = ({
 };
 
 // Resolved Breakdown Modal
+// The DPO is deliberately absent from every count here. No grievance is ever
+// assigned to the DPO directly — they arrive with the CDPO, the Supervisor or the
+// AWW — so a DPO row would read zero on every card and every status. What the DPO
+// actually owns is the appeal stage, which is explained in the note at the foot of
+// the modal rather than implied by an empty row.
 const ResolvedBreakdownModal = ({
   open, onClose, byRole, byStatus,
 }: {
   open: boolean; onClose: () => void;
-  byRole: { dpo: number; cdpo: number; sup: number; aww: number };
+  byRole: { cdpo: number; sup: number; aww: number };
   byStatus: {
-    closurePending: { dpo: number; cdpo: number; sup: number; aww: number };
-    closed: { dpo: number; cdpo: number; sup: number; aww: number };
-    appealRaised: { dpo: number; cdpo: number; sup: number; aww: number };
-    appealResolved: { dpo: number; cdpo: number; sup: number; aww: number };
+    closurePending: { cdpo: number; sup: number; aww: number };
+    closed: { cdpo: number; sup: number; aww: number };
+    appealRaised: { cdpo: number; sup: number; aww: number };
+    appealResolved: { cdpo: number; sup: number; aww: number };
   };
 }) => {
   if (!open) return null;
-  const totalResolved = byRole.dpo + byRole.cdpo + byRole.sup + byRole.aww;
+  const totalResolved = byRole.cdpo + byRole.sup + byRole.aww;
   const subCards = [
-    { label: 'Pending for Closure', icon: Clock,         color: '#f57f17', bg: '#fff8e1', border: '#ffe082', total: byStatus.closurePending.dpo + byStatus.closurePending.cdpo + byStatus.closurePending.sup + byStatus.closurePending.aww, rows: [{r:'DPO',v:byStatus.closurePending.dpo},{r:'CDPO',v:byStatus.closurePending.cdpo},{r:'Supervisor',v:byStatus.closurePending.sup},{r:'AWW',v:byStatus.closurePending.aww}] },
-    { label: 'Closed',          icon: CheckCircle2,  color: '#2e7d32', bg: '#e8f5e9', border: '#a5d6a7', total: byStatus.closed.dpo         + byStatus.closed.cdpo         + byStatus.closed.sup         + byStatus.closed.aww,         rows: [{r:'DPO',v:byStatus.closed.dpo},        {r:'CDPO',v:byStatus.closed.cdpo},        {r:'Supervisor',v:byStatus.closed.sup},        {r:'AWW',v:byStatus.closed.aww}]         },
-    { label: 'Appeal Raised',   icon: AlertTriangle, color: '#e65100', bg: '#fff3e0', border: '#ffcc80', total: byStatus.appealRaised.dpo    + byStatus.appealRaised.cdpo    + byStatus.appealRaised.sup    + byStatus.appealRaised.aww,   rows: [{r:'DPO',v:byStatus.appealRaised.dpo},  {r:'CDPO',v:byStatus.appealRaised.cdpo},  {r:'Supervisor',v:byStatus.appealRaised.sup},  {r:'AWW',v:byStatus.appealRaised.aww}]   },
-    { label: 'Appeal Resolved', icon: ShieldCheck,   color: '#1565c0', bg: '#e8eaf6', border: '#90caf9', total: byStatus.appealResolved.dpo  + byStatus.appealResolved.cdpo  + byStatus.appealResolved.sup  + byStatus.appealResolved.aww, rows: [{r:'DPO',v:byStatus.appealResolved.dpo},{r:'CDPO',v:byStatus.appealResolved.cdpo},{r:'Supervisor',v:byStatus.appealResolved.sup},{r:'AWW',v:byStatus.appealResolved.aww}] },
+    { label: 'Pending for Closure', icon: Clock,         color: '#f57f17', bg: '#fff8e1', border: '#ffe082', total: byStatus.closurePending.cdpo + byStatus.closurePending.sup + byStatus.closurePending.aww, rows: [{r:'CDPO',v:byStatus.closurePending.cdpo},{r:'Supervisor',v:byStatus.closurePending.sup},{r:'AWW',v:byStatus.closurePending.aww}] },
+    { label: 'Closed',          icon: CheckCircle2,  color: '#2e7d32', bg: '#e8f5e9', border: '#a5d6a7', total: byStatus.closed.cdpo         + byStatus.closed.sup         + byStatus.closed.aww,         rows: [{r:'CDPO',v:byStatus.closed.cdpo},        {r:'Supervisor',v:byStatus.closed.sup},        {r:'AWW',v:byStatus.closed.aww}]         },
+    { label: 'Appeal Raised',   icon: AlertTriangle, color: '#e65100', bg: '#fff3e0', border: '#ffcc80', total: byStatus.appealRaised.cdpo    + byStatus.appealRaised.sup    + byStatus.appealRaised.aww,   rows: [{r:'CDPO',v:byStatus.appealRaised.cdpo},  {r:'Supervisor',v:byStatus.appealRaised.sup},  {r:'AWW',v:byStatus.appealRaised.aww}]   },
+    { label: 'Appeal Resolved', icon: ShieldCheck,   color: '#1565c0', bg: '#e8eaf6', border: '#90caf9', total: byStatus.appealResolved.cdpo  + byStatus.appealResolved.sup  + byStatus.appealResolved.aww, rows: [{r:'CDPO',v:byStatus.appealResolved.cdpo},{r:'Supervisor',v:byStatus.appealResolved.sup},{r:'AWW',v:byStatus.appealResolved.aww}] },
   ];
   return (
     <div className="modal-backdrop" onClick={onClose}>
@@ -272,7 +279,7 @@ const ResolvedBreakdownModal = ({
             <span style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 800, color: 'var(--accent-green)', lineHeight: 1 }}>{totalResolved.toLocaleString()}</span>
           </div>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            {[{l:'DPO',v:byRole.dpo},{l:'CDPO',v:byRole.cdpo},{l:'Supervisor',v:byRole.sup},{l:'AWW',v:byRole.aww}].map(r => (
+            {[{l:'CDPO',v:byRole.cdpo},{l:'Supervisor',v:byRole.sup},{l:'AWW',v:byRole.aww}].map(r => (
               <span key={r.l} style={{ background: 'rgba(255,255,255,0.75)', borderRadius: 999, padding: '4px 10px', fontSize: 14, fontWeight: 600, color: 'var(--text-dark)' }}>
                 {r.l} <strong style={{ color: 'var(--accent-green)' }}>{r.v}</strong>
               </span>
@@ -300,6 +307,17 @@ const ResolvedBreakdownModal = ({
             );
           })}
         </div>
+        {/* Why there is no DPO row: the DPO's work sits at the appeal stage, not in
+            these counts. Stated once, in plain language, so the absence reads as
+            deliberate rather than as missing data. */}
+        <div style={{ display: 'flex', gap: 10, background: 'var(--color-info-light)', borderRadius: 'var(--radius-md)', padding: '12px 14px', marginTop: 18 }}>
+          <Info size={15} style={{ color: 'var(--color-info)', flexShrink: 0, marginTop: 1 }} />
+          <p style={{ margin: 0, fontSize: 16, color: 'var(--text-dark)', lineHeight: 1.55 }}>
+            Grievances are always assigned to the CDPO, Supervisor or AWW — never to the DPO directly.
+            When a beneficiary is not satisfied with the resolution, they can raise an appeal, and <strong>every appeal is reviewed and resolved by the DPO</strong>.
+            That is why <strong>Appeal Raised</strong> and <strong>Appeal Resolved</strong> are shown against the officer whose resolution was appealed.
+          </p>
+        </div>
       </div>
     </div>
   );
@@ -308,26 +326,17 @@ const ResolvedBreakdownModal = ({
 // Ticket card component (handles pending & overdue tickets)
 const TicketCardComponent = ({ card, onView }: { card: TicketCard; onView: () => void }) => {
   const isCorruptionOrUrgent = card.complaintType === 'Corruption' || card.complaintType === 'Urgent';
-  const age = (() => {
-    if (!card.submittedDate) return 0;
-    const cleanStr = card.submittedDate.replace('Submitted:', '').trim();
-    const m = cleanStr.match(/(\d{2})\/(\d{2})\/(\d{4})/);
-    if (!m) return 0;
-    const ticketDate = new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
-    const diff = REFERENCE_TODAY.getTime() - ticketDate.getTime();
-    return Math.floor(diff / (1000 * 60 * 60 * 24));
-  })();
-  const isTicketOverdue = card.isOverdue || age >= 21;
-  const accent = isTicketOverdue ? 'var(--color-danger)' : 'var(--accent-saffron)';
+  const overdue = isTicketOverdue(card);
+  const accent = overdue ? 'var(--color-danger)' : 'var(--accent-saffron)';
 
   return (
-    <div className="ticket-card" style={{ borderColor: isTicketOverdue ? 'var(--color-danger)' : 'var(--border-color)' }} onClick={onView}>
+    <div className="ticket-card" style={{ borderColor: overdue ? 'var(--color-danger)' : 'var(--border-color)' }} onClick={onView}>
       <div className="ticket-card-header">
         <span className="ticket-id">{card.ticketNumber}</span>
         <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
           {card.complaintType === 'Corruption' && <span className="badge badge-danger">Corruption</span>}
           {card.complaintType === 'Urgent' && <span className="badge badge-warning">Urgent</span>}
-          {isTicketOverdue && (
+          {overdue && (
             <span className="badge badge-danger" style={{ backgroundColor: '#ffebee', color: '#d32f2f', border: '1px solid #ffcdd2' }}>
               OVERDUE
             </span>
@@ -350,7 +359,7 @@ const TicketCardComponent = ({ card, onView }: { card: TicketCard; onView: () =>
       <div className="ticket-metadata">
         <span className="ticket-date" style={{ fontSize: 14 }}>{card.submittedDate?.includes('Submitted') ? card.submittedDate : `Submitted: ${card.submittedDate}`}</span>
         <span style={{ fontWeight: 700, fontSize: 14, color: accent }}>
-          {card.daysLabel || (isTicketOverdue ? `Overdue by ${age - 20} Days` : 'Urgent')}
+          {card.daysLabel || (overdue ? overdueLabel(card) : 'Urgent')}
         </span>
       </div>
 
@@ -387,8 +396,12 @@ const ResolvedCard = ({ card, onView, showOwnerChip }: { card: ResolvedTicketCar
   const owner = card.assignedTo ?? '';
   const ownerStyle = getRoleChipStyle(owner);
   const useOwnerChip = showOwnerChip && !!owner;
+  // A resolved ticket is still on the SLA clock until it is closed, so the breach
+  // has to be visible here too — otherwise the Overdue Only filter would return
+  // cards with nothing on them to explain why.
+  const overdue = isTicketOverdue(card);
   return (
-    <div className="ticket-card" style={{ cursor: 'pointer', padding: 0, overflow: 'hidden' }} onClick={onView}>
+    <div className="ticket-card" style={{ cursor: 'pointer', padding: 0, overflow: 'hidden', borderColor: overdue ? 'var(--color-danger)' : undefined }} onClick={onView}>
       {card.awaitingCdpoClosure && !showOwnerChip && (
         <div style={{ background: '#fff8e1', borderBottom: '1px solid #ffe082', padding: '7px 18px', fontSize: 14, fontWeight: 700, color: '#f57f17' }}>
           Awaiting CDPO Closure
@@ -397,15 +410,22 @@ const ResolvedCard = ({ card, onView, showOwnerChip }: { card: ResolvedTicketCar
       <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
           <span className="ticket-id">{card.ticketNumber}</span>
-          {useOwnerChip ? (
-            <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 14, fontWeight: 700, background: ownerStyle.bg, color: ownerStyle.color, border: `1px solid ${ownerStyle.border}`, textTransform: 'uppercase', letterSpacing: '0.4px', flexShrink: 0 }}>
-              {owner}
-            </span>
-          ) : (
-            <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 14, fontWeight: 700, background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}>
-              {cfg.label}
-            </span>
-          )}
+          <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexShrink: 0 }}>
+            {overdue && (
+              <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 14, fontWeight: 700, background: '#ffebee', color: '#d32f2f', border: '1px solid #ffcdd2' }}>
+                OVERDUE
+              </span>
+            )}
+            {useOwnerChip ? (
+              <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 14, fontWeight: 700, background: ownerStyle.bg, color: ownerStyle.color, border: `1px solid ${ownerStyle.border}`, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                {owner}
+              </span>
+            ) : (
+              <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 14, fontWeight: 700, background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}>
+                {cfg.label}
+              </span>
+            )}
+          </div>
         </div>
         <div className="ticket-title-row">
           <h4 className="ticket-title" style={{ margin: 0 }}>{card.beneficiaryName}</h4>
@@ -417,8 +437,11 @@ const ResolvedCard = ({ card, onView, showOwnerChip }: { card: ResolvedTicketCar
         </div>
         {card.topic && <div className="ticket-topic">{card.topic}</div>}
         <p className="ticket-desc">{card.description}</p>
-        <div style={{ fontSize: 14, color: 'var(--text-muted)', fontWeight: 500 }}>
-          {card.resolvedDate}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+          <span style={{ fontSize: 14, color: 'var(--text-muted)', fontWeight: 500 }}>
+            {card.resolvedDate}
+          </span>
+          {card.feedback && <FeedbackChip rating={card.feedback.rating} />}
         </div>
         {card.actionTaken && (
           <div style={{ background: '#f8fafc', border: '1px solid var(--border-color)', borderRadius: 6, padding: '8px 12px' }}>
@@ -625,7 +648,7 @@ export default function DPOView({
     return directResolved + resolvedAppeals;
   };
   const countOverdue = (role: AssignedFilter) => {
-    return sharedPendingCards.filter(t => t.assignedTo === role && (t.isOverdue || getTicketAge(t.submittedDate) >= 21)).length;
+    return sharedPendingCards.filter(t => t.assignedTo === role && isTicketOverdue(t)).length;
   };
 
   const dpoP = countPending('DPO');  const dpoO = countOverdue('DPO');  const dpoR = countResolved('DPO');
@@ -643,11 +666,13 @@ export default function DPOView({
     return cardsMatch + appealsMatch;
   };
 
+  // Resolved breakdown counts. No DPO column: nothing is assigned to the DPO, so
+  // every DPO figure here would be a constant zero — see ResolvedBreakdownModal.
   const byStatus = {
-    closurePending: { dpo: countByStatus('CLOSURE_PENDING', 'DPO'), cdpo: countByStatus('CLOSURE_PENDING', 'CDPO'), sup: countByStatus('CLOSURE_PENDING', 'Supervisor'), aww: countByStatus('CLOSURE_PENDING', 'AWW') },
-    closed: { dpo: countByStatus('CLOSED', 'DPO'), cdpo: countByStatus('CLOSED', 'CDPO'), sup: countByStatus('CLOSED', 'Supervisor'), aww: countByStatus('CLOSED', 'AWW') },
-    appealRaised: { dpo: countByStatus('APPEAL_RAISED', 'DPO'), cdpo: countByStatus('APPEAL_RAISED', 'CDPO'), sup: countByStatus('APPEAL_RAISED', 'Supervisor'), aww: countByStatus('APPEAL_RAISED', 'AWW') },
-    appealResolved: { dpo: countByStatus('APPEAL_RESOLVED', 'DPO'), cdpo: countByStatus('APPEAL_RESOLVED', 'CDPO'), sup: countByStatus('APPEAL_RESOLVED', 'Supervisor'), aww: countByStatus('APPEAL_RESOLVED', 'AWW') }
+    closurePending: { cdpo: countByStatus('CLOSURE_PENDING', 'CDPO'), sup: countByStatus('CLOSURE_PENDING', 'Supervisor'), aww: countByStatus('CLOSURE_PENDING', 'AWW') },
+    closed: { cdpo: countByStatus('CLOSED', 'CDPO'), sup: countByStatus('CLOSED', 'Supervisor'), aww: countByStatus('CLOSED', 'AWW') },
+    appealRaised: { cdpo: countByStatus('APPEAL_RAISED', 'CDPO'), sup: countByStatus('APPEAL_RAISED', 'Supervisor'), aww: countByStatus('APPEAL_RAISED', 'AWW') },
+    appealResolved: { cdpo: countByStatus('APPEAL_RESOLVED', 'CDPO'), sup: countByStatus('APPEAL_RESOLVED', 'Supervisor'), aww: countByStatus('APPEAL_RESOLVED', 'AWW') }
   };
 
   // ─── Filter logic helper for active lists ───
@@ -669,12 +694,10 @@ export default function DPOView({
       if (!t.awcName || t.awcName !== selectedAWC) return false;
     }
 
-    // 2. Sidebar Urgency Toggle (Overdue Only) — Pending tab only; Resolved/Appeals
-    // don't carry SLA state.
-    if (activeTab === 'Pending' && isOverdueOnly) {
-      const age = getTicketAge(t.submittedDate);
-      if (!(t.isOverdue || age >= 21)) return false;
-    }
+    // 2. Sidebar Urgency Toggle (Overdue Only) — applies on every ticket tab. The
+    // SLA runs until closure, not until resolution, so a ticket awaiting the CDPO's
+    // sign-off or sitting under appeal is still on the clock and can breach it.
+    if (isOverdueOnly && !isTicketOverdue(t)) return false;
 
     // 3. Category Filter
     if (selectedCategory !== 'All' && t.beneficiaryType !== selectedCategory) return false;
@@ -732,13 +755,6 @@ export default function DPOView({
     return complaintRank(a.complaintType) - complaintRank(b.complaintType);
   });
 
-  // Counted from the list actually on screen rather than the whole queue, so the
-  // banner can never contradict the cards below it once a filter or search narrows
-  // the list. Supervisor/AWW resolutions sit here until the CDPO signs them off;
-  // in the CDPO scope they live in the Pending for Closure tab instead, so this
-  // is naturally zero there.
-  const awaitingClosureCount = displayedResolved.filter(c => c.awaitingCdpoClosure).length;
-
   // ─── 2b. Pending for Closure Tab List ─── (CDPO scope only, ported from the
   // CDPO's own screen: tickets Supervisor/AWW have resolved but the CDPO hasn't
   // formally closed yet. View-only here — closure itself happens in that screen.)
@@ -749,6 +765,8 @@ export default function DPOView({
     if (!passesSource(card, sourceFilter)) return false;
     if (selectedProject !== 'All Projects' && card.project !== selectedProject) return false;
     if (selectedCategory !== 'All' && card.beneficiaryType !== selectedCategory) return false;
+    // Nothing in this queue is closed yet, so every card here is still on the clock.
+    if (isOverdueOnly && !isTicketOverdue(card)) return false;
     if (!passesDateFilter(card.resolvedDate ?? '', appliedDateOption)) return false;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -774,6 +792,10 @@ export default function DPOView({
     if (appeal.status === 'resolved') return false;
 
     if (!passesSource(appeal, sourceFilter)) return false;
+
+    // An appeal awaiting the DPO's decision is measured against the 21-day deadline
+    // from the date the appeal was raised (appealDate).
+    if (isOverdueOnly && !isAppealOverdue(appeal)) return false;
 
     const beneficiaryType = APPEAL_CATEGORY_MAP[appeal.byName] || 'Beneficiary';
     if (selectedCategory !== 'All' && beneficiaryType !== selectedCategory) return false;
@@ -845,7 +867,7 @@ export default function DPOView({
 
   // Active filter count
   const activeFilterCount =
-    (activeTab === 'Pending' && isOverdueOnly ? 1 : 0) +
+    (activeTab !== 'Appeal Resolved' && isOverdueOnly ? 1 : 0) +
     (activeTab === 'PendingClosure' && resolvedByFilter !== 'All' ? 1 : 0) +
     ((activeTab === 'Appeals' || activeTab === 'Appeal Resolved') && officialFilter !== 'All' ? 1 : 0) +
     (appliedDateOption ? 1 : 0) +
@@ -1078,10 +1100,12 @@ export default function DPOView({
             )}
           </div>
 
-          {/* Urgency: Overdue Only — Pending tab only. This is the sole way to
-              isolate overdue tickets now that there's no separate Overdue tab;
-              Resolved/Appeals carry no SLA state. */}
-          {activeTab === 'Pending' && (
+          {/* Urgency: Overdue Only — the sole way to isolate overdue tickets now
+              that there's no separate Overdue tab. Shown on every tab except
+              Appeal Resolved: the SLA runs until a ticket is finally settled, so
+              everything short of that can breach it, and everything in Appeal
+              Resolved is settled by definition. */}
+          {activeTab !== 'Appeal Resolved' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Urgency</label>
               <button
@@ -1295,16 +1319,6 @@ export default function DPOView({
             </div>
           )}
 
-          {/* Closure banner — how much of this resolved list is not actually closed
-              yet. Worded neutrally: the DPO watches this queue but the closure is
-              the CDPO's to make. */}
-          {activeTab === 'Resolved' && awaitingClosureCount > 0 && (
-            <div style={{ background: '#fff8e1', border: '1px solid #ffe082', borderRadius: 'var(--radius-md)', padding: '10px 16px', fontSize: 16, fontWeight: 600, color: '#f57f17', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span>⚠</span>
-              {awaitingClosureCount} ticket{awaitingClosureCount > 1 ? 's' : ''} awaiting CDPO closure
-            </div>
-          )}
-
           {/* Visibility notice — DPO can monitor these queues but never act on them */}
           {activeTab === 'Pending' && (assignedFilter === 'CDPO' || assignedFilter === 'Supervisor' || assignedFilter === 'AWW') && (
             <div style={{ display: 'flex', gap: 10, background: '#fff3e0', borderRadius: 'var(--radius-md)', padding: '12px 14px', border: '1px solid #ffcc80' }}>
@@ -1329,11 +1343,7 @@ export default function DPOView({
                   <TicketCardComponent
                     key={ticket.id}
                     card={ticket}
-                    onView={() => {
-                      const age = getTicketAge(ticket.submittedDate);
-                      const isOverdue = ticket.isOverdue || age >= 21;
-                      setSelectedTicket({ ...ticket, isPendingTicket: true, isOverdue });
-                    }}
+                    onView={() => setSelectedTicket({ ...ticket, isPendingTicket: true, isOverdue: isTicketOverdue(ticket) })}
                   />
                 )} />
             )
@@ -1472,7 +1482,7 @@ export default function DPOView({
       {/* Resolved Breakdown Modal */}
       <ResolvedBreakdownModal
         open={resolvedModal} onClose={() => setResolvedModal(false)}
-        byRole={{ dpo: dpoR, cdpo: cdpoR, sup: supR, aww: awwR }}
+        byRole={{ cdpo: cdpoR, sup: supR, aww: awwR }}
         byStatus={byStatus}
       />
 

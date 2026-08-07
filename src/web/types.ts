@@ -17,6 +17,25 @@ export interface TicketOrigin {
   loggedAt?: string;          // when the call / web submission happened
 }
 
+// ── Beneficiary feedback ────────────────────────────────────────────────────
+// Collected from the beneficiary once a grievance has been closed, and never
+// before — there is nothing to rate until the closure report exists.
+//
+// Satisfaction and the experience rating are two separate answers. A beneficiary
+// who accepts the outcome may still rate the experience Poor, and only a Poor
+// rating opens a free-text box: Good and Average are recorded as the rating alone.
+// A beneficiary who is *not* satisfied is routed to the appeal flow instead, so
+// that dissatisfaction is recorded as an appeal — with its own reason and its own
+// DPO review — rather than as a comment nobody is obliged to act on.
+export type FeedbackRating = 'Good' | 'Average' | 'Poor';
+
+export interface BeneficiaryFeedback {
+  satisfied: boolean;
+  rating: FeedbackRating;
+  comment?: string;     // captured only alongside a Poor rating
+  submittedOn?: string; // when the beneficiary responded, e.g. '22 Jun 2025'
+}
+
 export interface TicketCard {
   id: string;
   ticketNumber: string;
@@ -61,6 +80,11 @@ export interface TicketCard {
   closedBy?: AssignedFilter; // officer who formally closed it; absent while CLOSURE_PENDING
   appealReason?: string;     // the beneficiary's reason for appealing
   dpoActionTaken?: string;   // the DPO's decision on the appeal
+
+  // The beneficiary's own verdict on the closed grievance. Optional throughout —
+  // responding is voluntary, so an absent value means "no response yet", never
+  // "no complaints".
+  feedback?: BeneficiaryFeedback;
 }
 
 export interface ResolvedTicketCard extends TicketCard {

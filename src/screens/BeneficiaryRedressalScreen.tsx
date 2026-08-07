@@ -2,6 +2,8 @@ import React, { useRef, useState } from 'react';
 import { TicketCard, ResolvedTicketCard } from '../web/types';
 import TicketDetailsScreen from './TicketDetailsScreen';
 import BatchedTicketGrid from '../components/BatchedTicketGrid';
+import FeedbackChip from '../components/FeedbackChip';
+import { isTicketOverdue } from '../web/sla';
 import {
   Eye, X, Info, Clock, CheckCircle2, AlertTriangle, ShieldCheck,
   Calendar, ChevronDown, Inbox, Search,
@@ -295,7 +297,7 @@ const ResolvedBreakdownModal = ({
 
 const PendingCard = ({ card, showDocs, onView }: { card: TicketCard; showDocs: boolean; onView: () => void }) => {
   const isCorruptionOrUrgent = card.complaintType === 'Corruption' || card.complaintType === 'Urgent';
-  const overdue = card.isOverdue || card.daysType === 'overdue';
+  const overdue = isTicketOverdue(card);
   return (
     <div className="ticket-card" onClick={onView} style={{ cursor: 'pointer', borderColor: overdue ? 'var(--color-danger)' : 'var(--border-color)' }}>
       <div className="ticket-card-header">
@@ -348,8 +350,12 @@ const ResolvedCard = ({ card, onView, showOwnerChip }: {
   const owner = card.assignedTo ?? '';
   const ownerCfg = ROLE_CHIP[owner];
   const useOwnerChip = showOwnerChip && !!ownerCfg;
+  // A resolved ticket is still on the SLA clock until it is closed, so the breach
+  // has to be visible here too — otherwise the Overdue Only filter would return
+  // cards with nothing on them to explain why.
+  const overdue = isTicketOverdue(card);
   return (
-    <div className="ticket-card" style={{ cursor: 'pointer', padding: 0, overflow: 'hidden' }} onClick={onView}>
+    <div className="ticket-card" style={{ cursor: 'pointer', padding: 0, overflow: 'hidden', borderColor: overdue ? 'var(--color-danger)' : undefined }} onClick={onView}>
       {card.awaitingCdpoClosure && !showOwnerChip && (
         <div style={{ background: '#fff8e1', borderBottom: '1px solid #ffe082', padding: '7px 18px', fontSize: 14, fontWeight: 700, color: '#f57f17' }}>
           Awaiting CDPO Closure
@@ -358,13 +364,20 @@ const ResolvedCard = ({ card, onView, showOwnerChip }: {
       <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
           <span className="ticket-id">{card.ticketNumber}</span>
-          {useOwnerChip ? (
-            <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 14, fontWeight: 700, background: ownerCfg.bg, color: ownerCfg.color, border: `1px solid ${ownerCfg.border}`, textTransform: 'uppercase', letterSpacing: '0.4px', flexShrink: 0 }}>
-              {owner}
-            </span>
-          ) : (
-            <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 14, fontWeight: 700, background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}>{cfg.label}</span>
-          )}
+          <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexShrink: 0 }}>
+            {overdue && (
+              <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 14, fontWeight: 700, background: '#ffebee', color: '#d32f2f', border: '1px solid #ffcdd2' }}>
+                OVERDUE
+              </span>
+            )}
+            {useOwnerChip ? (
+              <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 14, fontWeight: 700, background: ownerCfg.bg, color: ownerCfg.color, border: `1px solid ${ownerCfg.border}`, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                {owner}
+              </span>
+            ) : (
+              <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 14, fontWeight: 700, background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}>{cfg.label}</span>
+            )}
+          </div>
         </div>
         <div className="ticket-title-row">
           <h4 className="ticket-title" style={{ margin: 0 }}>{card.beneficiaryName}</h4>
@@ -374,7 +387,10 @@ const ResolvedCard = ({ card, onView, showOwnerChip }: {
         </div>
         {card.topic && <div className="ticket-topic">{card.topic}</div>}
         <p className="ticket-desc">{card.description}</p>
-        <div style={{ fontSize: 14, color: 'var(--text-muted)', fontWeight: 500 }}>{card.resolvedDate}</div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+          <span style={{ fontSize: 14, color: 'var(--text-muted)', fontWeight: 500 }}>{card.resolvedDate}</span>
+          {card.feedback && <FeedbackChip rating={card.feedback.rating} />}
+        </div>
         {card.actionTaken && (
           <div style={{ background: '#f8fafc', border: '1px solid var(--border-color)', borderRadius: 6, padding: '8px 12px' }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>Action Taken Report (ATR)</div>
@@ -474,7 +490,7 @@ export default function CDPOView({
 
   const countP = (role: AssignedFilter) => allPending.filter(c => c.assignedTo === role).length;
   const countR = (role: AssignedFilter) => allResolved.filter(c => c.assignedTo === role).length;
-  const countOD= (role: AssignedFilter) => allPending.filter(c => c.assignedTo === role && (c.isOverdue || c.daysType === 'overdue')).length;
+  const countOD= (role: AssignedFilter) => allPending.filter(c => c.assignedTo === role && isTicketOverdue(c)).length;
   const countSt= (role: AssignedFilter, s: string) => allResolved.filter(c => c.assignedTo === role && c.status === s).length;
 
   const cdpoP = countP('CDPO');  const cdpoO = countOD('CDPO');  const cdpoR = countR('CDPO');
@@ -498,7 +514,7 @@ export default function CDPOView({
     if (assignedFilter === 'AWW' && selectedAWC !== 'All Centres') {
       if (!card.awcName || card.awcName !== selectedAWC) return false;
     }
-    if (isOverdueOnly && !(card.isOverdue || card.daysType === 'overdue')) return false;
+    if (isOverdueOnly && !isTicketOverdue(card)) return false;
     if (!passesDateFilter(card.submittedDate ?? '', appliedDateOption)) return false;
     if (assignedFilter === 'CDPO') {
       if (appliedTypes.length > 0 && (!card.complaintType || !appliedTypes.includes(card.complaintType))) return false;
@@ -525,6 +541,9 @@ export default function CDPOView({
     }
     if (assignedFilter === 'CDPO' && card.status === 'CLOSURE_PENDING') return false;
     if (appliedStatuses.length > 0 && (!card.status || !appliedStatuses.includes(card.status))) return false;
+    // A resolution is not the end of the SLA — only closure is. Tickets awaiting
+    // closure or under appeal are still running against the deadline and can breach it.
+    if (isOverdueOnly && !isTicketOverdue(card)) return false;
     if (!passesDateFilter(card.resolvedDate ?? '', appliedDateOption)) return false;
     if (appliedCategories.length > 0 && (!card.beneficiaryType || !appliedCategories.includes(card.beneficiaryType))) return false;
     if (searchQuery) {
@@ -543,6 +562,8 @@ export default function CDPOView({
     if (card.assignedTo !== 'Supervisor' && card.assignedTo !== 'AWW') return false;
     if (resolvedByFilter !== 'All' && card.assignedTo !== resolvedByFilter) return false;
     if (!passesSource(card, sourceFilter)) return false;
+    // Nothing in this queue is closed yet, so every card here is still on the clock.
+    if (isOverdueOnly && !isTicketOverdue(card)) return false;
     if (!passesDateFilter(card.resolvedDate ?? '', appliedDateOption)) return false;
     if (appliedCategories.length > 0 && (!card.beneficiaryType || !appliedCategories.includes(card.beneficiaryType))) return false;
     if (searchQuery) {
@@ -555,11 +576,6 @@ export default function CDPOView({
   })
     .sort((a, b) => resolutionTime(b.resolvedDate) - resolutionTime(a.resolvedDate));
 
-  // Counted from the list actually on screen rather than the whole queue, so the
-  // banner can never contradict the cards below it once a filter or search narrows
-  // the list. Applies to every scope whose resolutions the CDPO signs off — both
-  // Supervisor and AWW — not just the Supervisor's.
-  const awaitingClosureCount = displayedResolved.filter(c => c.awaitingCdpoClosure).length;
   const showDocs = assignedFilter === 'CDPO';
   const isCdpoPending = assignedFilter === 'CDPO' && activeTab === 'Pending';
 
@@ -572,7 +588,7 @@ export default function CDPOView({
 
   // Active filter count for badge
   const activeFilterCount =
-    (activeTab === 'Pending' && isOverdueOnly ? 1 : 0) +
+    (isOverdueOnly ? 1 : 0) +
     (activeTab === 'PendingClosure' && resolvedByFilter !== 'All' ? 1 : 0) +
     (sourceFilter !== 'All' ? 1 : 0) +
     (appliedDateOption ? 1 : 0) +
@@ -730,24 +746,24 @@ export default function CDPOView({
             )}
           </div>
 
-          {/* Overdue Toggle — SLA breach only applies to open (Pending) tickets */}
-          {activeTab === 'Pending' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Urgency</label>
-              <button
-                onClick={() => setIsOverdueOnly(v => !v)}
-                style={{
-                  padding: '8px 16px', borderRadius: 20, fontSize: 16, fontWeight: 600,
-                  cursor: 'pointer', transition: 'all 0.2s',
-                  background: isOverdueOnly ? 'var(--color-danger)' : 'var(--bg-main)',
-                  color: isOverdueOnly ? '#fff' : 'var(--text-dark)',
-                  border: `1.5px solid ${isOverdueOnly ? 'var(--color-danger)' : 'var(--border-color)'}`,
-                }}
-              >
-                {isOverdueOnly && '× '}Overdue Only
-              </button>
-            </div>
-          )}
+          {/* Overdue Toggle — shown on every tab. The SLA runs until a ticket is
+              closed, not until it is resolved, so a ticket awaiting closure or
+              sitting under appeal can breach the deadline just as an unworked one can. */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Urgency</label>
+            <button
+              onClick={() => setIsOverdueOnly(v => !v)}
+              style={{
+                padding: '8px 16px', borderRadius: 20, fontSize: 16, fontWeight: 600,
+                cursor: 'pointer', transition: 'all 0.2s',
+                background: isOverdueOnly ? 'var(--color-danger)' : 'var(--bg-main)',
+                color: isOverdueOnly ? '#fff' : 'var(--text-dark)',
+                border: `1.5px solid ${isOverdueOnly ? 'var(--color-danger)' : 'var(--border-color)'}`,
+              }}
+            >
+              {isOverdueOnly && '× '}Overdue Only
+            </button>
+          </div>
 
           {/* Type (CDPO pending) or Category (other pending + all resolved) */}
           {activeTab === 'Pending' && isCdpoPending && (
@@ -913,14 +929,6 @@ export default function CDPOView({
               <input type="text" className="search-input" placeholder="Search tickets..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
             </div>
           </div>
-
-          {/* Closure Banner */}
-          {activeTab === 'Resolved' && awaitingClosureCount > 0 && (
-            <div style={{ background: '#fff8e1', border: '1px solid #ffe082', borderRadius: 'var(--radius-md)', padding: '10px 16px', fontSize: 16, fontWeight: 600, color: '#f57f17', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span>⚠</span>
-              {awaitingClosureCount} ticket{awaitingClosureCount > 1 ? 's' : ''} awaiting your closure — click a card to close
-            </div>
-          )}
 
           {/* Ticket Grid */}
           {activeTab === 'Pending' ? (

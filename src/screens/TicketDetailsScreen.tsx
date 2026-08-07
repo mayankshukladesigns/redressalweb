@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { X, ArrowLeft, FileText, Check } from 'lucide-react';
+import { FEEDBACK_CFG } from '../components/FeedbackChip';
+import { isTicketOverdue, overdueLabel } from '../web/sla';
 
 interface TicketDetailsProps {
   card: any;
@@ -21,13 +23,23 @@ const fieldLabelStyle: React.CSSProperties = {
 };
 
 // Status badge config — ported verbatim from the mobile app (my-app/src/screens/TicketDetailsScreen.tsx STATUS_CFG)
-const STATUS_CFG: Record<string, { label: string; color: string; bg: string; border: string; hasIcon: boolean }> = {
-  PENDING:         { label: 'PENDING',         color: '#e65100', bg: '#fff3e0', border: '#ffcc80', hasIcon: false },
-  OVERDUE:         { label: 'OVERDUE',         color: '#d32f2f', bg: '#ffebee', border: '#ffcdd2', hasIcon: true  },
-  CLOSED:          { label: 'CLOSED',          color: '#2e7d32', bg: '#e8f5e9', border: '#a5d6a7', hasIcon: false },
-  CLOSURE_PENDING: { label: 'PENDING FOR CLOSURE', color: '#f57f17', bg: '#fff8e1', border: '#ffe082', hasIcon: true  },
-  APPEAL_RAISED:   { label: 'APPEAL RAISED',   color: '#e65100', bg: '#fff3e0', border: '#ffcc80', hasIcon: true  },
-  APPEAL_RESOLVED: { label: 'APPEAL RESOLVED', color: '#ffffff', bg: '#4f46e5', border: '#4f46e5', hasIcon: true  },
+//
+// `hint` is the plain-language meaning shown on hover. These labels are workflow
+// jargon: "Pending for Closure" tells you nothing unless you already know the
+// escalation path, and the officer reading the screen should not have to.
+const STATUS_CFG: Record<string, { label: string; color: string; bg: string; border: string; hasIcon: boolean; hint: string }> = {
+  PENDING:         { label: 'PENDING',         color: '#e65100', bg: '#fff3e0', border: '#ffcc80', hasIcon: false,
+    hint: 'This grievance has been assigned to an officer and is being worked on. No resolution has been submitted yet.' },
+  OVERDUE:         { label: 'OVERDUE',         color: '#d32f2f', bg: '#ffebee', border: '#ffcdd2', hasIcon: true,
+    hint: 'This grievance has crossed the 21-day deadline and is still not closed. It needs immediate attention.' },
+  CLOSED:          { label: 'CLOSED',          color: '#2e7d32', bg: '#e8f5e9', border: '#a5d6a7', hasIcon: false,
+    hint: 'This grievance has been resolved and formally closed. No further action is needed.' },
+  CLOSURE_PENDING: { label: 'PENDING FOR CLOSURE', color: '#f57f17', bg: '#fff8e1', border: '#ffe082', hasIcon: true,
+    hint: 'The officer has submitted their Action Taken Report. The CDPO now has to review it and formally close the ticket.' },
+  APPEAL_RAISED:   { label: 'APPEAL RAISED',   color: '#e65100', bg: '#fff3e0', border: '#ffcc80', hasIcon: true,
+    hint: 'The beneficiary was not satisfied with the resolution and has appealed. The DPO will review the case and decide.' },
+  APPEAL_RESOLVED: { label: 'APPEAL RESOLVED', color: '#ffffff', bg: '#4f46e5', border: '#4f46e5', hasIcon: true,
+    hint: 'The DPO has reviewed the appeal and given a final decision. The grievance is now complete.' },
 };
 
 export default function TicketDetailsScreen({
@@ -51,6 +63,9 @@ export default function TicketDetailsScreen({
   // Success screens are intentionally static — no ticket numbers — so the
   // confirmation reads the same everywhere and needs no per-ticket wording.
   const [successInfo, setSuccessInfo] = useState<{ title: string; description: string } | null>(null);
+  // Plain-language explanation of whichever status chip the user is pointing at.
+  // Hover or keyboard focus sets it; there is only ever one, so a single slot does.
+  const [activeHint, setActiveHint] = useState<string | null>(null);
 
   const RESOLVED_FAMILY_STATUSES = ['CLOSED', 'CLOSURE_PENDING', 'APPEAL_RAISED', 'APPEAL_RESOLVED'];
   const isPending = !RESOLVED_FAMILY_STATUSES.includes(currentCard.status);
@@ -60,7 +75,14 @@ export default function TicketDetailsScreen({
   // — otherwise the "Resolve Appeal" CTA reappears on an already-decided appeal.
   const isAppeal = currentCard.status === 'APPEAL_RAISED' || (currentCard._isAppeal && currentCard.status !== 'APPEAL_RESOLVED');
   const hasAppealReason = isAppeal || currentCard.status === 'APPEAL_RESOLVED';
-  const isOverdue = isPending && (currentCard.isOverdue || currentCard.daysType === 'overdue');
+  // The SLA runs until the ticket is settled, not until it is resolved — so a
+  // ticket sitting in a closure queue or under appeal can breach it too. A pending
+  // ticket says so through its status chip; the rest need a separate pill, since
+  // their own status still has to be shown.
+  const overdue = isTicketOverdue(currentCard);
+  const isOverdue = isPending && overdue;
+  // Overdue pill is shown on settled/closed non-appeal tickets; appeal overdue is reflected in the audit timeline only.
+  const showOverduePill = overdue && !isPending && !hasAppealReason;
 
   // ── Resolution chain ────────────────────────────────────────────────────────
   // Who did what: the resolver wrote the ATR, the closing officer signed it off.
@@ -87,6 +109,15 @@ export default function TicketDetailsScreen({
 
   const statusKey = isOverdue ? 'OVERDUE' : (isPending ? 'PENDING' : currentCard.status);
   const statusCfg = STATUS_CFG[statusKey] ?? STATUS_CFG.CLOSED;
+
+  // ── Beneficiary feedback ────────────────────────────────────────────────────
+  // Only a closed ticket carries feedback: the beneficiary is asked to rate the
+  // resolution once the closure report exists. A ticket that went on to appeal is
+  // not rated — the appeal itself is the beneficiary's answer, and it is recorded
+  // in full above.
+  const feedback = currentCard.status === 'CLOSED' ? currentCard.feedback : undefined;
+  const feedbackCfg = FEEDBACK_CFG[(feedback?.rating ?? 'Good') as keyof typeof FEEDBACK_CFG];
+  const FeedbackIcon = feedbackCfg.icon;
 
   // Timeline construction — ported verbatim from the mobile app
   // (my-app/src/screens/TicketDetailsScreen.tsx). Same events, per-event dot
@@ -190,11 +221,42 @@ export default function TicketDetailsScreen({
 
       pushResolutionAndClosure();
 
-      if (currentCard.status === 'APPEAL_RAISED' || currentCard.status === 'APPEAL_RESOLVED') {
-        items.push({ label: 'Appeal Raised by Beneficiary', date: fmt(eventDate(appealOffset), '02:00 PM'), dotColor: '#f57f17' });
-      }
-      if (currentCard.status === 'APPEAL_RESOLVED') {
-        items.push({ label: 'Appeal Resolved by DPO', date: fmt(eventDate(appealOffset + 5), '11:00 AM'), dotColor: '#1a237e' });
+      if (currentCard.status === 'APPEAL_RAISED' || currentCard.status === 'APPEAL_RESOLVED' || currentCard._isAppeal) {
+        // Parse appeal filed date if present
+        const appDateStr = currentCard.appealDate || currentCard._appealTicket?.appealDate;
+        const appMatch = (appDateStr || '').match(/(\d{2})\/(\d{2})\/(\d{4})/);
+        let appOffset = appealOffset;
+        if (appMatch) {
+          const ad = new Date(Number(appMatch[3]), Number(appMatch[2]) - 1, Number(appMatch[1]));
+          const off = Math.round((ad.getTime() - submissionDate.getTime()) / dayMs);
+          if (off >= closedOffset) appOffset = off;
+        }
+
+        const appealOverdueOffset = appOffset + 21;
+
+        // Check when DPO resolution happened if resolved
+        let dpoResOffset = appOffset + 5;
+        const dpoResMatch = (currentCard.resolvedDate || currentCard.dpoResolvedDate || '').match(/(\d{2})\/(\d{2})\/(\d{4})/);
+        if (dpoResMatch) {
+          const drd = new Date(Number(dpoResMatch[3]), Number(dpoResMatch[2]) - 1, Number(dpoResMatch[1]));
+          const off = Math.round((drd.getTime() - submissionDate.getTime()) / dayMs);
+          if (off >= appOffset) dpoResOffset = off;
+        }
+
+        const isUnresolvedAppeal = currentCard.status === 'APPEAL_RAISED' || currentCard.status === 'raised' || (currentCard._isAppeal && currentCard.status !== 'APPEAL_RESOLVED');
+        const appealOverdueFired = isUnresolvedAppeal
+          ? diffDays >= appealOverdueOffset
+          : dpoResOffset > appealOverdueOffset;
+
+        items.push({ label: 'Appeal Raised by Beneficiary', date: fmt(eventDate(appOffset), '02:00 PM'), dotColor: '#f57f17' });
+
+        if (appealOverdueFired) {
+          items.push({ label: 'Appeal Overdue', date: fmt(eventDate(appealOverdueOffset), '05:00 PM'), dotColor: '#d32f2f' });
+        }
+
+        if (currentCard.status === 'APPEAL_RESOLVED') {
+          items.push({ label: 'Appeal Resolved by DPO', date: fmt(eventDate(dpoResOffset), '11:00 AM'), dotColor: '#1a237e' });
+        }
       }
     }
 
@@ -376,14 +438,52 @@ export default function TicketDetailsScreen({
 
         {/* Scrollable Body Content */}
         <div className="drawer-body" style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {/* Ticket Title & Status Badge */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          {/* Ticket Title & Status Badge. The tooltip is anchored to the row rather
+              than to an individual chip, so it always spans the drawer's content
+              width and can never be clipped or pushed off-screen by a chip sitting
+              near the edge. Only one hint shows at a time, so one slot is enough. */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', position: 'relative' }}>
             <h2 style={{ fontSize: '22px', fontWeight: 700, color: '#0b3a60', fontFamily: 'var(--font-display)' }}>
               {currentCard.ticketNumber || 'Ticket #787868898972'}
             </h2>
-            <span style={{ background: statusCfg.bg, color: statusCfg.color, fontSize: '14px', fontWeight: 700, padding: '3px 10px', borderRadius: '100px', border: `1px solid ${statusCfg.border}`, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+            <span
+              tabIndex={0}
+              aria-describedby={activeHint ? 'status-hint' : undefined}
+              onMouseEnter={() => setActiveHint(statusCfg.hint)}
+              onMouseLeave={() => setActiveHint(null)}
+              onFocus={() => setActiveHint(statusCfg.hint)}
+              onBlur={() => setActiveHint(null)}
+              style={{ background: statusCfg.bg, color: statusCfg.color, fontSize: '14px', fontWeight: 700, padding: '3px 10px', borderRadius: '100px', border: `1px solid ${statusCfg.border}`, textTransform: 'uppercase', letterSpacing: '0.4px', cursor: 'help' }}
+            >
               {statusCfg.label}{statusCfg.hasIcon ? ' ⓘ' : ''}
             </span>
+            {showOverduePill && (
+              <span
+                tabIndex={0}
+                aria-describedby={activeHint ? 'status-hint' : undefined}
+                onMouseEnter={() => setActiveHint(STATUS_CFG.OVERDUE.hint)}
+                onMouseLeave={() => setActiveHint(null)}
+                onFocus={() => setActiveHint(STATUS_CFG.OVERDUE.hint)}
+                onBlur={() => setActiveHint(null)}
+                style={{ background: STATUS_CFG.OVERDUE.bg, color: STATUS_CFG.OVERDUE.color, fontSize: '14px', fontWeight: 700, padding: '3px 10px', borderRadius: '100px', border: `1px solid ${STATUS_CFG.OVERDUE.border}`, textTransform: 'uppercase', letterSpacing: '0.4px', cursor: 'help' }}
+              >
+                {overdueLabel(currentCard)} ⓘ
+              </span>
+            )}
+            {activeHint && (
+              <span
+                id="status-hint"
+                role="tooltip"
+                style={{
+                  position: 'absolute', top: 'calc(100% + 8px)', left: 0, right: 0, zIndex: 10,
+                  background: '#1f2937', color: '#ffffff', borderRadius: '6px',
+                  padding: '10px 12px', fontSize: '14px', fontWeight: 500, lineHeight: 1.45,
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.18)',
+                }}
+              >
+                {activeHint}
+              </span>
+            )}
           </div>
 
           {/* Help & Sub Topics */}
@@ -553,12 +653,56 @@ export default function TicketDetailsScreen({
                 )}
 
                 {/* The DPO's decision — only once the appeal has actually been
-                    decided. While it is merely raised there is nothing to show. */}
-                {currentCard.status === 'APPEAL_RESOLVED' && (
+                    decided, and only in the DPO's own view. The appellate finding
+                    is the DPO's record: the Supervisor and the CDPO can see from
+                    the status and the timeline that the appeal was resolved, but
+                    the reasoning behind it is not theirs to read. Keeping it out
+                    of their drawer also keeps the screen to what they can act on. */}
+                {currentCard.status === 'APPEAL_RESOLVED' && assignedFilter === 'DPO' && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     <span style={fieldLabelStyle}>Action Taken by DPO</span>
                     <div style={{ background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: '6px', padding: '14px 16px', fontSize: '16px', color: '#5b21b6', whiteSpace: 'pre-line', lineHeight: '1.4' }}>
                       {currentCard.dpoActionTaken || 'Appeal resolved in favour of existing resolution.'}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* BENEFICIARY FEEDBACK — the beneficiary's own verdict, collected after
+              the ticket was closed and therefore shown after the closure report.
+              Visible to every role: the officer who did the work, and everyone
+              above them, sees the same response.
+
+              A comment only ever accompanies a Poor rating; Good and Average are
+              recorded as the rating alone, so there is nothing to render for them
+              beyond the rating itself. Feedback is voluntary, so a closed ticket
+              without a response simply shows no block — silence is not scored. */}
+          {feedback && (
+            <div>
+              <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-dark)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid #cbd5e1', paddingBottom: '8px', marginBottom: '12px' }}>
+                Beneficiary Feedback
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', background: feedbackCfg.bg, border: `1px solid ${feedbackCfg.border}`, borderRadius: '6px', padding: '14px 16px' }}>
+                  <FeedbackIcon size={26} style={{ color: feedbackCfg.color, flexShrink: 0 }} />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <span style={{ fontSize: '16px', fontWeight: 700, color: feedbackCfg.color }}>
+                      Experience rated {feedback.rating}
+                    </span>
+                    <span style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
+                      {feedback.satisfied ? 'Satisfied with the resolution' : 'Not satisfied with the resolution'}
+                      {feedback.submittedOn ? ` · Submitted on ${feedback.submittedOn}` : ''}
+                    </span>
+                  </div>
+                </div>
+
+                {feedback.comment && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <span style={fieldLabelStyle}>Feedback by Beneficiary</span>
+                    <div style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '14px 16px', fontSize: '16px', color: '#1e293b', whiteSpace: 'pre-line', lineHeight: '1.4' }}>
+                      {feedback.comment}
                     </div>
                   </div>
                 )}

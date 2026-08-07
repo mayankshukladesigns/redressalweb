@@ -2,6 +2,8 @@ import React, { useRef, useState } from 'react';
 import { TicketCard, ResolvedTicketCard } from '../web/types';
 import TicketDetailsScreen from './TicketDetailsScreen';
 import BatchedTicketGrid from '../components/BatchedTicketGrid';
+import FeedbackChip from '../components/FeedbackChip';
+import { isTicketOverdue } from '../web/sla';
 import { Search, Calendar, Eye, RefreshCw, X, Info, Clock, CheckCircle2, AlertTriangle, ShieldCheck } from 'lucide-react';
 
 interface SupervisorViewProps {
@@ -180,7 +182,6 @@ export default function SupervisorScreen({
   const scopedPendingCount  = pendingList.filter(matchesScope).length;
   const scopedResolvedCount = resolvedList.filter(matchesScope).length;
 
-  const isTicketOverdue  = (c: TicketCard) => c.daysType === 'overdue' || c.isOverdue;
   const supervisorOverdue = pendingList.filter(c => c.assignedTo === 'Supervisor' && isTicketOverdue(c)).length;
   const awwOverdue        = pendingList.filter(c => c.assignedTo === 'AWW'        && isTicketOverdue(c)).length;
   const totalOverdue      = supervisorOverdue + awwOverdue;
@@ -223,8 +224,10 @@ export default function SupervisorScreen({
 
       if (!passesSource(ticket, sourceFilter)) return false;
 
-      const isOverdue = ticket.daysType === 'overdue' || ticket.isOverdue;
-      if (activeTab === 'Pending' && isOverdueOnly && !isOverdue) return false;
+      // The SLA runs until closure, not until resolution — a ticket awaiting the
+      // CDPO's sign-off or sitting under appeal is still on the clock, so the
+      // filter applies on the Resolved tab too.
+      if (isOverdueOnly && !isTicketOverdue(ticket)) return false;
 
       if (selectedCategory !== 'All' && ticket.beneficiaryType !== selectedCategory) return false;
 
@@ -264,13 +267,6 @@ export default function SupervisorScreen({
     ? [...getFilteredTickets()].sort(byBreachRisk)
     : [...getFilteredTickets()].sort(byLatestResolutionDate);
 
-  // Counted from the list actually on screen rather than the whole queue, so the
-  // banner can never contradict the cards below it once a filter or search narrows
-  // the list.
-  const awaitingClosureCount = activeTab === 'Resolved'
-    ? filteredTickets.filter(t => t.awaitingCdpoClosure).length
-    : 0;
-
   // Any change to scope, tab or a filter snaps the batched grid back to page one.
   const gridResetKey = [
     activeTab, scopeFilter, selectedAWC, searchQuery, isOverdueOnly,
@@ -297,7 +293,7 @@ export default function SupervisorScreen({
 
   // Active filter count for sidebar badge
   const activeFilterCount =
-    (activeTab === 'Pending' && isOverdueOnly ? 1 : 0) +
+    (isOverdueOnly ? 1 : 0) +
     (selectedCategory !== 'All' ? 1 : 0) +
     (activeTab === 'Resolved' ? appliedStatuses.length : 0) +
     (appliedDateOption !== 'All' ? 1 : 0) +
@@ -425,25 +421,25 @@ export default function SupervisorScreen({
             )}
           </div>
 
-          {/* Overdue Toggle — SLA breach only applies to open (Pending) tickets */}
-          {activeTab === 'Pending' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Urgency</label>
-              <button
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  padding: '8px 16px', borderRadius: '20px', fontSize: '16px', fontWeight: 600,
-                  cursor: 'pointer', transition: 'all 0.2s',
-                  background: isOverdueOnly ? 'var(--color-danger)' : 'var(--bg-main)',
-                  color: isOverdueOnly ? '#fff' : 'var(--text-dark)',
-                  border: `1.5px solid ${isOverdueOnly ? 'var(--color-danger)' : 'var(--border-color)'}`,
-                }}
-                onClick={() => setIsOverdueOnly(!isOverdueOnly)}
-              >
-                {isOverdueOnly ? '× ' : ''}Overdue Only
-              </button>
-            </div>
-          )}
+          {/* Overdue Toggle — shown on every tab. The SLA runs until a ticket is
+              closed, not until it is resolved, so a ticket awaiting the CDPO's
+              closure or sitting under appeal can breach the deadline too. */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Urgency</label>
+            <button
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                padding: '8px 16px', borderRadius: '20px', fontSize: '16px', fontWeight: 600,
+                cursor: 'pointer', transition: 'all 0.2s',
+                background: isOverdueOnly ? 'var(--color-danger)' : 'var(--bg-main)',
+                color: isOverdueOnly ? '#fff' : 'var(--text-dark)',
+                border: `1.5px solid ${isOverdueOnly ? 'var(--color-danger)' : 'var(--border-color)'}`,
+              }}
+              onClick={() => setIsOverdueOnly(!isOverdueOnly)}
+            >
+              {isOverdueOnly ? '× ' : ''}Overdue Only
+            </button>
+          </div>
 
           {/* Status — Resolved tab only */}
           {activeTab === 'Resolved' && (
@@ -589,14 +585,6 @@ export default function SupervisorScreen({
             </div>
           </div>
 
-          {/* Closure Banner */}
-          {activeTab === 'Resolved' && awaitingClosureCount > 0 && (
-            <div style={{ background: '#fff8e1', border: '1px solid #ffe082', borderRadius: 'var(--radius-md)', padding: '10px 16px', fontSize: '16px', fontWeight: 600, color: '#f57f17', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span>⚠</span>
-              {awaitingClosureCount} ticket{awaitingClosureCount > 1 ? 's' : ''} awaiting CDPO closure
-            </div>
-          )}
-
           {/* Ticket Grid */}
           {filteredTickets.length === 0 ? (
             <div style={{ padding: '64px 32px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-lg)', textAlign: 'center', color: 'var(--text-muted)' }}>
@@ -607,14 +595,16 @@ export default function SupervisorScreen({
           ) : (
             <BatchedTicketGrid items={filteredTickets} resetKey={gridResetKey}
               renderItem={(ticket) => {
-                const overdue = ticket.daysType === 'overdue' || ticket.isOverdue;
+                // Resolved tickets can be overdue too — they stay on the SLA clock
+                // until the CDPO closes them — so the badge is not Pending-only.
+                const overdue = isTicketOverdue(ticket);
                 const resolvedCfg = activeTab === 'Resolved' ? (RESOLVED_STATUS_CFG[ticket.status || 'CLOSED'] ?? RESOLVED_STATUS_CFG.CLOSED) : null;
                 return (
                   <div key={ticket.id} className="ticket-card" onClick={() => setSelectedTicket(ticket)} style={{ cursor: 'pointer', borderColor: overdue ? 'var(--color-danger)' : 'var(--border-color)' }}>
                     <div className="ticket-card-header">
                       <span className="ticket-id">{ticket.ticketNumber}</span>
                       <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                        {activeTab === 'Pending' && overdue && <span className="badge badge-danger">Overdue</span>}
+                        {overdue && <span className="badge badge-danger">Overdue</span>}
                         {resolvedCfg && (
                           <span style={{ padding: '3px 10px', borderRadius: '4px', fontSize: '14px', fontWeight: 700, letterSpacing: '0.3px', background: resolvedCfg.bg, color: resolvedCfg.color, border: `1px solid ${resolvedCfg.border}` }}>
                             {resolvedCfg.label}
@@ -641,6 +631,7 @@ export default function SupervisorScreen({
                       {activeTab === 'Pending' && (
                         <span style={{ fontWeight: 700, color: overdue ? 'var(--color-danger)' : 'var(--accent-ashoka)' }}>{ticket.daysLabel}</span>
                       )}
+                      {activeTab === 'Resolved' && ticket.feedback && <FeedbackChip rating={ticket.feedback.rating} />}
                     </div>
                     <div className="ticket-awc-row">
                       <span>AWC: <strong className="ticket-awc">{formatAwcName(ticket.awcName)}</strong></span>
