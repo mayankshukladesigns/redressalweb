@@ -29,17 +29,17 @@ const fieldLabelStyle: React.CSSProperties = {
 // escalation path, and the officer reading the screen should not have to.
 const STATUS_CFG: Record<string, { label: string; color: string; bg: string; border: string; hasIcon: boolean; hint: string }> = {
   PENDING:         { label: 'PENDING',         color: '#e65100', bg: '#fff3e0', border: '#ffcc80', hasIcon: false,
-    hint: 'This grievance has been assigned to an officer and is being worked on. No resolution has been submitted yet.' },
+    hint: 'This ticket has been assigned to an official and is being worked on. No resolution has been submitted yet.' },
   OVERDUE:         { label: 'OVERDUE',         color: '#d32f2f', bg: '#ffebee', border: '#ffcdd2', hasIcon: true,
-    hint: 'This grievance has crossed the 21-day deadline and is still not closed. It needs immediate attention.' },
+    hint: 'This ticket has crossed the 21-day deadline and is still not closed. It needs immediate attention.' },
   CLOSED:          { label: 'CLOSED',          color: '#2e7d32', bg: '#e8f5e9', border: '#a5d6a7', hasIcon: false,
-    hint: 'This grievance has been resolved and formally closed. No further action is needed.' },
+    hint: 'This ticket has been resolved and formally closed. No further action is needed.' },
   CLOSURE_PENDING: { label: 'PENDING FOR CLOSURE', color: '#f57f17', bg: '#fff8e1', border: '#ffe082', hasIcon: true,
-    hint: 'The officer has submitted their Action Taken Report. The CDPO now has to review it and formally close the ticket.' },
+    hint: 'The official has submitted their Action Taken Report (ATR). The CDPO now has to review it and formally close the ticket.' },
   APPEAL_RAISED:   { label: 'APPEAL RAISED',   color: '#e65100', bg: '#fff3e0', border: '#ffcc80', hasIcon: true,
-    hint: 'The beneficiary was not satisfied with the resolution and has appealed. The DPO will review the case and decide.' },
+    hint: 'The beneficiary was not satisfied with the resolution and has appealed. The DPO will review the appeal and submit the Action Taken Report (ATR).' },
   APPEAL_RESOLVED: { label: 'APPEAL RESOLVED', color: '#ffffff', bg: '#4f46e5', border: '#4f46e5', hasIcon: true,
-    hint: 'The DPO has reviewed the appeal and given a final decision. The grievance is now complete.' },
+    hint: 'The DPO has reviewed the appeal and submitted the Action Taken Report (ATR). The ticket is now complete.' },
 };
 
 export default function TicketDetailsScreen({

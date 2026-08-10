@@ -177,17 +177,16 @@ const DateRangePopover = ({
 
 // Pending Breakdown Modal
 const PendingBreakdownModal = ({
-  open, onClose, dpoP, dpoO, cdpoP, cdpoO, supP, supO, awwP, awwO,
+  open, onClose, cdpoP, cdpoO, supP, supO, awwP, awwO,
 }: {
   open: boolean; onClose: () => void;
-  dpoP: number; dpoO: number;
   cdpoP: number; cdpoO: number;
   supP: number; supO: number;
   awwP: number; awwO: number;
 }) => {
   if (!open) return null;
-  const totalP = dpoP + cdpoP + supP + awwP;
-  const totalO = dpoO + cdpoO + supO + awwO;
+  const totalP = cdpoP + supP + awwP;
+  const totalO = cdpoO + supO + awwO;
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-card" onClick={e => e.stopPropagation()} style={{ padding: 28, maxWidth: 480 }}>
@@ -210,7 +209,6 @@ const PendingBreakdownModal = ({
             </thead>
             <tbody>
               {[
-                { r: 'DPO', p: dpoP, o: dpoO },
                 { r: 'CDPO', p: cdpoP, o: cdpoO },
                 { r: 'Supervisor', p: supP, o: supO },
                 { r: 'AWW', p: awwP, o: awwO }
@@ -999,7 +997,6 @@ export default function DPOView({
           </thead>
           <tbody>
             {[
-              { label: 'DPO', p: dpoP, r: dpoR },
               { label: 'CDPO', p: cdpoP, r: cdpoR },
               { label: 'Supervisor', p: supP, r: supR },
               { label: 'AWW', p: awwP, r: awwR }
@@ -1013,9 +1010,9 @@ export default function DPOView({
             ))}
             <tr style={{ background: 'var(--primary-light)', fontWeight: 700 }}>
               <td style={{ padding: '14px 10px', paddingLeft: '24px', color: 'var(--primary-deep)', borderRadius: '6px 0 0 6px' }}>Total</td>
-              <td style={{ textAlign: 'right', padding: '14px 10px', color: 'var(--accent-saffron)', fontSize: '20px' }}>{dpoP + cdpoP + supP + awwP}</td>
-              <td style={{ textAlign: 'right', padding: '14px 10px', color: 'var(--accent-green)', fontSize: 20 }}>{dpoR + cdpoR + supR + awwR}</td>
-              <td style={{ textAlign: 'right', padding: '14px 10px', paddingRight: '24px', color: 'var(--primary-deep)', fontSize: 20, borderRadius: '0 6px 6px 0' }}>{dpoP + cdpoP + supP + awwP + dpoR + cdpoR + supR + awwR}</td>
+              <td style={{ textAlign: 'right', padding: '14px 10px', color: 'var(--accent-saffron)', fontSize: '20px' }}>{cdpoP + supP + awwP}</td>
+              <td style={{ textAlign: 'right', padding: '14px 10px', color: 'var(--accent-green)', fontSize: 20 }}>{cdpoR + supR + awwR}</td>
+              <td style={{ textAlign: 'right', padding: '14px 10px', paddingRight: '24px', color: 'var(--primary-deep)', fontSize: 20, borderRadius: '0 6px 6px 0' }}>{cdpoP + supP + awwP + cdpoR + supR + awwR}</td>
             </tr>
           </tbody>
         </table>
@@ -1473,7 +1470,6 @@ export default function DPOView({
       {/* Pending Breakdown Modal */}
       <PendingBreakdownModal
         open={pendingModal} onClose={() => setPendingModal(false)}
-        dpoP={dpoP} dpoO={dpoO}
         cdpoP={cdpoP} cdpoO={cdpoO}
         supP={supP} supO={supO}
         awwP={awwP} awwO={awwO}
