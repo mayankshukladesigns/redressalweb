@@ -75,6 +75,11 @@ export default function TicketDetailsScreen({
   // — otherwise the "Resolve Appeal" CTA reappears on an already-decided appeal.
   const isAppeal = currentCard.status === 'APPEAL_RAISED' || (currentCard._isAppeal && currentCard.status !== 'APPEAL_RESOLVED');
   const hasAppealReason = isAppeal || currentCard.status === 'APPEAL_RESOLVED';
+  // The appeal is the DPO's file to read. The CDPO, the Supervisor and the AWW
+  // can see from the status and the timeline that an appeal was raised, but the
+  // beneficiary's grievance against their handling is not theirs to read — the
+  // same reasoning that keeps the DPO's own decision out of their drawer.
+  const showAppealReason = hasAppealReason && assignedFilter === 'DPO';
   // The SLA runs until the ticket is settled, not until it is resolved — so a
   // ticket sitting in a closure queue or under appeal can breach it too. A pending
   // ticket says so through its status chip; the rest need a separate pill, since
@@ -609,7 +614,7 @@ export default function TicketDetailsScreen({
               the account of an earlier one. Only acts that have actually happened
               appear here; an outstanding step is reported by the timeline, which
               is the one place that tracks what a ticket is still waiting on. */}
-          {!isPending && (currentCard.actionTaken || hasAppealReason) && (
+          {!isPending && (currentCard.actionTaken || showAppealReason) && (
             <div>
               <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-dark)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid #cbd5e1', paddingBottom: '8px', marginBottom: '12px' }}>
                 Resolution Details
@@ -642,8 +647,9 @@ export default function TicketDetailsScreen({
                 )}
 
                 {/* Why the beneficiary appealed. Stays visible once the appeal is
-                    decided too — it's the record of what the DPO was asked to review. */}
-                {hasAppealReason && (
+                    decided too — it's the record of what the DPO was asked to
+                    review, and only the DPO reads it. */}
+                {showAppealReason && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     <span style={fieldLabelStyle}>Appeal Reason by Beneficiary</span>
                     <div style={{ background: '#fff3e0', border: '1px solid #ffcc80', borderRadius: '6px', padding: '14px 16px', fontSize: '16px', color: '#e65100', whiteSpace: 'pre-line', lineHeight: '1.4' }}>
