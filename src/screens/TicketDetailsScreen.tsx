@@ -693,20 +693,14 @@ export default function TicketDetailsScreen({
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '14px', background: feedbackCfg.bg, border: `1px solid ${feedbackCfg.border}`, borderRadius: '6px', padding: '14px 16px' }}>
                   <FeedbackIcon size={26} style={{ color: feedbackCfg.color, flexShrink: 0 }} />
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                    <span style={{ fontSize: '16px', fontWeight: 700, color: feedbackCfg.color }}>
-                      Experience rated {feedback.rating}
-                    </span>
-                    <span style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
-                      {feedback.satisfied ? 'Satisfied with the resolution' : 'Not satisfied with the resolution'}
-                      {feedback.submittedOn ? ` · Submitted on ${feedback.submittedOn}` : ''}
-                    </span>
-                  </div>
+                  <span style={{ fontSize: '16px', fontWeight: 700, color: feedbackCfg.color }}>
+                    Experience rated {feedback.rating}
+                  </span>
                 </div>
 
                 {feedback.comment && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <span style={fieldLabelStyle}>Feedback by Beneficiary</span>
+                    <span style={fieldLabelStyle}>Description</span>
                     <div style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '14px 16px', fontSize: '16px', color: '#1e293b', whiteSpace: 'pre-line', lineHeight: '1.4' }}>
                       {feedback.comment}
                     </div>

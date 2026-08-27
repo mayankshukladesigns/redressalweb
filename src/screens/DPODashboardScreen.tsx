@@ -1191,7 +1191,7 @@ export default function DPOView({
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Source</label>
             <div style={{ display: 'flex', gap: 6 }}>
-              {([['All', 'All'], ['WEB', 'Web'], ['APP', 'App'], ['CALL_CENTRE', 'Call Centre']] as [SourceFilter, string][]).map(([val, lbl]) => (
+              {([['All', 'All'], ['WEB', 'Web'], ['CALL_CENTRE', 'Call Centre']] as [SourceFilter, string][]).map(([val, lbl]) => (
                 <button key={val} onClick={() => setSourceFilter(val)} style={{
                   flex: 1, padding: '7px 4px', borderRadius: 20, fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
                   border: `1.5px solid ${sourceFilter === val ? 'var(--primary-deep)' : 'var(--border-color)'}`,
