@@ -700,7 +700,7 @@ export default function TicketDetailsScreen({
 
                 {feedback.comment && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <span style={fieldLabelStyle}>Description</span>
+                    <span style={fieldLabelStyle}>Feedback by Beneficiary</span>
                     <div style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '14px 16px', fontSize: '16px', color: '#1e293b', whiteSpace: 'pre-line', lineHeight: '1.4' }}>
                       {feedback.comment}
                     </div>
