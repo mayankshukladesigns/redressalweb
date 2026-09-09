@@ -321,7 +321,7 @@ const PendingCard = ({ card, showDocs, onView }: { card: TicketCard; showDocs: b
       <div className="ticket-awc-row">
         <span>AWC: <strong className="ticket-awc">{formatAwcName(card.awcName)}</strong></span>
         {showDocs && isCorruptionOrUrgent && (card.documentsCount ?? 0) > 0 && (
-          <span style={{ background: '#e8eaf6', color: '#1565c0', padding: '2px 8px', borderRadius: 4, fontSize: 14, fontWeight: 600, border: '1px solid #90caf9' }}>Doc Uploaded</span>
+          <span style={{ background: '#e8eaf6', color: '#1565c0', padding: '2px 8px', borderRadius: 4, fontSize: 12, fontWeight: 600, border: '1px solid #90caf9', whiteSpace: 'nowrap', flexShrink: 0 }}>Doc Uploaded</span>
         )}
       </div>
       <button className="ux4g-btn ux4g-btn-secondary ux4g-btn-md" style={{ width: '100%', display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center' }}

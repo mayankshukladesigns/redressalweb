@@ -360,7 +360,7 @@ const TicketCardComponent = ({ card, onView }: { card: TicketCard; onView: () =>
       <div className="ticket-awc-row">
         <span>AWC: <strong className="ticket-awc">{formatAwcName(card.awcName)}</strong></span>
         {isCorruptionOrUrgent && (card.documentsCount ?? 0) > 0 && (
-          <span style={{ background: '#e8eaf6', color: '#1565c0', padding: '2px 8px', borderRadius: 4, fontSize: 14, fontWeight: 600, border: '1px solid #90caf9' }}>
+          <span style={{ background: '#e8eaf6', color: '#1565c0', padding: '2px 8px', borderRadius: 4, fontSize: 12, fontWeight: 600, border: '1px solid #90caf9', whiteSpace: 'nowrap', flexShrink: 0 }}>
             Doc Uploaded
           </span>
         )}
@@ -466,6 +466,7 @@ const AppealCard = ({ card, onResolve, onViewDetails }: { card: AppealTicket; on
   // The DPO has 21 days from the filing date to decide an appeal; past that the
   // appeal is flagged exactly like an overdue grievance.
   const appealOverdue = isAppealOverdue(card);
+  const hasDocs = Boolean(card.documents) && (card.complaintType === 'Corruption' || card.complaintType === 'Urgent');
 
   return (
     <div className="ticket-card" style={{ borderColor: isResolved ? 'var(--accent-green)' : appealOverdue ? 'var(--color-danger)' : 'var(--accent-saffron)' }} onClick={isResolved ? onViewDetails : onResolve}>
@@ -499,17 +500,22 @@ const AppealCard = ({ card, onResolve, onViewDetails }: { card: AppealTicket; on
         </p>
       </div>
 
-      <div className="ticket-awc-row">
-        <span style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          <span>Filed: <strong>{card.appealDate?.replace('Appeal Filed:', '') || '28 Jun 2025'}</strong></span>
-          {appealOverdue && (
-            <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--color-danger)' }}>{appealOverdueLabel(card)}</span>
-          )}
-        </span>
-        {card.documents && (card.complaintType === 'Corruption' || card.complaintType === 'Urgent') && (
-          <span style={{ background: '#e8eaf6', color: '#1565c0', padding: '2px 8px', borderRadius: 4, fontSize: 14, fontWeight: 600, border: '1px solid #90caf9' }}>
+      <div className="ticket-awc-row" style={{ flexWrap: 'wrap', rowGap: 6 }}>
+        <span>Filed: <strong>{card.appealDate?.replace('Appeal Filed:', '') || '28 Jun 2025'}</strong></span>
+        {/* The right-hand slot holds the doc chip when the appeal has one, so it
+            lines up with the filed date; otherwise the overdue label takes that
+            slot and the row reads balanced end to end. */}
+        {hasDocs ? (
+          <span style={{ background: '#e8eaf6', color: '#1565c0', padding: '2px 8px', borderRadius: 4, fontSize: 12, fontWeight: 600, border: '1px solid #90caf9', whiteSpace: 'nowrap', flexShrink: 0 }}>
             Doc Uploaded
           </span>
+        ) : appealOverdue && (
+          <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--color-danger)' }}>{appealOverdueLabel(card)}</span>
+        )}
+        {/* Chip and overdue both present: the overdue label drops to a full-width
+            line of its own rather than squeezing the chip off the filed line. */}
+        {hasDocs && appealOverdue && (
+          <span style={{ width: '100%', fontWeight: 700, fontSize: 14, color: 'var(--color-danger)' }}>{appealOverdueLabel(card)}</span>
         )}
       </div>
 
