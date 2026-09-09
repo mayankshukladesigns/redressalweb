@@ -34,10 +34,6 @@ const COMPLAINT_TYPES = ['Urgent', 'Corruption', 'General'];
 const COMPLAINT_PRIORITY: Record<string, number> = { Urgent: 0, Corruption: 1, General: 2 };
 const complaintRank = (t?: string) => COMPLAINT_PRIORITY[t ?? ''] ?? 3;
 
-// Tickets predating the origin field are treated as web self-service.
-type SourceFilter = 'All' | 'WEB' | 'APP' | 'CALL_CENTRE';
-const channelOf = (c: { origin?: { channel?: string } }) => c.origin?.channel ?? 'WEB';
-const passesSource = (c: { origin?: { channel?: string } }, f: SourceFilter) => f === 'All' || channelOf(c) === f;
 const BENEFICIARY_CATEGORIES = [
   'Pregnant Woman', 'Lactating Mother', 'Children 0-6 months',
   'Children (6m-3y)', 'Children (3-6y)', 'Adolescent Girl',
@@ -220,7 +216,7 @@ const PendingBreakdownModal = ({
           </table>
         </div>
         <div style={{ display: 'flex', gap: 10, background: 'var(--color-info-light)', borderRadius: 'var(--radius-md)', padding: '12px 14px' }}>
-          <Info size={15} style={{ color: 'var(--color-info)', flexShrink: 0, marginTop: 1 }} />
+          <Info size={15} style={{ color: 'var(--color-info)', flexShrink: 0, alignSelf: 'flex-start', marginTop: 4.9 }} />
           <p style={{ margin: 0, fontSize: 16, color: 'var(--text-dark)', lineHeight: 1.55 }}>
             <strong>Pending</strong> is the count of tickets still awaiting action. <strong>Overdue</strong> tickets are grievances pending for more than 21 days and need immediate attention.
           </p>
@@ -457,9 +453,6 @@ export default function CDPOView({
   // Pending-for-Closure only: which official resolved the ticket
   const [resolvedByFilter, setResolvedByFilter] = useState<'All' | 'Supervisor' | 'AWW'>('All');
 
-  // Source channel filter — applies on every tab.
-  const [sourceFilter, setSourceFilter] = useState<SourceFilter>('All');
-
 
   // ── Handle role/tab switch ────────────────────────────────────────────────────
   const clearAllFilters = () => {
@@ -467,7 +460,6 @@ export default function CDPOView({
     setAppliedDateOption(null);
     setAppliedTypes([]); setAppliedCategories([]); setAppliedStatuses([]);
     setResolvedByFilter('All');
-    setSourceFilter('All');
   };
 
   const handleRoleSwitch = (role: AssignedFilter) => {
@@ -507,7 +499,6 @@ export default function CDPOView({
   // ── Filter logic ──────────────────────────────────────────────────────────────
   const displayedPending = allPending.filter(card => {
     if (card.assignedTo && card.assignedTo !== assignedFilter) return false;
-    if (!passesSource(card, sourceFilter)) return false;
     if ((assignedFilter === 'Supervisor' || assignedFilter === 'AWW') && selectedSector !== 'All Sectors') {
       if (!card.sector || card.sector !== selectedSector) return false;
     }
@@ -532,7 +523,6 @@ export default function CDPOView({
 
   const displayedResolved = allResolved.filter(card => {
     if (card.assignedTo && card.assignedTo !== assignedFilter) return false;
-    if (!passesSource(card, sourceFilter)) return false;
     if ((assignedFilter === 'Supervisor' || assignedFilter === 'AWW') && selectedSector !== 'All Sectors') {
       if (!card.sector || card.sector !== selectedSector) return false;
     }
@@ -561,7 +551,6 @@ export default function CDPOView({
     if (!card.awaitingCdpoClosure) return false;
     if (card.assignedTo !== 'Supervisor' && card.assignedTo !== 'AWW') return false;
     if (resolvedByFilter !== 'All' && card.assignedTo !== resolvedByFilter) return false;
-    if (!passesSource(card, sourceFilter)) return false;
     // Nothing in this queue is closed yet, so every card here is still on the clock.
     if (isOverdueOnly && !isTicketOverdue(card)) return false;
     if (!passesDateFilter(card.resolvedDate ?? '', appliedDateOption)) return false;
@@ -583,14 +572,13 @@ export default function CDPOView({
   const gridResetKey = [
     assignedFilter, activeTab, selectedSector, selectedAWC, searchQuery, isOverdueOnly,
     appliedDateOption, appliedTypes.join(','), appliedCategories.join(','),
-    appliedStatuses.join(','), resolvedByFilter, sourceFilter,
+    appliedStatuses.join(','), resolvedByFilter,
   ].join('|');
 
   // Active filter count for badge
   const activeFilterCount =
     (isOverdueOnly ? 1 : 0) +
     (activeTab === 'PendingClosure' && resolvedByFilter !== 'All' ? 1 : 0) +
-    (sourceFilter !== 'All' ? 1 : 0) +
     (appliedDateOption ? 1 : 0) +
     appliedTypes.length +
     appliedCategories.length +
@@ -849,23 +837,6 @@ export default function CDPOView({
             </>
           )}
 
-          {/* Source channel — shown on every tab */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Source</label>
-            <div style={{ display: 'flex', gap: 6 }}>
-              {([['All', 'All'], ['WEB', 'Web'], ['CALL_CENTRE', 'Call Centre']] as [SourceFilter, string][]).map(([val, lbl]) => (
-                <button key={val} onClick={() => setSourceFilter(val)} style={{
-                  flex: 1, padding: '7px 4px', borderRadius: 20, fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
-                  border: `1.5px solid ${sourceFilter === val ? 'var(--primary-deep)' : 'var(--border-color)'}`,
-                  background: sourceFilter === val ? 'var(--primary-deep)' : 'var(--bg-main)',
-                  color: sourceFilter === val ? '#ffffff' : 'var(--text-dark)',
-                }}>
-                  {lbl}
-                </button>
-              ))}
-            </div>
-          </div>
-
           {/* Date Range */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, position: 'relative' }}>
             <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
@@ -929,6 +900,39 @@ export default function CDPOView({
               <input type="text" className="search-input" placeholder="Search tickets..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
             </div>
           </div>
+
+          {/* Tab helper text — the three queues sound alike, so each one states
+              plainly whose tickets it holds and what the CDPO still has to do. */}
+          {activeTab === 'Pending' && (
+            <div style={{ display: 'flex', gap: 10, background: 'var(--color-info-light)', borderRadius: 'var(--radius-md)', padding: '12px 14px', border: '1px solid var(--border-color)' }}>
+              <Info size={15} style={{ color: 'var(--color-info)', flexShrink: 0, alignSelf: 'flex-start', marginTop: 4.5 }} />
+              <p style={{ margin: 0, fontSize: 16, color: 'var(--text-dark)', lineHeight: 1.5 }}>
+                {assignedFilter === 'CDPO'
+                  ? <>Grievances <strong>assigned directly to you</strong>. Open a ticket to review it and record your resolution.</>
+                  : <>Grievances still being worked on by the <strong>{assignedFilter === 'AWW' ? 'Anganwadi Worker' : 'Supervisor'}</strong>. Once they resolve one, it comes to you for final closure.</>}
+              </p>
+            </div>
+          )}
+
+          {activeTab === 'PendingClosure' && (
+            <div style={{ display: 'flex', gap: 10, background: '#fff8e1', borderRadius: 'var(--radius-md)', padding: '12px 14px', border: '1px solid #ffe082' }}>
+              <Clock size={15} style={{ color: '#f57f17', flexShrink: 0, alignSelf: 'flex-start', marginTop: 4.5 }} />
+              <p style={{ margin: 0, fontSize: 16, color: 'var(--text-dark)', lineHeight: 1.5 }}>
+                Grievances an <strong>Anganwadi Worker or Supervisor has already resolved</strong> — but they are not finished until <strong>you close them</strong>. Open a ticket to check the resolution and close it.
+              </p>
+            </div>
+          )}
+
+          {activeTab === 'Resolved' && (
+            <div style={{ display: 'flex', gap: 10, background: 'var(--accent-green-light)', borderRadius: 'var(--radius-md)', padding: '12px 14px', border: '1px solid var(--accent-green)' }}>
+              <ShieldCheck size={15} style={{ color: 'var(--accent-green)', flexShrink: 0, alignSelf: 'flex-start', marginTop: 4.5 }} />
+              <p style={{ margin: 0, fontSize: 16, color: 'var(--text-dark)', lineHeight: 1.5 }}>
+                {assignedFilter === 'CDPO'
+                  ? <>Grievances that were <strong>assigned to you</strong> and you have <strong>already resolved</strong>. Nothing left to do — kept here for your records.</>
+                  : <>Grievances the <strong>{assignedFilter === 'AWW' ? 'Anganwadi Worker' : 'Supervisor'}</strong> has already resolved, including any that are still waiting on your closure.</>}
+              </p>
+            </div>
+          )}
 
           {/* Ticket Grid */}
           {activeTab === 'Pending' ? (
