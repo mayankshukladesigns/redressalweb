@@ -77,3 +77,14 @@ export function isAppealOverdue(appeal: { status?: string; appealDate?: string }
   return appealAgeDays(appeal.appealDate) >= SLA_DAYS;
 }
 
+// Mirrors overdueByDays/overdueLabel for the appeal clock, so an overdue appeal
+// reads the same on an appeal card as an overdue grievance does on a ticket card.
+export function appealOverdueByDays(appeal: { status?: string; appealDate?: string }): number {
+  if (!isAppealOverdue(appeal)) return 0;
+  return Math.max(1, appealAgeDays(appeal.appealDate) - SLA_DAYS + 1);
+}
+
+export function appealOverdueLabel(appeal: { status?: string; appealDate?: string }): string {
+  const days = appealOverdueByDays(appeal);
+  return `Overdue by ${days} Day${days === 1 ? '' : 's'}`;
+}

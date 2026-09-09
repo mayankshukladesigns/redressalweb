@@ -4,7 +4,7 @@ import { initialAppealTickets } from '../web/mockData';
 import TicketDetailsScreen from './TicketDetailsScreen';
 import BatchedTicketGrid from '../components/BatchedTicketGrid';
 import FeedbackChip from '../components/FeedbackChip';
-import { isTicketOverdue, overdueLabel, isAppealOverdue } from '../web/sla';
+import { isTicketOverdue, overdueLabel, isAppealOverdue, appealOverdueLabel, appealAgeDays } from '../web/sla';
 import {
   Search,
   AlertTriangle,
@@ -44,10 +44,6 @@ const COMPLAINT_TYPES = ['Urgent', 'Corruption', 'General'];
 const COMPLAINT_PRIORITY: Record<string, number> = { Urgent: 0, Corruption: 1, General: 2 };
 const complaintRank = (t?: string) => COMPLAINT_PRIORITY[t ?? ''] ?? 3;
 
-// Tickets predating the origin field are treated as web self-service.
-type SourceFilter = 'All' | 'WEB' | 'APP' | 'CALL_CENTRE';
-const channelOf = (c: { origin?: { channel?: string } }) => c.origin?.channel ?? 'WEB';
-const passesSource = (c: { origin?: { channel?: string } }, f: SourceFilter) => f === 'All' || channelOf(c) === f;
 const BENEFICIARY_CATEGORIES = [
   'Pregnant Woman', 'Lactating Mother', 'Children 0-6 months',
   'Children (6m-3y)', 'Children (3-6y)', 'Adolescent Girl',
@@ -228,7 +224,7 @@ const PendingBreakdownModal = ({
           </table>
         </div>
         <div style={{ display: 'flex', gap: 10, background: 'var(--color-info-light)', borderRadius: 'var(--radius-md)', padding: '12px 14px' }}>
-          <Info size={15} style={{ color: 'var(--color-info)', flexShrink: 0, marginTop: 1 }} />
+          <Info size={15} style={{ color: 'var(--color-info)', flexShrink: 0, alignSelf: 'flex-start', marginTop: 4.9 }} />
           <p style={{ margin: 0, fontSize: 16, color: 'var(--text-dark)', lineHeight: 1.55 }}>
             <strong>Pending</strong> is the count of tickets still awaiting action. <strong>Overdue</strong> tickets are grievances pending for more than 21 days and need immediate attention.
           </p>
@@ -309,7 +305,7 @@ const ResolvedBreakdownModal = ({
             these counts. Stated once, in plain language, so the absence reads as
             deliberate rather than as missing data. */}
         <div style={{ display: 'flex', gap: 10, background: 'var(--color-info-light)', borderRadius: 'var(--radius-md)', padding: '12px 14px', marginTop: 18 }}>
-          <Info size={15} style={{ color: 'var(--color-info)', flexShrink: 0, marginTop: 1 }} />
+          <Info size={15} style={{ color: 'var(--color-info)', flexShrink: 0, alignSelf: 'flex-start', marginTop: 4.9 }} />
           <p style={{ margin: 0, fontSize: 16, color: 'var(--text-dark)', lineHeight: 1.55 }}>
             Grievances are always assigned to the CDPO, Supervisor or AWW — never to the DPO directly.
             When a beneficiary is not satisfied with the resolution, they can raise an appeal, and <strong>every appeal is reviewed and resolved by the DPO</strong>.
@@ -467,14 +463,24 @@ const ResolvedCard = ({ card, onView, showOwnerChip }: { card: ResolvedTicketCar
 const AppealCard = ({ card, onResolve, onViewDetails }: { card: AppealTicket; onResolve: () => void; onViewDetails: () => void }) => {
   const roleStyle = getRoleChipStyle(card.roleLabel);
   const isResolved = card.status === 'resolved';
+  // The DPO has 21 days from the filing date to decide an appeal; past that the
+  // appeal is flagged exactly like an overdue grievance.
+  const appealOverdue = isAppealOverdue(card);
 
   return (
-    <div className="ticket-card" style={{ borderColor: isResolved ? 'var(--accent-green)' : 'var(--accent-saffron)' }} onClick={isResolved ? onViewDetails : onResolve}>
+    <div className="ticket-card" style={{ borderColor: isResolved ? 'var(--accent-green)' : appealOverdue ? 'var(--color-danger)' : 'var(--accent-saffron)' }} onClick={isResolved ? onViewDetails : onResolve}>
       <div className="ticket-card-header">
         <span className="ticket-id">{card.ticketNumber}</span>
-        <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 14, fontWeight: 700, background: roleStyle.bg, color: roleStyle.color, border: `1px solid ${roleStyle.border}` }}>
-          {card.roleLabel?.toUpperCase()}
-        </span>
+        <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+          {appealOverdue && (
+            <span className="badge badge-danger" style={{ backgroundColor: '#ffebee', color: '#d32f2f', border: '1px solid #ffcdd2' }}>
+              OVERDUE
+            </span>
+          )}
+          <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 14, fontWeight: 700, background: roleStyle.bg, color: roleStyle.color, border: `1px solid ${roleStyle.border}` }}>
+            {card.roleLabel?.toUpperCase()}
+          </span>
+        </div>
       </div>
 
       <div className="ticket-title-row">
@@ -494,7 +500,12 @@ const AppealCard = ({ card, onResolve, onViewDetails }: { card: AppealTicket; on
       </div>
 
       <div className="ticket-awc-row">
-        <span>Filed: <strong>{card.appealDate?.replace('Appeal Filed:', '') || '28 Jun 2025'}</strong></span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <span>Filed: <strong>{card.appealDate?.replace('Appeal Filed:', '') || '28 Jun 2025'}</strong></span>
+          {appealOverdue && (
+            <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--color-danger)' }}>{appealOverdueLabel(card)}</span>
+          )}
+        </span>
         {card.documents && (card.complaintType === 'Corruption' || card.complaintType === 'Urgent') && (
           <span style={{ background: '#e8eaf6', color: '#1565c0', padding: '2px 8px', borderRadius: 4, fontSize: 14, fontWeight: 600, border: '1px solid #90caf9' }}>
             Doc Uploaded
@@ -580,7 +591,6 @@ export default function DPOView({
   const [appliedTypes, setAppliedTypes] = useState<string[]>([]);
   const [appliedStatuses, setAppliedStatuses] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const [sourceFilter, setSourceFilter] = useState<SourceFilter>('All');
   // Pending-for-Closure only: which official resolved the ticket (CDPO scope only)
   const [resolvedByFilter, setResolvedByFilter] = useState<'All' | 'Supervisor' | 'AWW'>('All');
   // Appeals / Appeal Resolved only (DPO scope, where every role's appeals are
@@ -595,7 +605,6 @@ export default function DPOView({
     setAppliedTypes([]);
     setAppliedStatuses([]);
     setSelectedCategory('All');
-    setSourceFilter('All');
     setResolvedByFilter('All');
     setOfficialFilter('All');
   };
@@ -675,9 +684,6 @@ export default function DPOView({
 
   // ─── Filter logic helper for active lists ───
   const applyCommonFilters = (t: TicketCard) => {
-    // 0. Source channel
-    if (!passesSource(t, sourceFilter)) return false;
-
     // 1. Scoping dropdowns
     if (assignedFilter === 'CDPO' && selectedProject !== 'All Projects') {
       if (!t.project || t.project !== selectedProject) return false;
@@ -760,7 +766,6 @@ export default function DPOView({
     if (!card.awaitingCdpoClosure) return false;
     if (card.assignedTo !== 'Supervisor' && card.assignedTo !== 'AWW') return false;
     if (resolvedByFilter !== 'All' && card.assignedTo !== resolvedByFilter) return false;
-    if (!passesSource(card, sourceFilter)) return false;
     if (selectedProject !== 'All Projects' && card.project !== selectedProject) return false;
     if (selectedCategory !== 'All' && card.beneficiaryType !== selectedCategory) return false;
     // Nothing in this queue is closed yet, so every card here is still on the clock.
@@ -789,8 +794,6 @@ export default function DPOView({
     }
     if (appeal.status === 'resolved') return false;
 
-    if (!passesSource(appeal, sourceFilter)) return false;
-
     // An appeal awaiting the DPO's decision is measured against the 21-day deadline
     // from the date the appeal was raised (appealDate).
     if (isOverdueOnly && !isAppealOverdue(appeal)) return false;
@@ -816,6 +819,12 @@ export default function DPOView({
     }
 
     return true;
+  }).sort((a, b) => {
+    // Overdue appeals lead the queue; within each group the oldest appeal — the
+    // one nearest to (or deepest past) the 21-day deadline — sits highest.
+    const overdueDiff = Number(isAppealOverdue(b)) - Number(isAppealOverdue(a));
+    if (overdueDiff !== 0) return overdueDiff;
+    return appealAgeDays(b.appealDate) - appealAgeDays(a.appealDate);
   });
 
   // ─── 4. Appeal Resolved Tab List ─── (appeals the DPO has already adjudicated,
@@ -824,8 +833,6 @@ export default function DPOView({
   const displayedAppealsResolved = appealList.filter(appeal => {
     if (appeal.status !== 'resolved') return false;
     if (officialFilter !== 'All' && appeal.roleLabel !== officialFilter) return false;
-
-    if (!passesSource(appeal, sourceFilter)) return false;
 
     const beneficiaryType = APPEAL_CATEGORY_MAP[appeal.byName] || 'Beneficiary';
     if (selectedCategory !== 'All' && beneficiaryType !== selectedCategory) return false;
@@ -860,7 +867,7 @@ export default function DPOView({
   // Any change to scope, tab or a filter snaps the batched grids back to page one.
   const gridResetKey = [
     assignedFilter, activeTab, selectedProject, selectedSector, selectedAWC, searchQuery,
-    isOverdueOnly, appliedDateOption, appliedTypes.join(','), appliedStatuses.join(','), selectedCategory, sourceFilter, resolvedByFilter, officialFilter,
+    isOverdueOnly, appliedDateOption, appliedTypes.join(','), appliedStatuses.join(','), selectedCategory, resolvedByFilter, officialFilter,
   ].join('|');
 
   // Active filter count
@@ -870,7 +877,6 @@ export default function DPOView({
     ((activeTab === 'Appeals' || activeTab === 'Appeal Resolved') && officialFilter !== 'All' ? 1 : 0) +
     (appliedDateOption ? 1 : 0) +
     (selectedCategory !== 'All' ? 1 : 0) +
-    (sourceFilter !== 'All' ? 1 : 0) +
     appliedTypes.length +
     appliedStatuses.length;
 
@@ -1187,23 +1193,6 @@ export default function DPOView({
             </div>
           )}
 
-          {/* Source channel — shown on every tab */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Source</label>
-            <div style={{ display: 'flex', gap: 6 }}>
-              {([['All', 'All'], ['WEB', 'Web'], ['CALL_CENTRE', 'Call Centre']] as [SourceFilter, string][]).map(([val, lbl]) => (
-                <button key={val} onClick={() => setSourceFilter(val)} style={{
-                  flex: 1, padding: '7px 4px', borderRadius: 20, fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
-                  border: `1.5px solid ${sourceFilter === val ? 'var(--primary-deep)' : 'var(--border-color)'}`,
-                  background: sourceFilter === val ? 'var(--primary-deep)' : 'var(--bg-main)',
-                  color: sourceFilter === val ? '#ffffff' : 'var(--text-dark)',
-                }}>
-                  {lbl}
-                </button>
-              ))}
-            </div>
-          </div>
-
           {/* Submission / Resolution Date */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, position: 'relative' }}>
             <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
@@ -1289,7 +1278,7 @@ export default function DPOView({
           {/* Appeals Tab Info Box */}
           {activeTab === 'Appeals' && (
             <div style={{ display: 'flex', gap: 10, background: 'var(--color-info-light)', borderRadius: 'var(--radius-md)', padding: '12px 14px', border: '1px solid var(--border-color)' }}>
-              <Info size={15} style={{ color: 'var(--color-info)', flexShrink: 0, marginTop: 1 }} />
+              <Info size={15} style={{ color: 'var(--color-info)', flexShrink: 0, alignSelf: 'flex-start', marginTop: 4.5 }} />
               <p style={{ margin: 0, fontSize: 16, color: 'var(--text-dark)', lineHeight: 1.5 }}>
                 <strong>Appeals</strong> are grievances escalated by beneficiaries who are unsatisfied with the resolution. DPO acts as the Senior Redressal Authority to audit and resolve them.
               </p>
@@ -1299,7 +1288,7 @@ export default function DPOView({
           {/* Appeal Resolved Tab Info Box */}
           {activeTab === 'Appeal Resolved' && (
             <div style={{ display: 'flex', gap: 10, background: 'var(--accent-green-light)', borderRadius: 'var(--radius-md)', padding: '12px 14px', border: '1px solid var(--accent-green)' }}>
-              <ShieldCheck size={15} style={{ color: 'var(--accent-green)', flexShrink: 0, marginTop: 1 }} />
+              <ShieldCheck size={15} style={{ color: 'var(--accent-green)', flexShrink: 0, alignSelf: 'flex-start', marginTop: 4.5 }} />
               <p style={{ margin: 0, fontSize: 16, color: 'var(--text-dark)', lineHeight: 1.5 }}>
                 These are appeals you've already reviewed and resolved, kept here for your records.
               </p>
@@ -1309,7 +1298,7 @@ export default function DPOView({
           {/* Pending for Closure Tab Info Box */}
           {activeTab === 'PendingClosure' && (
             <div style={{ display: 'flex', gap: 10, background: '#fff8e1', borderRadius: 'var(--radius-md)', padding: '12px 14px', border: '1px solid #ffe082' }}>
-              <Clock size={15} style={{ color: '#f57f17', flexShrink: 0, marginTop: 1 }} />
+              <Clock size={15} style={{ color: '#f57f17', flexShrink: 0, alignSelf: 'flex-start', marginTop: 4.5 }} />
               <p style={{ margin: 0, fontSize: 16, color: 'var(--text-dark)', lineHeight: 1.5 }}>
                 Tickets the Supervisor or AWW have already resolved, waiting on the CDPO to formally close them. View only — closing happens from the CDPO's own screen.
               </p>
@@ -1319,7 +1308,7 @@ export default function DPOView({
           {/* Visibility notice — DPO can monitor these queues but never act on them */}
           {activeTab === 'Pending' && (assignedFilter === 'CDPO' || assignedFilter === 'Supervisor' || assignedFilter === 'AWW') && (
             <div style={{ display: 'flex', gap: 10, background: '#fff3e0', borderRadius: 'var(--radius-md)', padding: '12px 14px', border: '1px solid #ffcc80' }}>
-              <Info size={15} style={{ color: '#e65100', flexShrink: 0, marginTop: 1 }} />
+              <Info size={15} style={{ color: '#e65100', flexShrink: 0, alignSelf: 'flex-start', marginTop: 4.5 }} />
               <p style={{ margin: 0, fontSize: 16, color: 'var(--text-dark)', lineHeight: 1.5 }}>
                 Showing all pending {assignedFilter} tickets. These are <strong>view-only</strong>; resolution and closure stay with the assignee.
               </p>
