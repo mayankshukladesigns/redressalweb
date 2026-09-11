@@ -84,11 +84,6 @@ const formatAwcName = (name: string | undefined): string => {
 const COMPLAINT_PRIORITY: Record<string, number> = { Urgent: 0, Corruption: 1, General: 2 };
 const complaintRank = (t?: string) => COMPLAINT_PRIORITY[t ?? ''] ?? 3;
 
-// Tickets predating the origin field are treated as web self-service.
-type SourceFilter = 'All' | 'WEB' | 'APP' | 'CALL_CENTRE';
-const channelOf = (c: { origin?: { channel?: string } }) => c.origin?.channel ?? 'WEB';
-const passesSource = (c: { origin?: { channel?: string } }, f: SourceFilter) => f === 'All' || channelOf(c) === f;
-
 function ticketAge(submittedDate?: string): number {
   const d = parseSubmittedDate(submittedDate);
   if (!d) return 0;
@@ -140,7 +135,6 @@ export default function SupervisorScreen({
   const [isOverdueOnly, setIsOverdueOnly] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [appliedStatuses, setAppliedStatuses] = useState<string[]>([]);
-  const [sourceFilter, setSourceFilter] = useState<SourceFilter>('All');
 
   // Date range filter
   const dateButtonRef = useRef<HTMLButtonElement>(null);
@@ -222,7 +216,6 @@ export default function SupervisorScreen({
     return list.filter((ticket) => {
       if (!matchesScope(ticket)) return false;
 
-      if (!passesSource(ticket, sourceFilter)) return false;
 
       // The SLA runs until closure, not until resolution — a ticket awaiting the
       // CDPO's sign-off or sitting under appeal is still on the clock, so the
@@ -270,7 +263,7 @@ export default function SupervisorScreen({
   // Any change to scope, tab or a filter snaps the batched grid back to page one.
   const gridResetKey = [
     activeTab, scopeFilter, selectedAWC, searchQuery, isOverdueOnly,
-    selectedCategory, appliedStatuses.join(','), appliedDateOption, sourceFilter,
+    selectedCategory, appliedStatuses.join(','), appliedDateOption,
   ].join('|');
 
   const handleResolveTicket = (ticketId: string, closureNote: string) => {
@@ -296,8 +289,7 @@ export default function SupervisorScreen({
     (isOverdueOnly ? 1 : 0) +
     (selectedCategory !== 'All' ? 1 : 0) +
     (activeTab === 'Resolved' ? appliedStatuses.length : 0) +
-    (appliedDateOption !== 'All' ? 1 : 0) +
-    (sourceFilter !== 'All' ? 1 : 0);
+    (appliedDateOption !== 'All' ? 1 : 0);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -477,23 +469,6 @@ export default function SupervisorScreen({
             </select>
           </div>
 
-          {/* Source channel */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <label style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Source</label>
-            <div style={{ display: 'flex', gap: 6 }}>
-              {([['All', 'All'], ['WEB', 'Web'], ['CALL_CENTRE', 'Call Centre']] as [SourceFilter, string][]).map(([val, lbl]) => (
-                <button key={val} onClick={() => setSourceFilter(val)} style={{
-                  flex: 1, padding: '7px 4px', borderRadius: 20, fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
-                  border: `1.5px solid ${sourceFilter === val ? 'var(--primary-deep)' : 'var(--border-color)'}`,
-                  background: sourceFilter === val ? 'var(--primary-deep)' : 'var(--bg-main)',
-                  color: sourceFilter === val ? '#ffffff' : 'var(--text-dark)',
-                }}>
-                  {lbl}
-                </button>
-              ))}
-            </div>
-          </div>
-
           {/* Date Range */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', position: 'relative' }}>
             <label style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Submission Date</label>
@@ -550,7 +525,7 @@ export default function SupervisorScreen({
             <button
               className="ux4g-btn ux4g-btn-outline-neutral ux4g-btn-sm"
               style={{ borderRadius: '20px', fontSize: '14px' }}
-              onClick={() => { setIsOverdueOnly(false); setSelectedCategory('All'); setAppliedStatuses([]); setAppliedDateOption('All'); setSourceFilter('All'); }}
+              onClick={() => { setIsOverdueOnly(false); setSelectedCategory('All'); setAppliedStatuses([]); setAppliedDateOption('All'); }}
             >
               Reset Filters
             </button>
@@ -604,9 +579,9 @@ export default function SupervisorScreen({
                     <div className="ticket-card-header">
                       <span className="ticket-id">{ticket.ticketNumber}</span>
                       <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                        {overdue && <span className="badge badge-danger">Overdue</span>}
+                        {overdue && <span className="status-chip badge-danger">Overdue</span>}
                         {resolvedCfg && (
-                          <span style={{ padding: '3px 10px', borderRadius: '4px', fontSize: '14px', fontWeight: 700, letterSpacing: '0.3px', background: resolvedCfg.bg, color: resolvedCfg.color, border: `1px solid ${resolvedCfg.border}` }}>
+                          <span className="status-chip" style={{ background: resolvedCfg.bg, color: resolvedCfg.color, border: `1px solid ${resolvedCfg.border}` }}>
                             {resolvedCfg.label}
                           </span>
                         )}
@@ -615,7 +590,7 @@ export default function SupervisorScreen({
                     <div className="ticket-title-row">
                       <h4 className="ticket-title" style={{ margin: 0 }}>{ticket.beneficiaryName}</h4>
                       {ticket.beneficiaryType && (
-                        <span style={{ fontSize: '14px', background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: '4px', fontWeight: 600 }}>
+                        <span className="meta-chip">
                           {ticket.beneficiaryType}
                         </span>
                       )}

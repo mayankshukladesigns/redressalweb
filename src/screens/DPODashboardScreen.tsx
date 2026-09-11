@@ -328,10 +328,10 @@ const TicketCardComponent = ({ card, onView }: { card: TicketCard; onView: () =>
       <div className="ticket-card-header">
         <span className="ticket-id">{card.ticketNumber}</span>
         <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-          {card.complaintType === 'Corruption' && <span className="badge badge-danger">Corruption</span>}
-          {card.complaintType === 'Urgent' && <span className="badge badge-warning">Urgent</span>}
+          {card.complaintType === 'Corruption' && <span className="status-chip badge-danger">Corruption</span>}
+          {card.complaintType === 'Urgent' && <span className="status-chip badge-warning">Urgent</span>}
           {overdue && (
-            <span className="badge badge-danger" style={{ backgroundColor: '#ffebee', color: '#d32f2f', border: '1px solid #ffcdd2' }}>
+            <span className="status-chip" style={{ background: '#ffebee', color: '#d32f2f', border: '1px solid #ffcdd2' }}>
               OVERDUE
             </span>
           )}
@@ -341,7 +341,7 @@ const TicketCardComponent = ({ card, onView }: { card: TicketCard; onView: () =>
       <div className="ticket-title-row">
         <h4 className="ticket-title" style={{ margin: 0 }}>{card.beneficiaryName || card.byName}</h4>
         {card.beneficiaryType && (
-          <span style={{ fontSize: 14, background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: 4, fontWeight: 600, flexShrink: 0 }}>
+          <span className="meta-chip">
             {card.beneficiaryType}
           </span>
         )}
@@ -360,7 +360,7 @@ const TicketCardComponent = ({ card, onView }: { card: TicketCard; onView: () =>
       <div className="ticket-awc-row">
         <span>AWC: <strong className="ticket-awc">{formatAwcName(card.awcName)}</strong></span>
         {isCorruptionOrUrgent && (card.documentsCount ?? 0) > 0 && (
-          <span style={{ background: '#e8eaf6', color: '#1565c0', padding: '2px 8px', borderRadius: 4, fontSize: 12, fontWeight: 600, border: '1px solid #90caf9', whiteSpace: 'nowrap', flexShrink: 0 }}>
+          <span className="meta-chip" style={{ background: '#e8eaf6', color: '#1565c0', border: '1px solid #90caf9' }}>
             Doc Uploaded
           </span>
         )}
@@ -402,20 +402,20 @@ const ResolvedCard = ({ card, onView, showOwnerChip }: { card: ResolvedTicketCar
         </div>
       )}
       <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+        <div className="ticket-card-header">
           <span className="ticket-id">{card.ticketNumber}</span>
           <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexShrink: 0 }}>
             {overdue && (
-              <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 14, fontWeight: 700, background: '#ffebee', color: '#d32f2f', border: '1px solid #ffcdd2' }}>
+              <span className="status-chip" style={{ background: '#ffebee', color: '#d32f2f', border: '1px solid #ffcdd2' }}>
                 OVERDUE
               </span>
             )}
             {useOwnerChip ? (
-              <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 14, fontWeight: 700, background: ownerStyle.bg, color: ownerStyle.color, border: `1px solid ${ownerStyle.border}`, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+              <span className="status-chip" style={{ background: ownerStyle.bg, color: ownerStyle.color, border: `1px solid ${ownerStyle.border}` }}>
                 {owner}
               </span>
             ) : (
-              <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 14, fontWeight: 700, background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}>
+              <span className="status-chip" style={{ background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}>
                 {cfg.label}
               </span>
             )}
@@ -424,7 +424,7 @@ const ResolvedCard = ({ card, onView, showOwnerChip }: { card: ResolvedTicketCar
         <div className="ticket-title-row">
           <h4 className="ticket-title" style={{ margin: 0 }}>{card.beneficiaryName}</h4>
           {card.beneficiaryType && (
-            <span style={{ fontSize: 14, background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: 4, fontWeight: 600, flexShrink: 0 }}>
+            <span className="meta-chip">
               {card.beneficiaryType}
             </span>
           )}
@@ -474,11 +474,11 @@ const AppealCard = ({ card, onResolve, onViewDetails }: { card: AppealTicket; on
         <span className="ticket-id">{card.ticketNumber}</span>
         <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
           {appealOverdue && (
-            <span className="badge badge-danger" style={{ backgroundColor: '#ffebee', color: '#d32f2f', border: '1px solid #ffcdd2' }}>
+            <span className="status-chip" style={{ background: '#ffebee', color: '#d32f2f', border: '1px solid #ffcdd2' }}>
               OVERDUE
             </span>
           )}
-          <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 14, fontWeight: 700, background: roleStyle.bg, color: roleStyle.color, border: `1px solid ${roleStyle.border}` }}>
+          <span className="status-chip" style={{ background: roleStyle.bg, color: roleStyle.color, border: `1px solid ${roleStyle.border}` }}>
             {card.roleLabel?.toUpperCase()}
           </span>
         </div>
@@ -486,7 +486,7 @@ const AppealCard = ({ card, onResolve, onViewDetails }: { card: AppealTicket; on
 
       <div className="ticket-title-row">
         <h4 className="ticket-title" style={{ margin: 0 }}>{card.byName}</h4>
-        <span style={{ fontSize: 14, background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: 4, fontWeight: 600, flexShrink: 0 }}>
+        <span className="meta-chip">
           Beneficiary
         </span>
       </div>
@@ -501,12 +501,12 @@ const AppealCard = ({ card, onResolve, onViewDetails }: { card: AppealTicket; on
       </div>
 
       <div className="ticket-awc-row" style={{ flexWrap: 'wrap', rowGap: 6 }}>
-        <span>Filed: <strong>{card.appealDate?.replace('Appeal Filed:', '') || '28 Jun 2025'}</strong></span>
+        <span>Appeal Filed: <strong>{card.appealDate?.replace('Appeal Filed:', '').trim() || '28/06/2025'}</strong></span>
         {/* The right-hand slot holds the doc chip when the appeal has one, so it
             lines up with the filed date; otherwise the overdue label takes that
             slot and the row reads balanced end to end. */}
         {hasDocs ? (
-          <span style={{ background: '#e8eaf6', color: '#1565c0', padding: '2px 8px', borderRadius: 4, fontSize: 12, fontWeight: 600, border: '1px solid #90caf9', whiteSpace: 'nowrap', flexShrink: 0 }}>
+          <span className="meta-chip" style={{ background: '#e8eaf6', color: '#1565c0', border: '1px solid #90caf9' }}>
             Doc Uploaded
           </span>
         ) : appealOverdue && (
@@ -1317,6 +1317,18 @@ export default function DPOView({
               <Info size={15} style={{ color: '#e65100', flexShrink: 0, alignSelf: 'flex-start', marginTop: 4.5 }} />
               <p style={{ margin: 0, fontSize: 16, color: 'var(--text-dark)', lineHeight: 1.5 }}>
                 Showing all pending {assignedFilter} tickets. These are <strong>view-only</strong>; resolution and closure stay with the assignee.
+              </p>
+            </div>
+          )}
+
+          {/* Resolved queues the DPO only observes. The CDPO — not the DPO —
+              signs these off, so the notice names who still owns the closure
+              rather than implying the DPO has anything left to do. */}
+          {activeTab === 'Resolved' && (assignedFilter === 'Supervisor' || assignedFilter === 'AWW') && (
+            <div style={{ display: 'flex', gap: 10, background: 'var(--accent-green-light)', borderRadius: 'var(--radius-md)', padding: '12px 14px', border: '1px solid var(--accent-green)' }}>
+              <ShieldCheck size={15} style={{ color: 'var(--accent-green)', flexShrink: 0, alignSelf: 'flex-start', marginTop: 4.5 }} />
+              <p style={{ margin: 0, fontSize: 16, color: 'var(--text-dark)', lineHeight: 1.5 }}>
+                Grievances the <strong>{assignedFilter === 'AWW' ? 'Anganwadi Worker' : 'Supervisor'}</strong> has already resolved, including any still waiting on the CDPO's closure. <strong>View-only</strong> — closing them stays with the CDPO.
               </p>
             </div>
           )}

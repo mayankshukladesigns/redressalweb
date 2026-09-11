@@ -424,12 +424,51 @@ a {
   font-weight: 600;
   letter-spacing: 0.3px;
   text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .badge-danger { background-color: var(--color-danger-light); color: var(--color-danger); }
 .badge-warning { background-color: var(--color-warning-light); color: var(--color-warning); }
 .badge-success { background-color: var(--color-success-light); color: var(--color-success); }
 .badge-info { background-color: var(--color-info-light); color: var(--color-info); }
+
+/* Ticket status chips.
+   The status text ("PENDING FOR CLOSURE") is the widest thing in a card header,
+   so these run a notch smaller than .badge and never break mid-label — a chip
+   that does not fit moves to the next line whole instead of splitting in two.
+   Only the colours stay inline at the call site, since they vary per status;
+   everything else lives here so the chips read the same on every view.
+   .status-chip is the squared card variant, .status-pill the rounded drawer
+   variant, .meta-chip the neutral beneficiary-type tag. */
+.status-chip,
+.status-pill,
+.meta-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.status-chip,
+.status-pill {
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.status-chip { padding: 3px 8px; border-radius: 4px; }
+.status-pill { padding: 3px 10px; border-radius: 100px; }
+
+.meta-chip {
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  background: #f1f5f9;
+  color: #475569;
+}
 
 /* ==========================================================================
    UX4G Buttons
@@ -503,10 +542,13 @@ a {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 8px;
 }
 
 .ticket-id {
   font-size: 14px;
+  white-space: nowrap;
   font-weight: 700;
   color: var(--text-muted);
   font-family: var(--font-display);

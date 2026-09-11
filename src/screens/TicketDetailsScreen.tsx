@@ -458,7 +458,8 @@ export default function TicketDetailsScreen({
               onMouseLeave={() => setActiveHint(null)}
               onFocus={() => setActiveHint(statusCfg.hint)}
               onBlur={() => setActiveHint(null)}
-              style={{ background: statusCfg.bg, color: statusCfg.color, fontSize: '14px', fontWeight: 700, padding: '3px 10px', borderRadius: '100px', border: `1px solid ${statusCfg.border}`, textTransform: 'uppercase', letterSpacing: '0.4px', cursor: 'help' }}
+              className="status-pill"
+              style={{ background: statusCfg.bg, color: statusCfg.color, border: `1px solid ${statusCfg.border}`, cursor: 'help' }}
             >
               {statusCfg.label}{statusCfg.hasIcon ? ' ⓘ' : ''}
             </span>
@@ -470,7 +471,8 @@ export default function TicketDetailsScreen({
                 onMouseLeave={() => setActiveHint(null)}
                 onFocus={() => setActiveHint(STATUS_CFG.OVERDUE.hint)}
                 onBlur={() => setActiveHint(null)}
-                style={{ background: STATUS_CFG.OVERDUE.bg, color: STATUS_CFG.OVERDUE.color, fontSize: '14px', fontWeight: 700, padding: '3px 10px', borderRadius: '100px', border: `1px solid ${STATUS_CFG.OVERDUE.border}`, textTransform: 'uppercase', letterSpacing: '0.4px', cursor: 'help' }}
+                className="status-pill"
+                style={{ background: STATUS_CFG.OVERDUE.bg, color: STATUS_CFG.OVERDUE.color, border: `1px solid ${STATUS_CFG.OVERDUE.border}`, cursor: 'help' }}
               >
                 {overdueLabel(currentCard)} ⓘ
               </span>

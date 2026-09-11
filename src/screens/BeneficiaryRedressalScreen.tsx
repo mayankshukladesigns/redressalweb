@@ -299,15 +299,15 @@ const PendingCard = ({ card, showDocs, onView }: { card: TicketCard; showDocs: b
       <div className="ticket-card-header">
         <span className="ticket-id">{card.ticketNumber}</span>
         <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-          {card.complaintType === 'Corruption' && <span className="badge badge-danger">Corruption</span>}
-          {card.complaintType === 'Urgent'     && <span className="badge badge-warning">Urgent</span>}
-          {overdue && <span className="badge badge-danger">OVERDUE</span>}
+          {card.complaintType === 'Corruption' && <span className="status-chip badge-danger">Corruption</span>}
+          {card.complaintType === 'Urgent'     && <span className="status-chip badge-warning">Urgent</span>}
+          {overdue && <span className="status-chip badge-danger">OVERDUE</span>}
         </div>
       </div>
       <div className="ticket-title-row">
         <h4 className="ticket-title" style={{ margin: 0 }}>{card.beneficiaryName}</h4>
         {card.beneficiaryType && (
-          <span style={{ fontSize: 14, background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: 4, fontWeight: 600, flexShrink: 0 }}>{card.beneficiaryType}</span>
+          <span className="meta-chip">{card.beneficiaryType}</span>
         )}
       </div>
       {card.topic && <div className="ticket-topic">{card.topic}</div>}
@@ -358,27 +358,27 @@ const ResolvedCard = ({ card, onView, showOwnerChip }: {
         </div>
       )}
       <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+        <div className="ticket-card-header">
           <span className="ticket-id">{card.ticketNumber}</span>
           <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexShrink: 0 }}>
             {overdue && (
-              <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 14, fontWeight: 700, background: '#ffebee', color: '#d32f2f', border: '1px solid #ffcdd2' }}>
+              <span className="status-chip" style={{ background: '#ffebee', color: '#d32f2f', border: '1px solid #ffcdd2' }}>
                 OVERDUE
               </span>
             )}
             {useOwnerChip ? (
-              <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 14, fontWeight: 700, background: ownerCfg.bg, color: ownerCfg.color, border: `1px solid ${ownerCfg.border}`, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+              <span className="status-chip" style={{ background: ownerCfg.bg, color: ownerCfg.color, border: `1px solid ${ownerCfg.border}` }}>
                 {owner}
               </span>
             ) : (
-              <span style={{ padding: '3px 8px', borderRadius: 4, fontSize: 14, fontWeight: 700, background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}>{cfg.label}</span>
+              <span className="status-chip" style={{ background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}>{cfg.label}</span>
             )}
           </div>
         </div>
         <div className="ticket-title-row">
           <h4 className="ticket-title" style={{ margin: 0 }}>{card.beneficiaryName}</h4>
           {card.beneficiaryType && (
-            <span style={{ fontSize: 14, background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: 4, fontWeight: 600, flexShrink: 0 }}>{card.beneficiaryType}</span>
+            <span className="meta-chip">{card.beneficiaryType}</span>
           )}
         </div>
         {card.topic && <div className="ticket-topic">{card.topic}</div>}
