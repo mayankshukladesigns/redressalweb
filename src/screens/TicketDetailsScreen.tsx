@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { X, ArrowLeft, FileText, Check } from 'lucide-react';
 import { FEEDBACK_CFG } from '../components/FeedbackChip';
+import MaskedPhone from '../components/MaskedPhone';
 import { isTicketOverdue, overdueLabel } from '../web/sla';
 
 interface TicketDetailsProps {
@@ -529,7 +530,7 @@ export default function TicketDetailsScreen({
               {!origin.callerIsSelf && origin.callerMobile && (
                 <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr' }}>
                   <span style={{ color: 'var(--text-muted)' }}>Caller Contact</span>
-                  <span style={{ fontWeight: 600, color: 'var(--text-dark)' }}>{origin.callerMobile}</span>
+                  <MaskedPhone value={origin.callerMobile} />
                 </div>
               )}
               {isCallCentre && origin.agentName && (
@@ -553,7 +554,7 @@ export default function TicketDetailsScreen({
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Mobile</span>
-                <span style={{ fontWeight: 600, color: 'var(--text-dark)' }}>{currentCard.beneficiaryMobile || '98765 00412'}</span>
+                <MaskedPhone value={currentCard.beneficiaryMobile || '98765 00412'} />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Category</span>
